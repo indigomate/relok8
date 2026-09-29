@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, ArrowRight, Check, CheckCircle2, RefreshCw, 
   Calculator, FileText, MapPin, Calendar, Home, DollarSign,
-  Shield, Users, Sparkles, Map as MapIcon, LayoutGrid, Columns2
+  Shield, Users, Sparkles
 } from 'lucide-react';
 import { Listing, DepositClearingRecord, SubscriptionTier } from './types';
 import { INITIAL_LISTINGS, INITIAL_DEPOSIT_RECORDS } from './data/mockListings';
@@ -23,7 +23,6 @@ import { parseHashRoute, navigateToCity, CITIES_SEO_INFO } from './utils/router'
 import { CityLandingHeader } from './components/CityLandingHeader';
 import { ListingGridSkeleton } from './components/ListingCardSkeleton';
 import { DepartingTenantBanner } from './components/DepartingTenantBanner';
-import { InteractiveMap } from './components/InteractiveMap';
 
 export default function App() {
   // Theme State: Default light
@@ -85,10 +84,6 @@ export default function App() {
   const [isSavedOnly, setIsSavedOnly] = useState<boolean>(false);
   const [filterBillsIncludedOnly, setFilterBillsIncludedOnly] = useState<boolean>(false);
   const [filterMeldunekOnly, setFilterMeldunekOnly] = useState<boolean>(false);
-
-  // View Mode: 'grid' | 'split' | 'map'
-  const [viewMode, setViewMode] = useState<'grid' | 'split' | 'map'>('grid');
-  const [hoveredListingId, setHoveredListingId] = useState<string | null>(null);
 
   // Skeleton Loading & Filter Transition State
   const [isFiltering, setIsFiltering] = useState<boolean>(true);
@@ -511,8 +506,8 @@ export default function App() {
               </button>
             </div>
 
-            {/* Active Result Count, Reset & View Mode Toggles */}
-            <div className="flex flex-wrap items-center gap-3 text-slate-500">
+            {/* Active Result Count & Reset */}
+            <div className="flex items-center gap-3 text-slate-500">
               <span className="font-semibold text-slate-700">
                 {isFiltering ? (
                   <span className="inline-flex items-center gap-1.5 text-slate-400">
@@ -542,132 +537,28 @@ export default function App() {
                   <span>{strings.filterReset}</span>
                 </button>
               )}
-
-              {/* View Mode Toggle: Grid / Split / Map */}
-              <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-xl border border-slate-200/80">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('grid')}
-                  title="Grid View"
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    viewMode === 'grid'
-                      ? 'bg-white text-indigo-600 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Grid</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('split')}
-                  title="Split View (List + Map)"
-                  className={`hidden md:flex px-2.5 py-1 rounded-lg text-xs font-semibold items-center gap-1.5 transition-all cursor-pointer ${
-                    viewMode === 'split'
-                      ? 'bg-white text-indigo-600 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Columns2 className="w-3.5 h-3.5" />
-                  <span>Split</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('map')}
-                  title="Map View"
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                    viewMode === 'map'
-                      ? 'bg-white text-indigo-600 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <MapIcon className="w-3.5 h-3.5" />
-                  <span>Map</span>
-                </button>
-              </div>
             </div>
           </div>
 
-          {/* Listings Container: Responsive Grid / Split / Map with Skeleton Loading State */}
+          {/* 3-Column Responsive Grid with Skeleton Loading State */}
           {isFiltering ? (
             <ListingGridSkeleton count={selectedCity === 'All Poland' ? 6 : Math.min(Math.max(filteredListings.length, 3), 6)} />
           ) : filteredListings.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 animate-in fade-in duration-200">
-                {filteredListings.map((listing) => (
-                  <div
-                    key={listing.id}
-                    onMouseEnter={() => setHoveredListingId(listing.id)}
-                    onMouseLeave={() => setHoveredListingId(null)}
-                  >
-                    <ListingCard
-                      listing={listing}
-                      isSaved={savedIds.includes(listing.id)}
-                      onToggleSave={handleToggleSave}
-                      onSelectListing={(l) => {
-                        setActiveListing(l);
-                        window.location.hash = `#/room/${l.id}`;
-                      }}
-                      locale={locale}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : viewMode === 'split' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2 items-start animate-in fade-in duration-200">
-                {/* Left: 2-column cards */}
-                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  {filteredListings.map((listing) => (
-                    <div
-                      key={listing.id}
-                      onMouseEnter={() => setHoveredListingId(listing.id)}
-                      onMouseLeave={() => setHoveredListingId(null)}
-                    >
-                      <ListingCard
-                        listing={listing}
-                        isSaved={savedIds.includes(listing.id)}
-                        onToggleSave={handleToggleSave}
-                        onSelectListing={(l) => {
-                          setActiveListing(l);
-                          window.location.hash = `#/room/${l.id}`;
-                        }}
-                        locale={locale}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Right: Sticky interactive Leaflet map */}
-                <div className="hidden lg:block lg:col-span-5 sticky top-24 h-[calc(100vh-140px)] min-h-[520px]">
-                  <InteractiveMap
-                    listings={filteredListings}
-                    onSelectListing={(l) => {
-                      setActiveListing(l);
-                      window.location.hash = `#/room/${l.id}`;
-                    }}
-                    onHoverListing={setHoveredListingId}
-                    hoveredListingId={hoveredListingId}
-                    locale={locale}
-                    cityFilter={selectedCity}
-                  />
-                </div>
-              </div>
-            ) : (
-              /* Full Map View */
-              <div className="h-[580px] sm:h-[650px] w-full pt-2 animate-in fade-in duration-200">
-                <InteractiveMap
-                  listings={filteredListings}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 animate-in fade-in duration-200">
+              {filteredListings.map((listing) => (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  isSaved={savedIds.includes(listing.id)}
+                  onToggleSave={handleToggleSave}
                   onSelectListing={(l) => {
                     setActiveListing(l);
                     window.location.hash = `#/room/${l.id}`;
                   }}
-                  onHoverListing={setHoveredListingId}
-                  hoveredListingId={hoveredListingId}
                   locale={locale}
-                  cityFilter={selectedCity}
                 />
-              </div>
-            )
+              ))}
+            </div>
           ) : (
             <div className="text-center py-16 px-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
               <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
@@ -696,27 +587,6 @@ export default function App() {
               </button>
             </div>
           )}
-
-          {/* Floating Mobile/Desktop Bottom Pill to toggle Map/List */}
-          <div className="fixed bottom-6 inset-x-0 flex justify-center z-40 pointer-events-none">
-            <button
-              type="button"
-              onClick={() => setViewMode(viewMode === 'map' ? 'grid' : 'map')}
-              className="pointer-events-auto px-4 py-2.5 rounded-full bg-slate-900/95 hover:bg-slate-900 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-xl hover:scale-105 transition-all cursor-pointer border border-white/20 backdrop-blur-md"
-            >
-              {viewMode === 'map' ? (
-                <>
-                  <LayoutGrid className="w-4 h-4 text-indigo-400" />
-                  <span>{locale === 'pl' ? 'Pokaż listę' : 'Show list'}</span>
-                </>
-              ) : (
-                <>
-                  <MapIcon className="w-4 h-4 text-indigo-400" />
-                  <span>{locale === 'pl' ? 'Pokaż mapę' : 'Show map'}</span>
-                </>
-              )}
-            </button>
-          </div>
 
         </section>
 
