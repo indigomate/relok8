@@ -47,7 +47,7 @@ export const Footer: React.FC<FooterProps> = ({
                   }}
                   className="hover:text-indigo-600 transition-colors text-left block"
                 >
-                  Warsaw / Warszawa
+                  Student housing Warsaw
                 </a>
               </li>
               <li>
@@ -59,7 +59,7 @@ export const Footer: React.FC<FooterProps> = ({
                   }}
                   className="hover:text-indigo-600 transition-colors text-left block"
                 >
-                  Kraków
+                  No agency commission flats Krakow
                 </a>
               </li>
               <li>
@@ -71,7 +71,7 @@ export const Footer: React.FC<FooterProps> = ({
                   }}
                   className="hover:text-indigo-600 transition-colors text-left block"
                 >
-                  Wrocław
+                  Rooms in Wrocław
                 </a>
               </li>
               <li>
@@ -83,7 +83,7 @@ export const Footer: React.FC<FooterProps> = ({
                   }}
                   className="hover:text-indigo-600 transition-colors text-left block"
                 >
-                  Gdańsk
+                  Apartments in Gdańsk
                 </a>
               </li>
               <li>
@@ -95,7 +95,7 @@ export const Footer: React.FC<FooterProps> = ({
                   }}
                   className="hover:text-indigo-600 transition-colors text-left block"
                 >
-                  Lublin
+                  Student housing Lublin
                 </a>
               </li>
             </ul>
@@ -108,45 +108,51 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2 text-[13px]">
               <li>
-                <a href="#how-it-works" className="hover:text-indigo-600 transition-colors">
-                  {locale === 'pl' ? 'Jak to działa' : locale === 'uk' ? 'Як це працює' : 'How it works'}
+                <a href="#/how-it-works" className="hover:text-indigo-600 transition-colors block">
+                  {locale === 'pl' ? 'Jak działa cesja' : 'How Lease Takeover Works'}
                 </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={onOpenIntake}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                <a
+                  href="#/list-your-room"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.hash = '#/list-your-room';
+                    onOpenIntake();
+                  }}
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block"
                 >
-                  {locale === 'pl' ? 'Dodaj swój pokój' : locale === 'uk' ? 'Додати кімнату' : 'List your room'}
-                </button>
+                  {locale === 'pl' ? 'Dodaj swój pokój' : 'List your room (Free)'}
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={onOpenLeaveYourLease}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                <a
+                  href="#/leave-your-lease"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.hash = '#/leave-your-lease';
+                    onOpenLeaveYourLease();
+                  }}
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block"
                 >
-                  {locale === 'pl' ? 'Wyprowadzasz się? Przekaż najem' : locale === 'uk' ? 'Передати оренду без штрафів' : 'Leaving early? Transfer your lease'}
-                </button>
+                  {locale === 'pl' ? 'Wyprowadzasz się? Przekaż najem' : 'Leaving early? Transfer lease'}
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={onOpenHelp}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                <a
+                  href="#/meldunek-guide"
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block"
                 >
-                  {locale === 'pl' ? 'Poradnik meldunkowy i PESEL' : 'Registration (Meldunek) guide'}
-                </button>
+                  {locale === 'pl' ? 'Poradnik meldunkowy i PESEL' : 'Rooms with Meldunek & PESEL Guide'}
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={onOpenHelp}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left font-medium text-slate-700"
+                <a
+                  href="#/cesja-template"
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left font-medium text-slate-800 block"
                 >
                   Cesja umowy najmu wzór english
-                </button>
+                </a>
               </li>
             </ul>
           </div>
@@ -158,32 +164,41 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2 text-[13px]">
               <li>
-                <button
-                  type="button"
-                  onClick={onOpenHelp}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                <a
+                  href="#/help"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.hash = '#/help';
+                    onOpenHelp();
+                  }}
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block"
                 >
-                  {locale === 'pl' ? 'Centrum pomocy / FAQ' : locale === 'uk' ? 'Довідковий центр' : 'Help Center & FAQ'}
-                </button>
+                  {locale === 'pl' ? 'Centrum pomocy / FAQ' : 'Help Center & FAQ'}
+                </a>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={onOpenHelp}
-                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left"
+                <a
+                  href="#/safety-guide"
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block"
                 >
-                  {locale === 'pl' ? 'Ochrona przed oszustwami' : 'Rental safety & scam tips'}
-                </button>
+                  {locale === 'pl' ? 'Ochrona przed oszustwami' : 'Rental safety & scam prevention'}
+                </a>
               </li>
               <li>
-                <span className="text-slate-500">
+                <a
+                  href="#/saved"
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block"
+                >
+                  {locale === 'pl' ? 'Zapisane pokoje' : 'Saved Apartments'}
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#/cesja-template"
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left block text-slate-500"
+                >
                   {locale === 'pl' ? 'Pisemny protokół zdawczy' : 'Handover inspection protocol'}
-                </span>
-              </li>
-              <li>
-                <span className="text-slate-500">
-                  {locale === 'pl' ? 'Weryfikacja tożsamości najemców' : 'Student & ID verification'}
-                </span>
+                </a>
               </li>
             </ul>
           </div>
@@ -212,11 +227,11 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <span>© 2026 Relok8</span>
             <span>•</span>
-            <a href="#privacy" className="hover:text-slate-900 transition-colors">Privacy</a>
+            <a href="#/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</a>
             <span>•</span>
-            <a href="#terms" className="hover:text-slate-900 transition-colors">Terms</a>
+            <a href="#/terms" className="hover:text-slate-900 transition-colors">Terms of Service</a>
             <span>•</span>
-            <a href="#cookies" className="hover:text-slate-900 transition-colors">Cookies</a>
+            <a href="#/how-it-works" className="hover:text-slate-900 transition-colors">Art. 509 KC</a>
             <span>•</span>
             <span className="text-slate-400">relok8.online</span>
           </div>

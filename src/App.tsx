@@ -14,15 +14,24 @@ import { CesjaGeneratorModal } from './components/CesjaGeneratorModal';
 import { DepositClearingModal } from './components/DepositClearingModal';
 import { LeaveYourLeaseModal } from './components/LeaveYourLeaseModal';
 import { HelpModal } from './components/HelpModal';
-import { LoginModal } from './components/LoginModal';
+import { LoginModal, UserProfile } from './components/LoginModal';
 import { CookieBanner } from './components/CookieBanner';
 import { Footer } from './components/Footer';
 import { SupportedLocale, formatPLN } from './utils/formatters';
 import { t } from './utils/translations';
-import { parseHashRoute, navigateToCity, CITIES_SEO_INFO } from './utils/router';
+import { parseHashRoute, navigateToCity, CITIES_SEO_INFO, ParsedRoute } from './utils/router';
 import { CityLandingHeader } from './components/CityLandingHeader';
 import { ListingGridSkeleton } from './components/ListingCardSkeleton';
 import { DepartingTenantBanner } from './components/DepartingTenantBanner';
+import { ListingDetailPage } from './pages/ListingDetailPage';
+import { SavedApartmentsPage } from './pages/SavedApartmentsPage';
+import { HowItWorksPage } from './pages/HowItWorksPage';
+import { MeldunekGuidePage } from './pages/MeldunekGuidePage';
+import { CesjaTemplatePage } from './pages/CesjaTemplatePage';
+import { SafetyGuidePage } from './pages/SafetyGuidePage';
+import { LegalTermsPrivacyPage } from './pages/LegalTermsPrivacyPage';
+import { MobileBottomNav } from './components/MobileBottomNav';
+import { api } from './services/api';
 
 export default function App() {
   // Theme State: Default light
@@ -34,6 +43,9 @@ export default function App() {
   });
 
   const strings = t[locale];
+
+  // Active Route State
+  const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(() => parseHashRoute(window.location.hash));
 
   useEffect(() => {
     localStorage.setItem('r8_locale', locale);
@@ -119,12 +131,57 @@ export default function App() {
     return parseHashRoute(window.location.hash).type === 'help';
   });
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const [loginReason, setLoginReason] = useState<string>('');
   const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
+
+  // Authenticated User State
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    const saved = localStorage.getItem('r8_user');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null;
+  });
+
+  // Sync listings and user session with backend
+  useEffect(() => {
+    api.listings.getAll()
+      .then((serverListings) => {
+        if (serverListings && serverListings.length > 0) {
+          setListings(serverListings);
+          localStorage.setItem('r8_listings', JSON.stringify(serverListings));
+        }
+      })
+      .catch(() => {
+        // Local in-memory seed used seamlessly
+      });
+
+    // Check user auth token session
+    api.auth.getMe()
+      .then((user) => {
+        if (user) {
+          setCurrentUser(user);
+          localStorage.setItem('r8_user', JSON.stringify(user));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleLikeListing = async (id: string) => {
+    setListings((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, likesCount: (l.likesCount || 0) + 1 } : l))
+    );
+    try {
+      await api.listings.like(id);
+    } catch (e) {}
+  };
 
   // HashRouter Listener for SEO-friendly City routes and Page views
   useEffect(() => {
     const handleHashChange = () => {
       const parsed = parseHashRoute(window.location.hash);
+      setCurrentRoute(parsed);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       
       if (parsed.type === 'city' && parsed.city) {
         setSelectedCity(parsed.city);
@@ -132,6 +189,20 @@ export default function App() {
       } else if (parsed.type === 'home') {
         setSelectedCity('All Poland');
         document.title = 'Relok8 – Student & Expat Housing in Poland | No Broker Fees';
+      } else if (parsed.type === 'saved') {
+        document.title = 'Saved Apartments & Favorites | Relok8';
+      } else if (parsed.type === 'how-it-works') {
+        document.title = 'How Lease Takeover Poland Works (Art. 509 KC) | Relok8';
+      } else if (parsed.type === 'meldunek-guide') {
+        document.title = 'Rooms with Meldunek & PESEL Guide for Expats | Relok8';
+      } else if (parsed.type === 'cesja-template') {
+        document.title = 'Cesja umowy najmu wzór english (Bilingual Template) | Relok8';
+      } else if (parsed.type === 'safety-guide') {
+        document.title = 'Rental Safety & Scam Prevention in Poland | Relok8';
+      } else if (parsed.type === 'terms') {
+        document.title = 'Terms of Service | Relok8';
+      } else if (parsed.type === 'privacy') {
+        document.title = 'Privacy Policy & RODO | Relok8';
       } else if (parsed.type === 'leave-your-lease') {
         setIsLeaveLeaseOpen(true);
         document.title = 'Leave Your Lease in Poland (0 PLN Break Fee) | Relok8';
@@ -141,11 +212,10 @@ export default function App() {
       } else if (parsed.type === 'help') {
         setIsHelpOpen(true);
         document.title = 'Help & Rental Safety Guide | Relok8';
-      } else if (parsed.type === 'room-detail' && parsed.listingId) {
+      } else if (parsed.type === 'listing-detail' && parsed.listingId) {
         const found = listings.find((l) => l.id === parsed.listingId);
         if (found) {
-          setActiveListing(found);
-          document.title = `${found.shortTitle || found.title} – ${found.city} | Relok8`;
+          document.title = `${found.title} – ${found.city} | Relok8`;
         }
       }
     };
@@ -177,18 +247,42 @@ export default function App() {
   };
 
   const handleToggleSave = (id: string) => {
+    const isAdding = !savedIds.includes(id);
     setSavedIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id];
+      const next = isAdding ? [...prev, id] : prev.filter((i) => i !== id);
       localStorage.setItem('r8_saved_ids', JSON.stringify(next));
       return next;
     });
+
+    if (isAdding) {
+      api.favorites.add(id).catch(() => {});
+      if (!currentUser) {
+        showToast(
+          locale === 'pl'
+            ? 'Zapisano! Załóż darmowe konto, aby zsynchronizować zapisane pokoje.'
+            : 'Saved! Sign up in 10s to sync your saved rooms across devices.'
+        );
+      } else {
+        showToast(locale === 'pl' ? 'Dodano do ulubionych!' : 'Added to saved apartments!');
+      }
+    } else {
+      api.favorites.remove(id).catch(() => {});
+      showToast(locale === 'pl' ? 'Usunięto z zapisanych' : 'Removed from saved');
+    }
   };
 
-  const handleAddListing = (newListing: Listing) => {
-    const next = [newListing, ...listings];
-    setListings(next);
-    localStorage.setItem('r8_listings', JSON.stringify(next));
-    showToast(locale === 'pl' ? 'Pokój został pomyślnie dodany!' : 'Room listing posted successfully!');
+  const handleAddListing = async (newListing: Listing) => {
+    try {
+      const created = await api.listings.create(newListing);
+      const next = [created, ...listings];
+      setListings(next);
+      localStorage.setItem('r8_listings', JSON.stringify(next));
+    } catch {
+      const next = [newListing, ...listings];
+      setListings(next);
+      localStorage.setItem('r8_listings', JSON.stringify(next));
+    }
+    showToast(locale === 'pl' ? 'Pokój został pomyślnie dodany do serwisu!' : 'Room listing posted successfully!');
   };
 
   // Filter listings
@@ -245,19 +339,98 @@ export default function App() {
         onOpenIntake={() => setIsIntakeOpen(true)}
         onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
         savedCount={savedIds.length}
-        onToggleSavedOnly={() => setIsSavedOnly(!isSavedOnly)}
-        isSavedOnly={isSavedOnly}
         locale={locale}
         setLocale={setLocale}
         theme={theme}
         setTheme={setTheme}
         onOpenHelp={() => setIsHelpOpen(true)}
-        onOpenLogin={() => setIsLoginOpen(true)}
+        onOpenLogin={() => {
+          setLoginReason('Sign up or log in to manage your saved apartments and contact hosts.');
+          setIsLoginOpen(true);
+        }}
+        currentUser={currentUser}
+        onLogout={() => {
+          localStorage.removeItem('r8_user');
+          setCurrentUser(null);
+          showToast(locale === 'pl' ? 'Wylogowano pomyślnie' : 'Logged out successfully');
+        }}
+        onSelectCity={handleSelectCity}
       />
 
-      <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12">
-        
-        {/* 1. HERO SECTION: Housing Search First */}
+      {currentRoute.type === 'listing-detail' && currentRoute.listingId ? (
+        (() => {
+          const detailListing = listings.find((l) => l.id === currentRoute.listingId) || listings[0];
+          return (
+            <ListingDetailPage
+              listing={detailListing}
+              onBack={() => { window.location.hash = '#/rooms'; }}
+              isSaved={savedIds.includes(detailListing.id)}
+              onToggleSave={handleToggleSave}
+              onOpenCesja={() => {
+                setPresetListingForCesja(detailListing);
+                setIsCesjaOpen(true);
+              }}
+              onOpenDepositClearing={() => setIsDepositOpen(true)}
+              locale={locale}
+              currentUser={currentUser}
+              onRequireLogin={(reason) => {
+                setLoginReason(reason);
+                setIsLoginOpen(true);
+              }}
+              onLike={handleLikeListing}
+            />
+          );
+        })()
+      ) : currentRoute.type === 'saved' ? (
+        <SavedApartmentsPage
+          savedListings={listings.filter((l) => savedIds.includes(l.id))}
+          onSelectListing={(l) => { window.location.hash = `#/listing/${l.id}`; }}
+          onRemoveSaved={handleToggleSave}
+          onClearAll={() => setSavedIds([])}
+          onBrowseListings={() => { window.location.hash = '#/rooms'; }}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'how-it-works' ? (
+        <HowItWorksPage
+          onBack={() => { window.location.hash = '#/rooms'; }}
+          onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
+          onOpenBrowse={() => { window.location.hash = '#/rooms'; }}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'meldunek-guide' ? (
+        <MeldunekGuidePage
+          onBack={() => { window.location.hash = '#/rooms'; }}
+          onBrowseRooms={() => { window.location.hash = '#/rooms'; }}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'cesja-template' ? (
+        <CesjaTemplatePage
+          onBack={() => { window.location.hash = '#/rooms'; }}
+          onOpenCesjaModal={() => setIsCesjaOpen(true)}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'safety-guide' ? (
+        <SafetyGuidePage
+          onBack={() => { window.location.hash = '#/rooms'; }}
+          onBrowseRooms={() => { window.location.hash = '#/rooms'; }}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'terms' ? (
+        <LegalTermsPrivacyPage
+          view="terms"
+          onBack={() => { window.location.hash = '#/rooms'; }}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'privacy' ? (
+        <LegalTermsPrivacyPage
+          view="privacy"
+          onBack={() => { window.location.hash = '#/rooms'; }}
+          locale={locale}
+        />
+      ) : (
+        <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12">
+          
+          {/* 1. HERO SECTION: Housing Search First */}
         <section className="pt-2 sm:pt-6 pb-2 text-center max-w-4xl mx-auto space-y-6">
           
           {/* Main Headline */}
@@ -594,8 +767,7 @@ export default function App() {
                   isSaved={savedIds.includes(listing.id)}
                   onToggleSave={handleToggleSave}
                   onSelectListing={(l) => {
-                    setActiveListing(l);
-                    window.location.hash = `#/room/${l.id}`;
+                    window.location.hash = `#/listing/${l.id}`;
                   }}
                   locale={locale}
                 />
@@ -750,6 +922,7 @@ export default function App() {
         </section>
 
       </main>
+      )}
 
       {/* Footer */}
       <Footer
@@ -770,6 +943,19 @@ export default function App() {
         }}
         locale={locale}
         theme={theme}
+      />
+
+      {/* Mobile Airbnb-style Bottom Navigation Bar */}
+      <MobileBottomNav
+        currentPath={currentRoute.type}
+        savedCount={savedIds.length}
+        isLoggedIn={!!currentUser}
+        onOpenIntake={() => setIsIntakeOpen(true)}
+        onOpenLogin={() => {
+          setLoginReason('Sign up or log in to manage your saved apartments and contact hosts.');
+          setIsLoginOpen(true);
+        }}
+        locale={locale}
       />
 
       {/* Cookie Consent Banner */}
@@ -861,8 +1047,17 @@ export default function App() {
       {isLoginOpen && (
         <LoginModal
           isOpen={isLoginOpen}
-          onClose={() => setIsLoginOpen(false)}
+          onClose={() => {
+            setIsLoginOpen(false);
+            setLoginReason('');
+          }}
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            localStorage.setItem('r8_user', JSON.stringify(user));
+            showToast(locale === 'pl' ? `Witaj ponownie, ${user.name}!` : `Welcome back, ${user.name}!`);
+          }}
           locale={locale}
+          actionReason={loginReason}
         />
       )}
 

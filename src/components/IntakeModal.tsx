@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Check, ArrowRight, ArrowLeft, UploadCloud, ImagePlus, Trash2 } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 
@@ -34,17 +34,45 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
   const [isFireSale, setIsFireSale] = useState(false);
 
   const PHOTO_PRESETS = [
-    { label: 'Warsaw Studio', path: '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg' },
-    { label: 'Kraków Loft', path: '/src/assets/images/listing_krakow_loft_1790621454348.jpg' },
-    { label: 'Wrocław Nordic', path: '/src/assets/images/listing_wroclaw_nordic_1790621466153.jpg' },
-    { label: 'Central Room', path: '/src/assets/images/listing_warsaw_center_1790621476399.jpg' }
+    { label: 'Warsaw Studio', path: '/images/listing_warsaw_mokotow_1790621438299.jpg' },
+    { label: 'Kraków Loft', path: '/images/listing_krakow_loft_1790621454348.jpg' },
+    { label: 'Wrocław Nordic', path: '/images/listing_wroclaw_nordic_1790621466153.jpg' },
+    { label: 'Central Room', path: '/images/listing_warsaw_center_1790621476399.jpg' }
   ];
-  const [selectedPhoto, setSelectedPhoto] = useState(PHOTO_PRESETS[0].path);
+  const [photos, setPhotos] = useState<string[]>([PHOTO_PRESETS[0].path]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setPhotos((prev) => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemovePhoto = (indexToRemove: number) => {
+    setPhotos((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  const handleAddPreset = (path: string) => {
+    if (!photos.includes(path)) {
+      setPhotos((prev) => [...prev, path]);
+    }
+  };
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const finalImages = photos.length > 0 ? photos : [PHOTO_PRESETS[0].path];
 
     const created: Listing = {
       id: `rel-${city.substring(0, 3).toLowerCase()}-${Date.now().toString().slice(-4)}`,
@@ -61,10 +89,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
       availableDate: availableDate || '2026-10-20',
       leaseEndDate: leaseEndDate || '2027-06-30',
       remainingMonths: 8,
-      images: [
-        selectedPhoto,
-        '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg'
-      ],
+      images: finalImages,
       meldunekAllowed: true,
       isFurnished: true,
       flatmatesInfo: roomType === 'Private Room' ? 'Shared with flatmates' : 'Entire flat',
@@ -75,6 +100,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
       landlordConsentStatus: 'Guaranteed Consent',
       landlordName,
       landlordContactEmail: 'landlord@relok8.online',
+      likesCount: 1,
       departingTenant: {
         name: tenantName,
         nationality: 'International',
@@ -208,24 +234,80 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="text-[13px] font-medium text-[var(--r8-text-2)] block mb-1.5">Apartment photo</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {PHOTO_PRESETS.map((p, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setSelectedPhoto(p.path)}
-                      className={`relative aspect-[4/3] rounded-[10px] overflow-hidden border transition-all cursor-pointer ${
-                        selectedPhoto === p.path ? 'border-[var(--r8-indigo-400)] scale-[0.98]' : 'border-transparent opacity-60'
-                      }`}
-                    >
-                      <img src={p.path} alt={p.label} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-1 inset-x-1 text-[9px] bg-[#0B1120]/80 text-white rounded text-center truncate px-1">
-                        {p.label}
-                      </span>
-                    </button>
-                  ))}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[13px] font-semibold text-[var(--r8-text)] block">
+                    Apartment Photos ({photos.length})
+                  </label>
+                  <label className="text-xs text-indigo-600 hover:text-indigo-700 font-medium cursor-pointer inline-flex items-center gap-1">
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    <span>Upload from device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Upload drag drop box */}
+                <label className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 hover:bg-indigo-50/70 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors text-center">
+                  <UploadCloud className="w-6 h-6 text-indigo-600" />
+                  <span className="text-[13px] font-medium text-slate-700">Click or drag photos here to upload</span>
+                  <span className="text-[11px] text-slate-500">Supports JPG, PNG, WebP up to 10MB</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </label>
+
+                {/* Current Photos Grid */}
+                {photos.length > 0 && (
+                  <div className="grid grid-cols-4 gap-2 pt-1">
+                    {photos.map((photo, idx) => (
+                      <div key={idx} className="relative aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 group">
+                        <img src={photo} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePhoto(idx)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer opacity-90 group-hover:opacity-100"
+                          title="Remove photo"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-600 text-white shadow-xs">
+                            Cover
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quick Add Presets */}
+                <div className="pt-2 border-t border-slate-100">
+                  <span className="text-[11px] text-slate-500 block mb-1.5 font-medium">Or pick high-resolution apartment templates:</span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {PHOTO_PRESETS.map((p, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleAddPreset(p.path)}
+                        className="relative aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 hover:border-indigo-400 transition-all cursor-pointer opacity-80 hover:opacity-100"
+                      >
+                        <img src={p.path} alt={p.label} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 inset-x-1 text-[9px] bg-slate-900/80 text-white rounded text-center truncate px-1">
+                          + {p.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

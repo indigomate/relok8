@@ -76,7 +76,20 @@ export const CITY_TO_SLUG_MAP: Record<string, string> = {
   Lublin: 'lublin'
 };
 
-export type RouteType = 'home' | 'city' | 'leave-your-lease' | 'list-room' | 'help' | 'room-detail' | 'how-it-works';
+export type RouteType = 
+  | 'home' 
+  | 'city' 
+  | 'leave-your-lease' 
+  | 'list-room' 
+  | 'help' 
+  | 'listing-detail' 
+  | 'how-it-works' 
+  | 'saved' 
+  | 'meldunek-guide' 
+  | 'cesja-template' 
+  | 'safety-guide' 
+  | 'terms' 
+  | 'privacy';
 
 export interface ParsedRoute {
   type: RouteType;
@@ -86,7 +99,7 @@ export interface ParsedRoute {
 }
 
 /**
- * Parses URL hash (e.g. "#/warsaw/rooms", "#/krakow/student-housing", "#/leave-your-lease")
+ * Parses URL hash (e.g. "#/listing/rel-waw-01", "#/saved", "#/how-it-works", "#/warsaw/rooms")
  */
 export function parseHashRoute(hashString: string): ParsedRoute {
   const cleanHash = (hashString || window.location.hash || '').replace(/^#\/?/, '').trim();
@@ -98,24 +111,52 @@ export function parseHashRoute(hashString: string): ParsedRoute {
   const parts = cleanHash.split('/').filter(Boolean);
   const firstPart = parts[0]?.toLowerCase() || '';
 
-  if (firstPart === 'leave-your-lease' || firstPart === 'cesja') {
-    return { type: 'leave-your-lease', rawHash: cleanHash };
+  if (firstPart === 'saved' || firstPart === 'saved-apartments' || firstPart === 'favorites') {
+    return { type: 'saved', rawHash: cleanHash };
   }
 
-  if (firstPart === 'list-a-room' || firstPart === 'list-your-room' || firstPart === 'add-room') {
-    return { type: 'list-room', rawHash: cleanHash };
-  }
-
-  if (firstPart === 'help' || firstPart === 'faq' || firstPart === 'safety') {
-    return { type: 'help', rawHash: cleanHash };
+  if (firstPart === 'listing' || firstPart === 'room') {
+    return { 
+      type: 'listing-detail', 
+      listingId: parts[1] || '', 
+      rawHash: cleanHash 
+    };
   }
 
   if (firstPart === 'how-it-works') {
     return { type: 'how-it-works', rawHash: cleanHash };
   }
 
-  if (firstPart === 'room' && parts[1]) {
-    return { type: 'room-detail', listingId: parts[1], rawHash: cleanHash };
+  if (firstPart === 'leave-your-lease' || firstPart === 'cesja') {
+    return { type: 'leave-your-lease', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'list-a-room' || firstPart === 'list-your-room' || firstPart === 'add-room' || firstPart === 'list-room') {
+    return { type: 'list-room', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'meldunek' || firstPart === 'meldunek-guide' || firstPart === 'pesel') {
+    return { type: 'meldunek-guide', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'cesja-template' || firstPart === 'cesja-wzor') {
+    return { type: 'cesja-template', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'safety' || firstPart === 'safety-guide' || firstPart === 'scams') {
+    return { type: 'safety-guide', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'terms') {
+    return { type: 'terms', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'privacy') {
+    return { type: 'privacy', rawHash: cleanHash };
+  }
+
+  if (firstPart === 'help' || firstPart === 'faq') {
+    return { type: 'help', rawHash: cleanHash };
   }
 
   // Check if it's a city route: e.g. "warsaw/rooms", "krakow/student-housing", "wroclaw"

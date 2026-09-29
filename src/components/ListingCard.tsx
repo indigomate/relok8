@@ -6,38 +6,33 @@ import { t } from '../utils/translations';
 
 interface ListingCardProps {
   listing: Listing;
-  isSaved: boolean;
-  onToggleSave: (id: string) => void;
+  isSaved?: boolean;
+  onToggleSave?: (id: string) => void;
   onSelectListing: (listing: Listing) => void;
   locale?: SupportedLocale;
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({
   listing,
-  isSaved,
-  onToggleSave,
   onSelectListing,
   locale = 'en'
 }) => {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isImgLoaded, setIsImgLoaded] = useState(false);
   const strings = t[locale];
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    setIsImgLoaded(false);
     setCurrentImgIndex((prev) => (prev === 0 ? listing.images.length - 1 : prev - 1));
   };
 
   const handleNextImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    setIsImgLoaded(false);
     setCurrentImgIndex((prev) => (prev === listing.images.length - 1 ? 0 : prev + 1));
-  };
-
-  const handleHeartClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onToggleSave(listing.id);
   };
 
   return (
@@ -53,15 +48,26 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       }}
       className="group rounded-2xl bg-white border border-slate-100 hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 overflow-hidden cursor-pointer flex flex-col justify-between text-left focus:outline-none"
     >
-      {/* Image Container with fixed 4:3 Aspect Ratio */}
+      {/* Image Container with fixed 4:3 Aspect Ratio & Suspended Preview */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+        {/* Suspended Preview Shimmer Skeleton */}
+        {!isImgLoaded && (
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse z-0 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin opacity-40" />
+          </div>
+        )}
+
         <img
           src={listing.images[currentImgIndex] || listing.images[0]}
           alt={`${listing.title} · Rooms with Meldunek allowed, student & expat housing in ${listing.city}`}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onLoad={() => setIsImgLoaded(true)}
+          className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 relative z-1 ${
+            isImgLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
           onError={(e) => {
-            e.currentTarget.src = '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg';
+            setIsImgLoaded(true);
+            e.currentTarget.src = '/images/listing_warsaw_mokotow_1790621438299.jpg';
           }}
         />
 
@@ -76,21 +82,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             </span>
           )}
         </div>
-
-        {/* Favorite Button: Frosted white circular button */}
-        <button
-          type="button"
-          onClick={handleHeartClick}
-          aria-label={isSaved ? 'Remove from saved' : 'Save room'}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-sm flex items-center justify-center transition hover:scale-110 cursor-pointer"
-        >
-          <Heart
-            className={`w-4 h-4 transition-colors ${
-              isSaved ? 'fill-[#FF6B5B] text-[#FF6B5B]' : 'text-slate-600'
-            }`}
-            strokeWidth={1.8}
-          />
-        </button>
 
         {/* Carousel Navigation Arrows on Hover */}
         {listing.images.length > 1 && (

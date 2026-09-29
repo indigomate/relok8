@@ -17,9 +17,9 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-06-30',
     remainingMonths: 8,
     images: [
-      '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg',
-      '/src/assets/images/listing_warsaw_center_1790621476399.jpg',
-      '/src/assets/images/listing_wroclaw_nordic_1790621466153.jpg'
+      '/images/listing_warsaw_mokotow_1790621438299.jpg',
+      '/images/listing_warsaw_center_1790621476399.jpg',
+      '/images/listing_wroclaw_nordic_1790621466153.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -73,8 +73,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-08-31',
     remainingMonths: 10,
     images: [
-      '/src/assets/images/listing_krakow_loft_1790621454348.jpg',
-      '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg'
+      '/images/listing_krakow_loft_1790621454348.jpg',
+      '/images/listing_warsaw_mokotow_1790621438299.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -127,8 +127,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-05-31',
     remainingMonths: 7,
     images: [
-      '/src/assets/images/listing_wroclaw_nordic_1790621466153.jpg',
-      '/src/assets/images/listing_warsaw_center_1790621476399.jpg'
+      '/images/listing_wroclaw_nordic_1790621466153.jpg',
+      '/images/listing_warsaw_center_1790621476399.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -181,8 +181,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-09-30',
     remainingMonths: 11,
     images: [
-      '/src/assets/images/listing_warsaw_center_1790621476399.jpg',
-      '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg'
+      '/images/listing_warsaw_center_1790621476399.jpg',
+      '/images/listing_warsaw_mokotow_1790621438299.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -236,8 +236,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-07-31',
     remainingMonths: 9,
     images: [
-      '/src/assets/images/listing_warsaw_mokotow_1790621438299.jpg',
-      '/src/assets/images/listing_wroclaw_nordic_1790621466153.jpg'
+      '/images/listing_warsaw_mokotow_1790621438299.jpg',
+      '/images/listing_wroclaw_nordic_1790621466153.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -291,8 +291,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-06-30',
     remainingMonths: 8,
     images: [
-      '/src/assets/images/listing_warsaw_center_1790621476399.jpg',
-      '/src/assets/images/listing_krakow_loft_1790621454348.jpg'
+      '/images/listing_warsaw_center_1790621476399.jpg',
+      '/images/listing_krakow_loft_1790621454348.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -344,8 +344,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-06-30',
     remainingMonths: 8,
     images: [
-      '/src/assets/images/listing_krakow_loft_1790621454348.jpg',
-      '/src/assets/images/listing_wroclaw_nordic_1790621466153.jpg'
+      '/images/listing_krakow_loft_1790621454348.jpg',
+      '/images/listing_wroclaw_nordic_1790621466153.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,
@@ -396,8 +396,8 @@ export const INITIAL_LISTINGS: Listing[] = [
     leaseEndDate: '2027-06-30',
     remainingMonths: 8,
     images: [
-      '/src/assets/images/listing_wroclaw_nordic_1790621466153.jpg',
-      '/src/assets/images/listing_warsaw_center_1790621476399.jpg'
+      '/images/listing_wroclaw_nordic_1790621466153.jpg',
+      '/images/listing_warsaw_center_1790621476399.jpg'
     ],
     meldunekAllowed: true,
     isFurnished: true,

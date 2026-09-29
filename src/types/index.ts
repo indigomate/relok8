@@ -42,6 +42,7 @@ export interface Listing {
   squareMeters: number;
   floor: string;
   depositSettlementType: 'P2P Direct Clearing' | 'Escrow Guarded';
+  likesCount?: number;
   lat?: number;
   lng?: number;
 }
