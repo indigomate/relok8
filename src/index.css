@@ -1,0 +1,250 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+:root {
+  /* Surfaces: clean pure white canvas, crisp modern marketplace look */
+  --r8-canvas:        #FFFFFF;  /* main page background: pure white */
+  --r8-surface-1:     #FFFFFF;  /* cards, panels */
+  --r8-surface-2:     #F8FAFC;  /* raised: hover, subtle background containers, inputs */
+  --r8-surface-3:     #F1F5F9;  /* selected chips, pills, active controls */
+  --r8-border:        #E2E8F0;  /* clean subtle 1px border */
+  --r8-border-strong: #CBD5E1;  /* active input borders, visible dividers */
+
+  /* Text & Hierarchy Tokens */
+  --r8-text:          #0F172A;  /* primary title & headline high-contrast slate-900 */
+  --r8-text-2:        #475569;  /* secondary body & description: slate-600 */
+  --r8-text-3:        #64748B;  /* tertiary labels, timestamps & footnotes: slate-500 */
+
+  /* Typography Font Weights - balanced information density */
+  --r8-weight-hero:    800;  /* primary hero headline */
+  --r8-weight-title:   700;  /* section titles (h2) and prominent modal headers */
+  --r8-weight-card:    600;  /* card titles (h3), button labels, chip selections */
+  --r8-weight-medium:  500;  /* badges, metadata highlights, active tabs */
+  --r8-weight-body:    400;  /* body content, explanations, and longform copy */
+
+  /* Brand */
+  --r8-indigo-600:    #4F46E5;  /* primary button fill (white text) */
+  --r8-indigo-500:    #6366F1;  /* the logo indigo: rings, links, illustrations */
+  --r8-indigo-400:    #4F46E5;  /* indigo text/accent */
+  --r8-violet-400:    #A78BFA;  /* gradient midpoint only */
+  --r8-coral-500:     #FF6B5B;  /* the logo coral: accent, key highlights */
+  --r8-coral-600:     #F0523F;  /* coral hover/pressed */
+
+  /* Semantic */
+  --r8-success:       #059669;  /* verified, completed (emerald-600) */
+  --r8-warning:       #D97706;  /* deadline approaching (amber-600) */
+  --r8-danger:        #DC2626;  /* errors (red-600) */
+
+  /* The one gradient */
+  --r8-loop-gradient: linear-gradient(135deg, #6366F1 0%, #A78BFA 55%, #FF6B5B 100%);
+
+  /* Radius */
+  --r8-radius-card:   20px;
+  --r8-radius-photo:  14px;
+  --r8-radius-ctl:    12px;
+  --r8-radius-pill:   9999px;
+}
+
+[data-theme="dark"] {
+  --r8-canvas:        #0B1120;
+  --r8-surface-1:     #0F172A;
+  --r8-surface-2:     #172033;
+  --r8-surface-3:     #1E293B;
+  --r8-border:        #1E293B;
+  --r8-border-strong: #334155;
+  --r8-text:          #F8FAFC;
+  --r8-text-2:        #94A3B8;
+  --r8-text-3:        #64748B;
+  --r8-indigo-400:    #818CF8;
+  --r8-success:       #34D399;
+  --r8-warning:       #FBBF24;
+  --r8-danger:        #F87171;
+}
+
+body {
+  background-color: var(--r8-canvas);
+  color: var(--r8-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: "cv11", "ss03", "tnum";
+  overflow-x: hidden;
+  line-height: 1.55;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Typography Hierarchy & Information Density Distinctions */
+h1, .r8-hero-title {
+  font-weight: var(--r8-weight-hero);
+  letter-spacing: -0.03em;
+  color: var(--r8-text);
+  line-height: 1.15;
+}
+
+h2, .r8-section-title {
+  font-weight: var(--r8-weight-title);
+  letter-spacing: -0.025em;
+  color: var(--r8-text);
+  line-height: 1.3;
+}
+
+h3, .r8-card-title {
+  font-weight: var(--r8-weight-card);
+  letter-spacing: -0.015em;
+  color: var(--r8-text);
+  line-height: 1.35;
+}
+
+p, .r8-body-content {
+  font-weight: var(--r8-weight-body);
+  color: var(--r8-text-2);
+  line-height: 1.6;
+}
+
+.r8-section-subhead {
+  color: var(--r8-text-2);
+  font-weight: var(--r8-weight-body);
+  font-size: 0.875rem;
+  line-height: 1.55;
+  letter-spacing: normal;
+}
+
+.r8-label-kicker {
+  color: var(--r8-text-3);
+  font-weight: var(--r8-weight-card);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Tabular figures for prices, dates, metrics */
+.tnum, [data-tnum] {
+  font-feature-settings: "tnum" 1;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--r8-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--r8-border-strong);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Card: clean border, subtle shadow on white canvas */
+.r8-card {
+  background: var(--r8-surface-1);
+  border: 1px solid var(--r8-border);
+  border-radius: var(--r8-radius-card);
+  padding: 8px;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  transition: background 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.r8-card:hover {
+  background: var(--r8-surface-1);
+  border-color: var(--r8-border-strong);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Interactive focus ring - §4: 2px solid indigo-400, 2px offset */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--r8-indigo-400);
+  outline-offset: 2px;
+}
+
+/* Looping-8 spinner animation - §8 */
+@keyframes r8-loop {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+.r8-spinner-path {
+  stroke-dasharray: 24 76;
+  animation: r8-loop 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .r8-spinner-path {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/* Shimmer loading animation for skeletons */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Overlay shadow - only for popovers/modals per §4 */
+.r8-shadow-overlay {
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* Leaflet Custom Price Pill Markers */
+.r8-price-marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 5px 9px;
+  border-radius: 9999px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.18);
+  border: 1px solid rgba(203, 213, 225, 0.9);
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.r8-price-marker:hover,
+.r8-price-marker.active {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border-color: #4338ca;
+  transform: translate(-50%, -50%) scale(1.12);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+  z-index: 1000 !important;
+}
+
+/* Clean Leaflet Popup Reset */
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: inherit !important;
+  width: auto !important;
+}
+
+.leaflet-container {
+  font-family: inherit !important;
+}

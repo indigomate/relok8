@@ -1,0 +1,6 @@
+{
+  "name": "Relok8",
+  "description": "Student and expat housing platform in Poland without broker fees. Rooms and flats handed over by departing tenants with landlord pre-approval.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
