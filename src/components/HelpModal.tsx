@@ -48,12 +48,12 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, locale })
           <div className="space-y-2">
             <h4 className="font-bold text-slate-900 flex items-center gap-2">
               <FileCheck className="w-4 h-4 text-indigo-600" />
-              <span>{locale === 'pl' ? 'Co to jest cesja umowy (Art. 509 KC)?' : 'What is a lease assignment (Cesja)?'}</span>
+              <span>{locale === 'pl' ? 'Cesja umowy najmu wzór english & Art. 509 KC' : 'Cesja umowy najmu wzór english (Lease Takeover Poland)'}</span>
             </h4>
             <p className="leading-relaxed">
               {locale === 'pl'
-                ? 'Cesja to prawne przekazanie praw i obowiązków z dotychczasowego najemcy na nowego najemcę na tych samych warunkach. Pozwala to uniknąć 2-3 miesięcznych kar za zerwanie umowy.'
-                : 'A lease assignment legally transfers the existing lease rights and obligations from the departing tenant to you under identical terms. It protects departing students from break penalties while guaranteeing 0-vacancy for the landlord.'}
+                ? 'Cesja umowy najmu wzór english to oficjalne dwujęzyczne porozumienie cesji praw i obowiązków z dotychczasowego najemcy na nowego najemcę na tych samych warunkach (Art. 509 KC). Wzór chroni obie strony i eliminuje kary umowne za wcześniejsze rozwiązanie najmu.'
+                : 'Cesja umowy najmu wzór english is our official bilingual (Polish-English) lease takeover agreement pursuant to Article 509 of the Polish Civil Code. It transfers active lease rights and tenant obligations directly to the replacement tenant with written landlord pre-approval.'}
             </p>
           </div>
 

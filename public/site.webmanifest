@@ -1,0 +1,17 @@
+{
+  "name": "Relok8 | Peer-to-Peer Lease Transfers & Student Housing in Poland",
+  "short_name": "Relok8",
+  "description": "Exit your lease early with zero penalties or find pre-vetted student & expat housing in Warsaw, Kraków, Wrocław, and Lublin.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/relok8-logo-for-light.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

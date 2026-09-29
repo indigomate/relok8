@@ -12,8 +12,8 @@ export const CITIES_SEO_INFO: Record<string, CitySeoInfo> = {
   Warsaw: {
     name: 'Warsaw',
     slug: 'warsaw',
-    heading: 'Student & Expat Rooms in Warsaw',
-    tagline: 'Direct lease transfers in Mokotów, Śródmieście, and Wola. 0 PLN broker commissions.',
+    heading: 'Student housing Warsaw · Direct Lease Transfers',
+    tagline: 'Direct lease transfers in Mokotów, Śródmieście, and Wola. 0 PLN broker commissions and rooms with Meldunek allowed.',
     universities: ['University of Warsaw (UW)', 'Warsaw School of Economics (SGH)', 'Warsaw Tech (PW)', 'Medical University (WUM)'],
     transit: 'Metro lines M1 & M2, direct tram network to campuses',
     averageRentPLN: 2200
@@ -21,8 +21,8 @@ export const CITIES_SEO_INFO: Record<string, CitySeoInfo> = {
   'Kraków': {
     name: 'Kraków',
     slug: 'krakow',
-    heading: 'Student & Expat Rooms in Kraków',
-    tagline: 'Rooms and flats in Kazimierz, Stare Miasto, and Krowodrza. Landlord-approved handovers.',
+    heading: 'No agency commission flats Krakow · Verified Student & Expat Rooms',
+    tagline: 'Rooms and flats in Kazimierz, Stare Miasto, and Krowodrza. Zero agency commission flats Krakow with landlord-approved lease takeovers.',
     universities: ['Jagiellonian University (UJ)', 'AGH University of Science & Tech', 'Kraków Univ. of Economics (UEK)'],
     transit: 'Plac Wolnica / Teatr Słowackiego central tram corridors',
     averageRentPLN: 2100
@@ -30,8 +30,8 @@ export const CITIES_SEO_INFO: Record<string, CitySeoInfo> = {
   'Wrocław': {
     name: 'Wrocław',
     slug: 'wroclaw',
-    heading: 'Student & Expat Rooms in Wrocław',
-    tagline: 'Waterfront lofts and student rooms in Nadodrze, Śródmieście, and Grunwald.',
+    heading: 'Student & Expat Rooms in Wrocław · Lease Takeover Poland',
+    tagline: 'Waterfront lofts and student rooms in Nadodrze, Śródmieście, and Grunwald with 0 broker fees.',
     universities: ['Wrocław Tech (PWr)', 'University of Wrocław (UWr)', 'Wrocław Medical University'],
     transit: 'Plac Grunwaldzki & Pomorska high-frequency tram junctions',
     averageRentPLN: 2000
@@ -39,7 +39,7 @@ export const CITIES_SEO_INFO: Record<string, CitySeoInfo> = {
   'Gdańsk': {
     name: 'Gdańsk',
     slug: 'gdansk',
-    heading: 'Rooms & Flats in Gdańsk & Tricity',
+    heading: 'Rooms & Flats in Gdańsk & Tricity · Direct Handovers',
     tagline: 'Modern apartments in Wrzeszcz Garnizon, Oliwa, and Przymorze without broker fees.',
     universities: ['Gdańsk University of Technology (PG)', 'University of Gdańsk (UG)', 'Medical University of Gdańsk (GUMed)'],
     transit: 'SKM Fast City Train connecting Gdańsk, Sopot, and Gdynia',
@@ -48,8 +48,8 @@ export const CITIES_SEO_INFO: Record<string, CitySeoInfo> = {
   Lublin: {
     name: 'Lublin',
     slug: 'lublin',
-    heading: 'Student Rooms in Lublin (English Division Housing)',
-    tagline: 'Convenient flats for international medicine, dentistry, and Erasmus students.',
+    heading: 'Student housing Lublin · English Division & Expat Flats',
+    tagline: 'Convenient student housing Lublin for international medicine, dentistry, and Erasmus students. Rooms with Meldunek allowed.',
     universities: ['Medical University of Lublin (UMLub)', 'Maria Curie-Skłodowska University (UMCS)', 'John Paul II Catholic Univ. (KUL)'],
     transit: 'Direct city bus routes 26, 31, and 40 to campus lecture halls',
     averageRentPLN: 1800

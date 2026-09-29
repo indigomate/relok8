@@ -25,8 +25,8 @@ export const Footer: React.FC<FooterProps> = ({
         
         {/* Legal Disclaimer Card: Directly above the footer navigation columns */}
         <div className="bg-slate-50 border border-slate-200/80 text-slate-500 text-xs rounded-xl p-4 leading-relaxed">
-          <strong className="text-slate-700">Legal notice: </strong>
-          Relok8 is a housing platform that provides contract templates and connects outgoing tenants with prospective tenants. We do not act as a real estate broker or escrow bank. Lease transfers and address registrations are executed directly between tenants and property owners in accordance with Polish law.
+          <strong className="text-slate-700">Legal notice & Cesja umowy najmu wzór english: </strong>
+          Relok8 is a peer-to-peer housing exchange platform providing bilingual lease transfer agreements (Cesja umowy najmu wzór english under Art. 509 KC of the Polish Civil Code) to connect departing expats and students with incoming renters. We do not act as an unlicensed real estate broker or escrow bank. Lease transfers and address registrations (Rooms with Meldunek allowed) are executed directly between tenants and property owners with written landlord consent.
         </div>
 
         {/* Main Footer Links Grid */}
@@ -137,6 +137,15 @@ export const Footer: React.FC<FooterProps> = ({
                   className="hover:text-indigo-600 transition-colors cursor-pointer text-left"
                 >
                   {locale === 'pl' ? 'Poradnik meldunkowy i PESEL' : 'Registration (Meldunek) guide'}
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={onOpenHelp}
+                  className="hover:text-indigo-600 transition-colors cursor-pointer text-left font-medium text-slate-700"
+                >
+                  Cesja umowy najmu wzór english
                 </button>
               </li>
             </ul>

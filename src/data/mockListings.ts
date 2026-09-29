@@ -3,8 +3,8 @@ import { Listing, DepositClearingRecord } from '../types';
 export const INITIAL_LISTINGS: Listing[] = [
   {
     id: 'rel-waw-01',
-    title: 'Furnished Studio in Upper Mokotów',
-    shortTitle: 'Furnished Studio in Upper Mokotów',
+    title: 'Student housing Warsaw · Furnished Studio in Upper Mokotów',
+    shortTitle: 'Student housing Warsaw',
     city: 'Warsaw',
     district: 'Mokotów',
     address: 'ul. Rakowiecka 32, 02-521 Warszawa',
@@ -59,8 +59,8 @@ export const INITIAL_LISTINGS: Listing[] = [
   },
   {
     id: 'rel-krk-02',
-    title: 'Industrial 1-Bed in Historic Kazimierz',
-    shortTitle: 'Industrial 1-Bed in Kazimierz',
+    title: 'No agency commission flats Krakow · Industrial 1-Bed in Historic Kazimierz',
+    shortTitle: 'No agency commission flats Krakow',
     city: 'Kraków',
     district: 'Kazimierz',
     address: 'ul. Józefa 18, 31-056 Kraków',
@@ -277,8 +277,8 @@ export const INITIAL_LISTINGS: Listing[] = [
   },
   {
     id: 'rel-lub-06',
-    title: 'Quiet Studio near Medical University',
-    shortTitle: 'Quiet Studio near Medical University',
+    title: 'Student housing Lublin · Quiet Studio near Medical University',
+    shortTitle: 'Student housing Lublin',
     city: 'Lublin',
     district: 'Śródmieście / Czechów',
     address: 'ul. Chodźki 14, 20-093 Lublin',

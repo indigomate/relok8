@@ -57,7 +57,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
         <img
           src={listing.images[currentImgIndex] || listing.images[0]}
-          alt={listing.title}
+          alt={`${listing.title} · Rooms with Meldunek allowed, student & expat housing in ${listing.city}`}
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {

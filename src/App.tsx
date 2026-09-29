@@ -407,13 +407,17 @@ export default function App() {
               </div>
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                 {selectedCity !== 'All Poland' 
-                  ? (locale === 'pl' ? `Pokoje w mieście ${selectedCity}` : `Rooms in ${selectedCity}`)
-                  : (locale === 'pl' ? 'Dostępne pokoje i mieszkania' : locale === 'uk' ? 'Доступні кімнати та квартири' : 'Rooms available now')}
+                  ? (selectedCity === 'Warsaw' || selectedCity === 'Lublin'
+                      ? `Student housing ${selectedCity} · Lease Takeover Poland`
+                      : selectedCity === 'Kraków'
+                        ? 'No agency commission flats Krakow · Verified Rooms'
+                        : `Rooms in ${selectedCity}`)
+                  : (locale === 'pl' ? 'Student housing Warsaw / Lublin & cesja umowy najmu' : 'Student housing Warsaw / Lublin & Lease Takeover Poland')}
               </h2>
               <p className="text-[13px] text-slate-500 mt-0.5">
                 {locale === 'pl'
-                  ? 'Oferty bezpośrednie od wyprowadzających się lokatorów. Bez prowizji agencji.'
-                  : 'Direct lease assignments from departing tenants. Zero broker commissions.'}
+                  ? 'Oferty bezpośrednie od wyprowadzających się lokatorów. Bez prowizji agencji i pokoje z meldunkiem.'
+                  : 'Direct lease assignments from departing tenants. Zero broker commissions and rooms with Meldunek allowed.'}
               </p>
             </div>
 
@@ -440,6 +444,44 @@ export default function App() {
           <div className="flex flex-wrap items-center justify-between gap-3 text-[13px]">
             <div className="flex flex-wrap items-center gap-2">
               
+              {/* Target Search: Student housing Warsaw / Lublin */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedCity === 'Warsaw' || selectedCity === 'Lublin') {
+                    handleSelectCity('All Poland');
+                  } else {
+                    handleSelectCity('Warsaw');
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+                  selectedCity === 'Warsaw' || selectedCity === 'Lublin'
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
+                }`}
+              >
+                🎓 Student housing Warsaw / Lublin
+              </button>
+
+              {/* Target Search: No agency commission flats Krakow */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedCity === 'Kraków') {
+                    handleSelectCity('All Poland');
+                  } else {
+                    handleSelectCity('Kraków');
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
+                  selectedCity === 'Kraków'
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
+                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
+                }`}
+              >
+                ⚡ No agency commission flats Krakow
+              </button>
+
               {/* Max 2,500 PLN chip */}
               <button
                 type="button"
@@ -492,7 +534,7 @@ export default function App() {
                 {strings.billsIncluded}
               </button>
 
-              {/* Meldunek Allowed chip */}
+              {/* Target Search: Rooms with Meldunek allowed chip */}
               <button
                 type="button"
                 onClick={() => setFilterMeldunekOnly(!filterMeldunekOnly)}

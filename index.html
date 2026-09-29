@@ -3,29 +3,94 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Relok8 – Student & Expat Housing in Poland | No Broker Fees</title>
-    <meta name="description" content="Find rooms and apartments across Warsaw, Kraków, Wrocław, Gdańsk, and Lublin with zero broker fees. Landlord-approved lease transfers and official Meldunek address registration." />
-    <meta property="og:title" content="Relok8 – Student & Expat Housing in Poland | No Broker Fees" />
-    <meta property="og:description" content="Student & expat housing without broker fees. Rooms and flats handed over by departing tenants with landlord pre-approval in Poland." />
+    <title>Relok8 | Peer-to-Peer Lease Transfers & Student Housing in Poland</title>
+    <meta name="description" content="Exit your lease early with zero penalties or find pre-vetted student & expat housing in Warsaw, Kraków, Wrocław, and Lublin. Landlord-approved lease assignments (Cesja umowy najmu)." />
+    <meta name="keywords" content="lease transfer Poland, student housing Warsaw, cesja umowy najmu, expat apartments Krakow, no broker fee housing Poland, take over lease Lublin, Relok8, relok8.online, meldunek allowed rooms" />
+    <meta name="author" content="Relok8 Team" />
+    <meta name="creator" content="Relok8" />
+    <meta name="publisher" content="Relok8" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <!-- Canonical & Alternates -->
+    <link rel="canonical" href="https://relok8.online" />
+    <link rel="alternate" hreflang="en-US" href="https://relok8.online" />
+    <link rel="alternate" hreflang="pl-PL" href="https://relok8.online?lang=pl" />
+
+    <!-- OpenGraph Social Sharing -->
     <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:url" content="https://relok8.online" />
+    <meta property="og:site_name" content="Relok8" />
+    <meta property="og:title" content="Relok8 — Zero-Penalty Lease Takeovers for Expats & Students in Poland" />
+    <meta property="og:description" content="Passing your room on Day 1 or looking for a short-notice apartment in Poland? Skip agency fees and exit leases smoothly with legal landlord protection." />
+    <meta property="og:image" content="https://relok8.online/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Relok8 - Peer to Peer Housing & Lease Assignment Engine in Poland" />
+
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Relok8 – Student & Expat Housing in Poland | No Broker Fees" />
-    <meta name="twitter:description" content="Find verified rooms and apartments in Poland with zero broker fees. Direct lease handovers with landlord approval." />
+    <meta name="twitter:site" content="@relok8_online" />
+    <meta name="twitter:creator" content="@relok8_online" />
+    <meta name="twitter:title" content="Relok8 | Zero-Penalty Lease Transfers in Poland" />
+    <meta name="twitter:description" content="Pass your lease or take over verified student rooms across Poland without broker fees." />
+    <meta name="twitter:image" content="https://relok8.online/og-image.jpg" />
+
+    <!-- Icons & Manifest -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Schema.org Structured Data -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Relok8",
-      "applicationCategory": "RealEstateApplication",
-      "operatingSystem": "All",
-      "description": "Student and expat housing platform in Poland without broker fees. Direct lease assignments and zero-vacancy handovers.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "PLN"
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://relok8.online/#organization",
+          "name": "Relok8",
+          "url": "https://relok8.online",
+          "logo": "https://relok8.online/logo.png",
+          "description": "Peer-to-peer lease assignment and relocation engine for foreign students and working expats in Poland.",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "PL"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://relok8.online/#website",
+          "url": "https://relok8.online",
+          "name": "Relok8 Housing Marketplace",
+          "publisher": {
+            "@id": "https://relok8.online/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://relok8.online/?city={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "RealEstateAgent",
+          "name": "Relok8 Lease Transfers",
+          "image": "https://relok8.online/og-image.jpg",
+          "url": "https://relok8.online",
+          "priceRange": "PLN 1000 - PLN 5000",
+          "areaServed": [
+            { "@type": "City", "name": "Warsaw" },
+            { "@type": "City", "name": "Kraków" },
+            { "@type": "City", "name": "Wrocław" },
+            { "@type": "City", "name": "Lublin" },
+            { "@type": "City", "name": "Gdańsk" }
+          ]
+        }
+      ]
     }
     </script>
+
+    <!-- Typography Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -35,4 +100,3 @@
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
