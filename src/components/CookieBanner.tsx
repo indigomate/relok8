@@ -26,7 +26,7 @@ export const CookieBanner: React.FC<{ locale: SupportedLocale }> = ({ locale }) 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 inset-x-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-white border border-slate-200/90 shadow-2xl rounded-2xl p-4 text-left animate-in slide-in-from-bottom-4 duration-200">
+    <div className="fixed bottom-20 md:bottom-4 inset-x-4 sm:left-auto sm:right-6 sm:max-w-md z-50 bg-white border border-slate-200/90 shadow-2xl rounded-2xl p-4 text-left animate-in slide-in-from-bottom-4 duration-200">
       <div className="space-y-2">
         <h4 className="text-[13px] font-bold text-slate-900">
           {locale === 'pl' ? 'Prywatność i pliki cookies' : locale === 'uk' ? 'Конфіденційність та файли cookie' : 'Privacy & Cookie Settings'}
@@ -38,14 +38,14 @@ export const CookieBanner: React.FC<{ locale: SupportedLocale }> = ({ locale }) 
           <button
             type="button"
             onClick={handleAccept}
-            className="flex-1 py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-semibold rounded-xl transition-colors cursor-pointer"
+            className="flex-1 min-h-[40px] py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[12px] font-semibold rounded-xl transition-colors cursor-pointer"
           >
             {strings.cookieAccept}
           </button>
           <button
             type="button"
             onClick={handleDecline}
-            className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-semibold rounded-xl transition-colors cursor-pointer"
+            className="min-h-[40px] py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-semibold rounded-xl transition-colors cursor-pointer"
           >
             {strings.cookieDecline}
           </button>

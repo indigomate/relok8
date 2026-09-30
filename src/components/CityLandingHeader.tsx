@@ -27,7 +27,7 @@ export const CityLandingHeader: React.FC<CityLandingHeaderProps> = ({
   const isPl = locale === 'pl';
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 text-left relative overflow-hidden">
+    <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 sm:p-8 space-y-6 text-left relative overflow-hidden">
       {/* Breadcrumb & Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 relative z-10">
         <div className="flex items-center gap-2">

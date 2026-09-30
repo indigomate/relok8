@@ -18,7 +18,7 @@ export const DepartingTenantBanner: React.FC<DepartingTenantBannerProps> = ({
   const isPl = locale === 'pl';
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-slate-50 border border-slate-200 p-6 sm:p-8 md:p-10 shadow-xs transition-all text-left">
+    <section className="relative overflow-hidden rounded-3xl bg-slate-50 border border-slate-200 p-5 sm:p-8 md:p-10 shadow-xs transition-all text-left">
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8 lg:gap-10">
         
         {/* Left Column: Heading & Key Points */}

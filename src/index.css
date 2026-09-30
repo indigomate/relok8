@@ -60,12 +60,15 @@
   --r8-danger:        #F87171;
 }
 
+html,
 body {
   background-color: var(--r8-canvas);
   color: var(--r8-text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-feature-settings: "cv11", "ss03", "tnum";
   overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-text-size-adjust: 100%;
   line-height: 1.55;
   transition: background-color 0.2s ease, color 0.2s ease;
 }

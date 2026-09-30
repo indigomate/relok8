@@ -91,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Centre: Search bar (§4.2 compact state) */}
         {isCompactSearchVisible && (
-          <div className="hidden md:flex flex-1 justify-center max-w-lg">
+          <div className="hidden md:flex flex-1 justify-center max-w-xs md:max-w-sm lg:max-w-md mx-2">
             <SearchBar
               mode="compact"
               searchState={searchState}
@@ -103,13 +103,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
 
         {/* Right: List your place · Saved · Language · Account menu */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           
-          {/* List your place */}
+          {/* List your place (hidden on mobile where MobileBottomNav has primary CTA) */}
           <button
             type="button"
             onClick={onOpenListPlace}
-            className="text-xs sm:text-sm font-semibold text-slate-800 hover:text-indigo-600 hover:bg-slate-50 px-3 py-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
+            className="hidden sm:inline-flex items-center text-xs sm:text-sm font-semibold text-slate-800 hover:text-indigo-600 hover:bg-slate-50 px-3 py-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer whitespace-nowrap"
           >
             {strings.listYourPlace}
           </button>
@@ -119,11 +119,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="button"
             onClick={onNavigateSaved}
             aria-label={`${strings.saved} (${savedCount})`}
-            className="relative p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+            className="relative min-w-[40px] min-h-[40px] p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
           >
             <Heart className="w-5 h-5" />
             {savedCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-scale-in">
+              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-scale-in">
                 {savedCount}
               </span>
             )}
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              className="p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+              className="min-w-[40px] min-h-[40px] p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center gap-1 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
               aria-label="Change language"
             >
               <Globe className="w-5 h-5" />

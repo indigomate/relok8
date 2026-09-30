@@ -47,13 +47,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <nav 
       aria-label="Mobile navigation" 
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 px-4 py-2 flex items-center justify-around shadow-lg pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 px-2 sm:px-4 py-2 flex items-center justify-around shadow-lg pb-[max(0.75rem,env(safe-area-inset-bottom))]"
     >
       {/* 1. Explore */}
       <button
         type="button"
         onClick={handleHomeClick}
-        className={`flex flex-col items-center gap-1 min-w-[56px] py-1 cursor-pointer transition-colors ${
+        className={`flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
           isExplore ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
@@ -65,7 +65,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleSavedClick}
-        className={`relative flex flex-col items-center gap-1 min-w-[56px] py-1 cursor-pointer transition-colors ${
+        className={`relative flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
           isSaved ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
@@ -84,7 +84,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleListClick}
-        className="flex flex-col items-center gap-1 min-w-[64px] py-1 cursor-pointer text-indigo-600 hover:text-indigo-700 transition-colors font-semibold"
+        className="flex flex-col items-center gap-1 min-w-[52px] sm:min-w-[64px] py-1 cursor-pointer text-indigo-600 hover:text-indigo-700 transition-colors font-semibold"
       >
         <PlusCircle className="w-5 h-5 stroke-[2.2]" />
         <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Dodaj lokal' : 'List place'}</span>
@@ -94,7 +94,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={onOpenHelp}
-        className="flex flex-col items-center gap-1 min-w-[56px] py-1 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors"
+        className="flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors"
       >
         <HelpCircle className="w-5 h-5 stroke-[1.8]" />
         <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Pomoc' : 'Help'}</span>
@@ -104,7 +104,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={onOpenLogin}
-        className="flex flex-col items-center gap-1 min-w-[56px] py-1 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors"
+        className="flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors"
       >
         <User className="w-5 h-5 stroke-[1.8]" />
         <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Profil' : 'Profile'}</span>

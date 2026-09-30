@@ -117,27 +117,28 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           
           {/* Back & Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs sm:text-[13px] text-slate-500 overflow-hidden">
+          <div className="flex items-center gap-2 text-xs sm:text-[13px] text-slate-500 overflow-hidden min-w-0">
             <button
               type="button"
               onClick={onBack}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-colors cursor-pointer shrink-0"
+              className="min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-colors cursor-pointer shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>{locale === 'pl' ? 'Wróć do listy' : 'Back to rooms'}</span>
+              <span className="hidden xs:inline">{locale === 'pl' ? 'Wróć do listy' : 'Back to rooms'}</span>
+              <span className="xs:hidden">{locale === 'pl' ? 'Wróć' : 'Back'}</span>
             </button>
             <span className="text-slate-300 hidden sm:inline">/</span>
             <span className="font-medium text-slate-700 hidden sm:inline">{listing.city}</span>
             <span className="text-slate-300 hidden sm:inline">/</span>
-            <span className="font-semibold text-slate-900 truncate max-w-[200px] sm:max-w-xs">{listing.title}</span>
+            <span className="font-semibold text-slate-900 truncate max-w-[120px] sm:max-w-[200px] md:max-w-xs">{listing.title}</span>
           </div>
 
           {/* Action Buttons: Like, Save, Share */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={handleShare}
-              className="p-2 sm:px-3 sm:py-1.5 rounded-full border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 bg-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-[38px] min-w-[38px] p-2 sm:px-3 sm:py-1.5 rounded-full border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300 bg-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               title="Share listing URL"
             >
               {copied ? (
@@ -156,7 +157,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             <button
               type="button"
               onClick={handleToggleLike}
-              className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
+              className={`min-h-[38px] min-w-[38px] px-2.5 sm:px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 isLiked
                   ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-xs'
                   : 'bg-white border-slate-200 text-slate-700 hover:text-rose-600 hover:border-rose-200'
@@ -173,7 +174,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             <button
               type="button"
               onClick={() => onToggleSave(listing.id)}
-              className={`px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
+              className={`min-h-[38px] min-w-[38px] px-2.5 sm:px-3.5 py-1.5 rounded-full border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 isSaved
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
                   : 'bg-white border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300'
@@ -426,7 +427,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           </div>
 
           {/* Sticky Side Form */}
-          <div className="lg:col-span-1 lg:sticky lg:top-24 space-y-4">
+          <div id="contact-section" className="lg:col-span-1 lg:sticky lg:top-24 space-y-4 scroll-mt-24">
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-100 space-y-5">
               
               {/* Price */}
@@ -491,6 +492,31 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
 
         </div>
 
+      </div>
+
+      {/* Mobile Floating Bottom Bar (§10 Mobile Touch Guidelines) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg flex items-center justify-between gap-3">
+        <div>
+          <div className="text-base font-extrabold text-slate-900 tnum">
+            {formatPLN(listing.monthlyRentPLN, locale)}
+            <span className="text-xs font-normal text-slate-500"> / mo</span>
+          </div>
+          <div className="text-[11px] text-emerald-700 font-medium">
+            {listing.billsIncluded || (listing as any).czynszIncluded
+              ? '✓ Bills included'
+              : `+ bills ${listing.czynszAdminPLN} PLN`}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById('contact-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="min-h-[44px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+        >
+          Contact {tenant.name.split(' ')[0]}
+        </button>
       </div>
 
     </div>

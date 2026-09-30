@@ -112,7 +112,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
             <div className="space-y-6">
               
               {/* Summary Card */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)]">
                 <div>
                   <div className="text-[11px] font-semibold text-[var(--r8-text-3)] uppercase tracking-wider">
                     {locale === 'pl' ? 'Kwota kaucji' : 'Deposit Amount'}
@@ -157,7 +157,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                 </div>
 
                 {/* Step 1 */}
-                <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] flex items-start justify-between gap-4">
+                <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-start gap-3">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                       currentRecord.tenantInspectionSigned ? 'bg-[var(--r8-indigo-600)] text-white' : 'border border-[var(--r8-border-strong)] text-[var(--r8-text-3)]'
@@ -178,7 +178,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStepComplete('inspection')}
-                      className="px-3 py-1.5 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] text-white text-xs font-semibold rounded-[10px] shrink-0 cursor-pointer"
+                      className="min-h-[38px] px-3.5 py-1.5 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] text-white text-xs font-semibold rounded-[10px] shrink-0 self-start sm:self-auto cursor-pointer transition-colors"
                     >
                       {locale === 'pl' ? 'Podpisz protokół' : 'Sign protocol'}
                     </button>
@@ -186,7 +186,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                 </div>
 
                 {/* Step 2 */}
-                <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] flex items-start justify-between gap-4">
+                <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-start gap-3">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                       currentRecord.landlordConsentSigned ? 'bg-[var(--r8-indigo-600)] text-white' : 'border border-[var(--r8-border-strong)] text-[var(--r8-text-3)]'
@@ -209,7 +209,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStepComplete('consent')}
-                      className="px-3 py-1.5 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] text-white text-xs font-semibold rounded-[10px] shrink-0 cursor-pointer"
+                      className="min-h-[38px] px-3.5 py-1.5 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] text-white text-xs font-semibold rounded-[10px] shrink-0 self-start sm:self-auto cursor-pointer transition-colors"
                     >
                       {locale === 'pl' ? 'Potwierdź' : 'Verify sign-off'}
                     </button>
@@ -217,7 +217,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                 </div>
 
                 {/* Step 3 */}
-                <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] flex items-start justify-between gap-4">
+                <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-start gap-3">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                       currentRecord.depositTransferred ? 'bg-[var(--r8-indigo-600)] text-white' : 'border border-[var(--r8-border-strong)] text-[var(--r8-text-3)]'
@@ -240,7 +240,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleStepComplete('transfer')}
-                      className="px-3 py-1.5 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] text-white text-xs font-semibold rounded-[10px] shrink-0 cursor-pointer"
+                      className="min-h-[38px] px-3.5 py-1.5 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] text-white text-xs font-semibold rounded-[10px] shrink-0 self-start sm:self-auto cursor-pointer transition-colors"
                     >
                       {locale === 'pl' ? 'Potwierdź przelew' : 'Confirm transfer'}
                     </button>
@@ -251,7 +251,6 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                     </span>
                   )}
                 </div>
-
               </div>
 
               {currentRecord.status === 'settled' && (

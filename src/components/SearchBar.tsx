@@ -113,7 +113,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveDropdown(activeDropdown === 'where' ? null : 'where')}
-            className={`w-full text-left px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
+            className={`w-full text-left px-3 md:px-4 lg:px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
               activeDropdown === 'where' ? 'bg-slate-100/80' : 'hover:bg-slate-50'
             }`}
           >
@@ -178,7 +178,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveDropdown(activeDropdown === 'date' ? null : 'date')}
-            className={`w-full text-left px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
+            className={`w-full text-left px-3 md:px-4 lg:px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
               activeDropdown === 'date' ? 'bg-slate-100/80' : 'hover:bg-slate-50'
             }`}
           >
@@ -252,7 +252,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
-            className={`w-full text-left px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
+            className={`w-full text-left px-3 md:px-4 lg:px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
               activeDropdown === 'type' ? 'bg-slate-100/80' : 'hover:bg-slate-50'
             }`}
           >
@@ -300,7 +300,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => setActiveDropdown(activeDropdown === 'budget' ? null : 'budget')}
-            className={`w-full text-left px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
+            className={`w-full text-left px-3 md:px-4 lg:px-5 py-2.5 rounded-full transition-colors flex flex-col justify-center ${
               activeDropdown === 'budget' ? 'bg-slate-100/80' : 'hover:bg-slate-50'
             }`}
           >
@@ -354,17 +354,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         </div>
 
         {/* SEARCH BUTTON */}
-        <div className="pr-1.5 pl-2">
+        <div className="pr-1.5 pl-1.5 shrink-0">
           <button
             type="button"
             onClick={() => {
               setActiveDropdown(null);
               if (onSearchSubmit) onSearchSubmit();
             }}
-            className="flex items-center gap-2 px-5 py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+            className="flex items-center gap-1.5 md:gap-2 px-3.5 md:px-5 py-2.5 md:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none whitespace-nowrap cursor-pointer"
           >
             <Search className="w-4 h-4" />
-            <span>{strings.searchSubmit}</span>
+            <span className="hidden sm:inline">{strings.searchSubmit}</span>
           </button>
         </div>
       </div>
@@ -374,22 +374,22 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <button
           type="button"
           onClick={() => setMobileSheetOpen(true)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-full border border-slate-200 shadow-sm text-left"
+          className="w-full min-h-[52px] flex items-center justify-between px-3.5 py-2.5 bg-white rounded-full border border-slate-200 shadow-sm text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
               <Search className="w-4 h-4" />
             </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-bold text-slate-900 truncate">
                 {locale === 'pl' ? 'Dokąd się przeprowadzasz?' : 'Where are you moving?'}
               </div>
-              <div className="text-[11px] text-slate-500 truncate max-w-[210px]">
+              <div className="text-[11px] text-slate-500 truncate max-w-[170px] sm:max-w-[260px]">
                 {compactSummary}
               </div>
             </div>
           </div>
-          <ChevronDown className="w-4 h-4 text-slate-400" />
+          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
         </button>
       </div>
 
@@ -419,10 +419,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onSearchChange({ city: 'All Poland' })}
-                  className={`p-3 rounded-xl border text-xs font-semibold text-left ${
+                  className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
                     searchState.city === 'All Poland' || !searchState.city
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                      : 'border-slate-200 text-slate-800'
+                      : 'border-slate-200 text-slate-800 hover:bg-slate-50'
                   }`}
                 >
                   {strings.searchWhereAny}
@@ -432,10 +432,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     key={c.slug}
                     type="button"
                     onClick={() => onSearchChange({ city: c.name })}
-                    className={`p-3 rounded-xl border text-xs font-semibold text-left ${
+                    className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
                       searchState.city === c.name
                         ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                        : 'border-slate-200 text-slate-800'
+                        : 'border-slate-200 text-slate-800 hover:bg-slate-50'
                     }`}
                   >
                     {c.name}
@@ -453,23 +453,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 <button
                   type="button"
                   onClick={() => onSearchChange({ moveInDate: '' })}
-                  className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer ${
                     !searchState.moveInDate ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
                   {strings.searchMoveInFlexible}
                 </button>
               </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+              <div className="grid grid-cols-7 gap-1.5 text-center text-xs">
                 {generateCalendarDays().slice(0, 14).map((d) => (
                   <button
                     key={d.dateStr}
                     type="button"
                     onClick={() => onSearchChange({ moveInDate: d.dateStr })}
-                    className={`py-2 rounded-lg text-xs font-medium ${
+                    className={`min-h-[40px] py-2 rounded-lg text-xs font-medium flex items-center justify-center cursor-pointer transition-colors ${
                       searchState.moveInDate === d.dateStr
                         ? 'bg-indigo-600 text-white font-bold'
-                        : 'bg-slate-50 text-slate-700'
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
                     {d.label}
@@ -489,10 +489,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     key={opt.key}
                     type="button"
                     onClick={() => onSearchChange({ roomType: opt.val })}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border ${
+                    className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-medium border flex items-center cursor-pointer transition-colors ${
                       searchState.roomType === opt.val || (!searchState.roomType && opt.val === 'All room types')
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-slate-700 border-slate-200'
+                        ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     {opt.label}
@@ -518,21 +518,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 step={100}
                 value={searchState.maxRent}
                 onChange={(e) => onSearchChange({ maxRent: Number(e.target.value) })}
-                className="w-full accent-indigo-600"
+                className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
               />
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMobileSheetOpen(false);
-              if (onSearchSubmit) onSearchSubmit();
-            }}
-            className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-md"
-          >
-            {locale === 'pl' ? 'Pokaż oferty' : 'Show rooms'}
-          </button>
+          <div className="pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+            <button
+              type="button"
+              onClick={() => {
+                setMobileSheetOpen(false);
+                if (onSearchSubmit) onSearchSubmit();
+              }}
+              className="w-full min-h-[48px] py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-colors cursor-pointer"
+            >
+              {locale === 'pl' ? 'Pokaż oferty' : 'Show rooms'}
+            </button>
+          </div>
         </div>
       )}
     </div>

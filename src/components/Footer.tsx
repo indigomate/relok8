@@ -29,11 +29,11 @@ export const Footer: React.FC<FooterProps> = ({
   };
 
   return (
-    <footer className="mt-20 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 transition-colors">
+    <footer className="mt-20 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 transition-colors pb-24 md:pb-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 space-y-10">
         
         {/* Four Columns (§4.6) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           
           {/* Column 1: Find a room (one link per enabled city, "Rooms in {City}") */}
           <div className="space-y-3">

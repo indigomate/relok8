@@ -119,7 +119,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           type="button"
           onClick={handleHeartClick}
           aria-label={isSaved ? 'Remove from saved' : 'Save listing'}
-          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-rose-600 flex items-center justify-center shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+          className="absolute top-3 right-3 z-10 w-10 h-10 min-w-[40px] min-h-[40px] rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-rose-600 flex items-center justify-center shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
         >
           <Heart
             className={`w-5 h-5 transition-colors ${
@@ -128,14 +128,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           />
         </button>
 
-        {/* Carousel Arrows on Hover */}
+        {/* Carousel Arrows */}
         {listing.images.length > 1 && (
           <>
             <button
               type="button"
               onClick={handlePrevImg}
               aria-label="Previous photo"
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -143,7 +143,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               type="button"
               onClick={handleNextImg}
               aria-label="Next photo"
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -222,14 +222,14 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         </div>
 
         {/* 8. Price: PLN 1,650 /mo · Deposit PLN 1,800 */}
-        <div className="pt-3 mt-1 border-t border-slate-100 flex items-baseline justify-between text-xs">
+        <div className="pt-3 mt-1 border-t border-slate-100 flex flex-wrap items-baseline justify-between gap-1 text-xs">
           <div>
-            <span className="text-base font-bold text-slate-900">
+            <span className="text-base font-bold text-slate-900 tnum">
               {formatPLN(listing.monthlyRentPLN, locale)}
             </span>
             <span className="text-slate-500 font-normal"> {strings.perMonth}</span>
           </div>
-          <span className="text-slate-500">
+          <span className="text-slate-500 text-[11px] sm:text-xs">
             {strings.deposit} {formatPLN(listing.depositPLN, locale)}
           </span>
         </div>

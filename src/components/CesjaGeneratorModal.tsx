@@ -323,7 +323,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
               </div>
 
               {/* Signatures */}
-              <div className="pt-6 border-t border-[var(--r8-border)] grid grid-cols-3 gap-4 text-center text-xs">
+              <div className="pt-6 border-t border-[var(--r8-border)] grid grid-cols-1 sm:grid-cols-3 gap-4 text-center text-xs">
                 <div className="space-y-6">
                   <div className="border-b border-dashed border-[var(--r8-border-strong)] pb-1 text-[11px] text-[var(--r8-text-3)]">
                     Cedent (Assignor)

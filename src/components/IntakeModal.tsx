@@ -109,15 +109,15 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center p-3 sm:p-6"
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex justify-center items-center p-3 sm:p-6"
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto text-left"
+        className="relative w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto text-left max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between">
+        <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
           <div className="text-sm font-bold text-slate-900">
             {strings.listYourPlace}
           </div>
@@ -132,7 +132,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
         </div>
 
         {/* Stepper */}
-        <div className="flex items-center justify-between px-6 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-500">
+        <div className="flex items-center justify-between px-6 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-500 shrink-0">
           <span className={step === 1 ? 'text-indigo-600 font-bold' : ''}>1. Place details</span>
           <span>→</span>
           <span className={step === 2 ? 'text-indigo-600 font-bold' : ''}>2. Dates & Rent</span>
@@ -140,7 +140,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
           <span className={step === 3 ? 'text-indigo-600 font-bold' : ''}>3. Review</span>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {step === 1 && (
             <div className="space-y-4">
               <div>

@@ -102,7 +102,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
           <button
             type="button"
             onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 shadow-xs"
+            className="min-h-[40px] flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white hover:bg-slate-50 shadow-xs cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
           >
             <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
             <span>{locale === 'pl' ? 'Filtry' : 'Filters'}</span>
@@ -208,9 +208,9 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
         </div>
 
         {/* Live Count and Sort Control */}
-        <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-2.5 sm:gap-3 ml-auto">
           {/* Live count */}
-          <span className="text-xs font-semibold text-slate-600 tnum">
+          <span className="text-xs font-semibold text-slate-600 tnum whitespace-nowrap">
             {resultsLabel}
           </span>
 
@@ -220,7 +220,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
               aria-label={strings.filterSortLabel}
               value={filters.sortBy}
               onChange={(e) => onFilterChange({ sortBy: e.target.value as SortOption })}
-              className="text-xs font-semibold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
+              className="min-h-[40px] text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-800 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 cursor-pointer"
             >
               <option value="soonest">{strings.sortSoonestMoveIn}</option>
               <option value="price-asc">{strings.sortPriceLowToHigh}</option>
@@ -359,18 +359,18 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-100 flex gap-2">
+          <div className="pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-slate-100 flex gap-2">
             <button
               type="button"
               onClick={onResetFilters}
-              className="flex-1 py-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200"
+              className="flex-1 min-h-[46px] py-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
             >
               {strings.filterReset}
             </button>
             <button
               type="button"
               onClick={() => setMobileFiltersOpen(false)}
-              className="flex-2 py-3 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-md"
+              className="flex-2 min-h-[46px] py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-colors cursor-pointer"
             >
               {locale === 'pl' ? `Pokaż ${resultsLabel}` : `Show ${resultsLabel}`}
             </button>
