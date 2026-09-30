@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { INITIAL_LISTINGS } from './src/data/mockListings';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,7 +62,10 @@ interface Listing {
   lng?: number;
 }
 
-let listings: Listing[] = [
+let listings: any[] = [...(INITIAL_LISTINGS as any[])];
+
+/*
+let listings_legacy: Listing[] = [
   {
     id: 'rel-waw-01',
     title: 'Student housing Warsaw · Furnished Studio in Upper Mokotów',
@@ -342,6 +346,7 @@ let listings: Listing[] = [
     lng: 22.5620
   }
 ];
+*/
 
 // In-memory collections for Inquiries, Users, Agreements
 interface Inquiry {

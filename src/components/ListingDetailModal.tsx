@@ -31,9 +31,18 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
 }) => {
   const [selectedImgIndex, setSelectedImgIndex] = useState(0);
   const [messageSent, setMessageSent] = useState(false);
-  const strings = t[locale];
+  const strings = (t[locale === 'pl' ? 'pl' : 'en'] as any);
 
   if (!isOpen || !listing) return null;
+
+  const tenant = listing.currentTenant || listing.departingTenant || {
+    name: 'Current Tenant',
+    nationality: 'Verified',
+    role: 'Student / Expat',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    joinedYear: '2025',
+    reasonForLeaving: 'Lease takeover'
+  };
 
   return (
     <div
@@ -84,7 +93,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--r8-surface-2)] border border-[var(--r8-border)] text-[12px] font-semibold text-[var(--r8-text)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--r8-success)]" />
-                <span>{listing.landlordConsentStatus} (Art. 509 KC)</span>
+                <span>{listing.landlordConsentStatus || strings.landlordApprovedChip}</span>
               </span>
               <span className="text-[12px] text-[var(--r8-text-3)] font-mono">
                 {listing.roomType} · {listing.squareMeters} m²
@@ -197,16 +206,16 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] space-y-3">
               <div className="flex items-center gap-3">
                 <img
-                  src={listing.departingTenant.avatar}
-                  alt={listing.departingTenant.name}
+                  src={tenant.avatar}
+                  alt={tenant.name}
                   className="w-10 h-10 rounded-full object-cover border border-[var(--r8-border-strong)]"
                 />
                 <div>
                   <div className="text-sm font-semibold text-[var(--r8-text)]">
-                    {listing.departingTenant.name} ({listing.departingTenant.nationality})
+                    {tenant.name} ({tenant.nationality})
                   </div>
                   <div className="text-[12px] text-[var(--r8-text-2)]">
-                    {listing.departingTenant.role} · Member since {listing.departingTenant.joinedYear}
+                    {tenant.role} · Member since {tenant.joinedYear}
                   </div>
                 </div>
               </div>
@@ -215,20 +224,20 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2 border-t border-[var(--r8-border)]">
                 <div className="flex items-center gap-2 text-[12px] text-[var(--r8-text)]">
                   <Check className="w-4 h-4 text-[var(--r8-success)] shrink-0" strokeWidth={2.5} />
-                  <span>{strings.trustPassport}</span>
+                  <span>{strings.trustPassport || 'Passport verified'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[12px] text-[var(--r8-text)]">
                   <Check className="w-4 h-4 text-[var(--r8-success)] shrink-0" strokeWidth={2.5} />
-                  <span>{strings.trustUni}</span>
+                  <span>{strings.trustUni || 'University verified'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-[12px] text-[var(--r8-text)]">
                   <Check className="w-4 h-4 text-[var(--r8-success)] shrink-0" strokeWidth={2.5} />
-                  <span>{strings.trustLandlord}</span>
+                  <span>{strings.trustLandlord || 'Landlord consent secured'}</span>
                 </div>
               </div>
 
               <div className="text-[12px] text-[var(--r8-text-2)] pt-1 italic">
-                "{listing.departingTenant.reasonForLeaving}"
+                "{tenant.reasonForLeaving}"
               </div>
             </div>
           </div>

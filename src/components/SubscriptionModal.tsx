@@ -26,7 +26,7 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
   const [cardExpiry, setCardExpiry] = useState('12/28');
   const [cardCvc, setCardCvc] = useState('941');
   const [isProcessing, setIsProcessing] = useState(false);
-  const strings = t[locale];
+  const strings = (t[locale === 'pl' ? 'pl' : 'en'] as any);
 
   if (!isOpen) return null;
 

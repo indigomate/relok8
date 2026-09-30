@@ -4,7 +4,7 @@ import { t } from '../utils/translations';
 
 export const CookieBanner: React.FC<{ locale: SupportedLocale }> = ({ locale }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const strings = t[locale];
+  const strings = t[locale === 'pl' ? 'pl' : 'en'];
 
   useEffect(() => {
     const consent = localStorage.getItem('r8_cookie_consent');

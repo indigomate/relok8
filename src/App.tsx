@@ -1,28 +1,33 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, ArrowRight, Check, CheckCircle2, RefreshCw, 
-  Calculator, FileText, MapPin, Calendar, Home, DollarSign,
-  Shield, Users, Sparkles
+  MapPin, Calendar, Home, DollarSign, Shield, Users, Heart
 } from 'lucide-react';
-import { Listing, DepositClearingRecord, SubscriptionTier } from './types';
+import { Listing, DepositClearingRecord } from './types';
 import { INITIAL_LISTINGS, INITIAL_DEPOSIT_RECORDS } from './data/mockListings';
-import { Navbar } from './components/Navbar';
+import { ENABLED_CITIES, getCityBySlug, getCityByName, CityConfig } from './data/cities';
+import { Navbar, UserProfile } from './components/Navbar';
+import { SearchBar, SearchState } from './components/SearchBar';
+import { FiltersBar, FilterValues, SortOption } from './components/FiltersBar';
 import { ListingCard } from './components/ListingCard';
-import { ListingDetailModal } from './components/ListingDetailModal';
+import { AlertCaptureCard } from './components/AlertCaptureCard';
+import { CityLandingHeader } from './components/CityLandingHeader';
+import { DepartingTenantBanner } from './components/DepartingTenantBanner';
+import { ListingGridSkeleton } from './components/ListingCardSkeleton';
+import { Footer } from './components/Footer';
+import { MobileBottomNav } from './components/MobileBottomNav';
+
+// Modals & Pages
 import { IntakeModal } from './components/IntakeModal';
 import { CesjaGeneratorModal } from './components/CesjaGeneratorModal';
 import { DepositClearingModal } from './components/DepositClearingModal';
 import { LeaveYourLeaseModal } from './components/LeaveYourLeaseModal';
 import { HelpModal } from './components/HelpModal';
-import { LoginModal, UserProfile } from './components/LoginModal';
+import { LoginModal } from './components/LoginModal';
 import { CookieBanner } from './components/CookieBanner';
-import { Footer } from './components/Footer';
-import { SupportedLocale, formatPLN } from './utils/formatters';
-import { t } from './utils/translations';
-import { parseHashRoute, navigateToCity, CITIES_SEO_INFO, ParsedRoute } from './utils/router';
-import { CityLandingHeader } from './components/CityLandingHeader';
-import { ListingGridSkeleton } from './components/ListingCardSkeleton';
-import { DepartingTenantBanner } from './components/DepartingTenantBanner';
+import { PenaltyCalculatorModal } from './components/PenaltyCalculatorModal';
+
+// Dedicated Subpages
 import { ListingDetailPage } from './pages/ListingDetailPage';
 import { SavedApartmentsPage } from './pages/SavedApartmentsPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
@@ -30,30 +35,29 @@ import { MeldunekGuidePage } from './pages/MeldunekGuidePage';
 import { CesjaTemplatePage } from './pages/CesjaTemplatePage';
 import { SafetyGuidePage } from './pages/SafetyGuidePage';
 import { LegalTermsPrivacyPage } from './pages/LegalTermsPrivacyPage';
-import { MobileBottomNav } from './components/MobileBottomNav';
+
+import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
+import { t } from './utils/translations';
+import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
 import { api } from './services/api';
 
 export default function App() {
   // Theme State: Default light
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
-  // Locale State: EN / PL / UK
+  // Active Route State from History API
+  const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(() =>
+    parseRoute(window.location.pathname, window.location.hash, window.location.search)
+  );
+
+  // Locale State: synchronized with URL prefix /pl
   const [locale, setLocale] = useState<SupportedLocale>(() => {
+    const route = parseRoute(window.location.pathname, window.location.hash, window.location.search);
+    if (route.locale === 'pl') return 'pl';
     return (localStorage.getItem('r8_locale') as SupportedLocale) || 'en';
   });
 
-  const strings = t[locale];
-
-  // Active Route State
-  const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(() => parseHashRoute(window.location.hash));
-
-  useEffect(() => {
-    localStorage.setItem('r8_locale', locale);
-  }, [locale]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  const strings = t[locale === 'pl' ? 'pl' : 'en'];
 
   // Listings State
   const [listings, setListings] = useState<Listing[]>(() => {
@@ -64,75 +68,14 @@ export default function App() {
     return INITIAL_LISTINGS;
   });
 
-  // Deposit Records State
-  const [depositRecords, setDepositRecords] = useState<DepositClearingRecord[]>(() => {
-    const saved = localStorage.getItem('r8_deposits');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return INITIAL_DEPOSIT_RECORDS;
-  });
-
   // Wishlist Saved State
   const [savedIds, setSavedIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('r8_saved_ids');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) {}
     }
-    return ['rel-waw-01'];
+    return ['rel-krk-01'];
   });
-
-  // Filters State - Initialized from Hash Route if present
-  const [selectedCity, setSelectedCity] = useState<string>(() => {
-    const initialRoute = parseHashRoute(window.location.hash);
-    if (initialRoute.type === 'city' && initialRoute.city) {
-      return initialRoute.city;
-    }
-    return 'All Poland';
-  });
-  const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedRoomType, setSelectedRoomType] = useState<string>('All Types');
-  const [maxRent, setMaxRent] = useState<number>(4500);
-  const [isSavedOnly, setIsSavedOnly] = useState<boolean>(false);
-  const [filterBillsIncludedOnly, setFilterBillsIncludedOnly] = useState<boolean>(false);
-  const [filterMeldunekOnly, setFilterMeldunekOnly] = useState<boolean>(false);
-
-  // Skeleton Loading & Filter Transition State
-  const [isFiltering, setIsFiltering] = useState<boolean>(true);
-
-  // Initial load simulation (400ms)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsFiltering(false);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Filter transition effect
-  useEffect(() => {
-    setIsFiltering(true);
-    const timer = setTimeout(() => {
-      setIsFiltering(false);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [selectedCity, selectedRoomType, maxRent, filterBillsIncludedOnly, filterMeldunekOnly, selectedDate, isSavedOnly]);
-
-  // Modals State - Initialized from Hash Route if applicable
-  const [activeListing, setActiveListing] = useState<Listing | null>(null);
-  const [isIntakeOpen, setIsIntakeOpen] = useState<boolean>(() => {
-    return parseHashRoute(window.location.hash).type === 'list-room';
-  });
-  const [isCesjaOpen, setIsCesjaOpen] = useState<boolean>(false);
-  const [isDepositOpen, setIsDepositOpen] = useState<boolean>(false);
-  const [isLeaveLeaseOpen, setIsLeaveLeaseOpen] = useState<boolean>(() => {
-    return parseHashRoute(window.location.hash).type === 'leave-your-lease';
-  });
-  const [isHelpOpen, setIsHelpOpen] = useState<boolean>(() => {
-    return parseHashRoute(window.location.hash).type === 'help';
-  });
-  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
-  const [loginReason, setLoginReason] = useState<string>('');
-  const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
 
   // Authenticated User State
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
@@ -143,7 +86,117 @@ export default function App() {
     return null;
   });
 
-  // Sync listings and user session with backend
+  // Search State: single source of truth synced with URL query
+  const [searchState, setSearchState] = useState<SearchState>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialRoute = parseRoute(window.location.pathname, window.location.hash, window.location.search);
+    let initialCity = 'Anywhere in Poland';
+    if (initialRoute.type === 'city' && initialRoute.cityName) {
+      initialCity = initialRoute.cityName;
+    } else if (params.get('city')) {
+      initialCity = params.get('city')!;
+    }
+    return {
+      city: initialCity,
+      moveInDate: params.get('from') || '',
+      roomType: params.get('type') || 'All room types',
+      minRent: Number(params.get('min')) || 500,
+      maxRent: Number(params.get('max')) || 5000
+    };
+  });
+
+  // Additional Filter Values
+  const [filterValues, setFilterValues] = useState<FilterValues>({
+    maxRent: searchState.maxRent,
+    moveInDate: searchState.moveInDate,
+    roomType: searchState.roomType,
+    isFurnishedOnly: false,
+    billsIncludedOnly: false,
+    meldunekOnly: false,
+    maxFlatmates: null,
+    sortBy: 'soonest'
+  });
+
+  // Synchronize searchState and filterValues
+  useEffect(() => {
+    setFilterValues((prev) => ({
+      ...prev,
+      maxRent: searchState.maxRent,
+      moveInDate: searchState.moveInDate,
+      roomType: searchState.roomType
+    }));
+  }, [searchState.maxRent, searchState.moveInDate, searchState.roomType]);
+
+  // Loading skeleton state
+  const [isFiltering, setIsFiltering] = useState(false);
+
+  // Modals state
+  const [isIntakeOpen, setIsIntakeOpen] = useState(false);
+  const [isLeaveLeaseOpen, setIsLeaveLeaseOpen] = useState(false);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isCesjaOpen, setIsCesjaOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginReason, setLoginReason] = useState('');
+  const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
+
+  // Toast State
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Listen to popstate for History API navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseRoute(window.location.pathname, window.location.hash, window.location.search);
+      setCurrentRoute(parsed);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (parsed.locale !== locale) {
+        setLocale(parsed.locale);
+      }
+
+      if (parsed.type === 'city' && parsed.cityName) {
+        setSearchState((prev) => ({ ...prev, city: parsed.cityName! }));
+      } else if (parsed.type === 'home') {
+        setSearchState((prev) => ({ ...prev, city: 'Anywhere in Poland' }));
+      } else if (parsed.type === 'leave-your-lease') {
+        setIsLeaveLeaseOpen(true);
+      } else if (parsed.type === 'list') {
+        setIsIntakeOpen(true);
+      } else if (parsed.type === 'help') {
+        setIsHelpOpen(true);
+      } else if (parsed.type === 'savings-calculator') {
+        setIsCalculatorOpen(true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [locale]);
+
+  // Sync title and SEO meta
+  useEffect(() => {
+    if (currentRoute.type === 'city' && currentRoute.cityName) {
+      document.title = `Rooms in ${currentRoute.cityName} · No Broker Fees | Relok8`;
+    } else if (currentRoute.type === 'listing-detail' && currentRoute.listingId) {
+      const found = listings.find((l) => l.id === currentRoute.listingId);
+      if (found) {
+        document.title = `${found.title} · ${found.city} | Relok8`;
+      }
+    } else if (currentRoute.type === 'saved') {
+      document.title = 'Saved Rooms | Relok8';
+    } else if (currentRoute.type === 'how-it-works') {
+      document.title = 'How a Lease Takeover Works | Relok8';
+    } else {
+      document.title = 'Relok8 — Student & Expat Housing in Poland | No Broker Fees';
+    }
+  }, [currentRoute, listings]);
+
+  // Load listings from backend API
   useEffect(() => {
     api.listings.getAll()
       .then((serverListings) => {
@@ -152,11 +205,8 @@ export default function App() {
           localStorage.setItem('r8_listings', JSON.stringify(serverListings));
         }
       })
-      .catch(() => {
-        // Local in-memory seed used seamlessly
-      });
+      .catch(() => {});
 
-    // Check user auth token session
     api.auth.getMe()
       .then((user) => {
         if (user) {
@@ -167,86 +217,40 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const handleLikeListing = async (id: string) => {
-    setListings((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, likesCount: (l.likesCount || 0) + 1 } : l))
-    );
-    try {
-      await api.listings.like(id);
-    } catch (e) {}
-  };
-
-  // HashRouter Listener for SEO-friendly City routes and Page views
-  useEffect(() => {
-    const handleHashChange = () => {
-      const parsed = parseHashRoute(window.location.hash);
-      setCurrentRoute(parsed);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      
-      if (parsed.type === 'city' && parsed.city) {
-        setSelectedCity(parsed.city);
-        document.title = `${parsed.city} Student Rooms & Housing – No Broker Fees | Relok8`;
-      } else if (parsed.type === 'home') {
-        setSelectedCity('All Poland');
-        document.title = 'Relok8 – Student & Expat Housing in Poland | No Broker Fees';
-      } else if (parsed.type === 'saved') {
-        document.title = 'Saved Apartments & Favorites | Relok8';
-      } else if (parsed.type === 'how-it-works') {
-        document.title = 'How Lease Takeover Poland Works (Art. 509 KC) | Relok8';
-      } else if (parsed.type === 'meldunek-guide') {
-        document.title = 'Rooms with Meldunek & PESEL Guide for Expats | Relok8';
-      } else if (parsed.type === 'cesja-template') {
-        document.title = 'Cesja umowy najmu wzór english (Bilingual Template) | Relok8';
-      } else if (parsed.type === 'safety-guide') {
-        document.title = 'Rental Safety & Scam Prevention in Poland | Relok8';
-      } else if (parsed.type === 'terms') {
-        document.title = 'Terms of Service | Relok8';
-      } else if (parsed.type === 'privacy') {
-        document.title = 'Privacy Policy & RODO | Relok8';
-      } else if (parsed.type === 'leave-your-lease') {
-        setIsLeaveLeaseOpen(true);
-        document.title = 'Leave Your Lease in Poland (0 PLN Break Fee) | Relok8';
-      } else if (parsed.type === 'list-room') {
-        setIsIntakeOpen(true);
-        document.title = 'List Your Room in Poland | Relok8';
-      } else if (parsed.type === 'help') {
-        setIsHelpOpen(true);
-        document.title = 'Help & Rental Safety Guide | Relok8';
-      } else if (parsed.type === 'listing-detail' && parsed.listingId) {
-        const found = listings.find((l) => l.id === parsed.listingId);
-        if (found) {
-          document.title = `${found.title} – ${found.city} | Relok8`;
+  // Update search state and sync URL query
+  const handleSearchChange = (changes: Partial<SearchState>) => {
+    setSearchState((prev) => {
+      const next = { ...prev, ...changes };
+      const params = new URLSearchParams(window.location.search);
+      if (next.city && next.city !== 'Anywhere in Poland' && next.city !== 'All Poland') {
+        const cityObj = getCityByName(next.city);
+        if (cityObj && currentRoute.type !== 'city') {
+          navigateToCity(cityObj.slug, locale);
+        }
+      } else if (changes.city === 'Anywhere in Poland' || changes.city === 'All Poland') {
+        if (currentRoute.type === 'city') {
+          navigateTo(locale === 'pl' ? '/pl' : '/');
         }
       }
-    };
+      if (next.moveInDate) params.set('from', next.moveInDate); else params.delete('from');
+      if (next.roomType && next.roomType !== 'All room types') params.set('type', next.roomType); else params.delete('type');
+      if (next.maxRent < 5000) params.set('max', String(next.maxRent)); else params.delete('max');
+      
+      const newQuery = params.toString() ? `?${params.toString()}` : '';
+      window.history.replaceState({}, '', window.location.pathname + newQuery);
+      return next;
+    });
 
-    window.addEventListener('hashchange', handleHashChange);
-    // Initial call to sync title on first mount
-    handleHashChange();
+    setIsFiltering(true);
+    setTimeout(() => setIsFiltering(false), 200);
+  };
 
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [listings]);
-
-  const handleSelectCity = (city: string) => {
-    setSelectedCity(city);
-    navigateToCity(city);
-    const target = document.getElementById('rooms');
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth' });
+  // Toggle save
+  const handleToggleSave = (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
     }
-  };
-
-  // Toast State
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 4000);
-  };
-
-  const handleToggleSave = (id: string) => {
     const isAdding = !savedIds.includes(id);
     setSavedIds((prev) => {
       const next = isAdding ? [...prev, id] : prev.filter((i) => i !== id);
@@ -259,16 +263,25 @@ export default function App() {
       if (!currentUser) {
         showToast(
           locale === 'pl'
-            ? 'Zapisano! Załóż darmowe konto, aby zsynchronizować zapisane pokoje.'
+            ? 'Zapisano! Zaloguj się, aby zsynchronizować zapisane pokoje.'
             : 'Saved! Sign up in 10s to sync your saved rooms across devices.'
         );
       } else {
-        showToast(locale === 'pl' ? 'Dodano do ulubionych!' : 'Added to saved apartments!');
+        showToast(locale === 'pl' ? 'Dodano do zapisanych!' : 'Added to saved!');
       }
     } else {
       api.favorites.remove(id).catch(() => {});
       showToast(locale === 'pl' ? 'Usunięto z zapisanych' : 'Removed from saved');
     }
+  };
+
+  const handleLikeListing = async (id: string) => {
+    setListings((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, likesCount: (l.likesCount || 0) + 1 } : l))
+    );
+    try {
+      await api.listings.like(id);
+    } catch (e) {}
   };
 
   const handleAddListing = async (newListing: Listing) => {
@@ -282,90 +295,140 @@ export default function App() {
       setListings(next);
       localStorage.setItem('r8_listings', JSON.stringify(next));
     }
-    showToast(locale === 'pl' ? 'Pokój został pomyślnie dodany do serwisu!' : 'Room listing posted successfully!');
+    showToast(locale === 'pl' ? 'Ogłoszenie zostało dodane!' : 'Listing published successfully!');
   };
 
-  // Filter listings
+  // Active City Config if on city route
+  const activeCityConfig = useMemo(() => {
+    if (currentRoute.type === 'city' && currentRoute.citySlug) {
+      return getCityBySlug(currentRoute.citySlug);
+    }
+    if (searchState.city && searchState.city !== 'Anywhere in Poland' && searchState.city !== 'All Poland') {
+      return getCityByName(searchState.city);
+    }
+    return undefined;
+  }, [currentRoute, searchState.city]);
+
+  // Filter & Sort Listings
   const filteredListings = useMemo(() => {
-    return listings.filter((l) => {
-      if (selectedCity !== 'All Poland' && l.city !== selectedCity) return false;
-      if (selectedRoomType !== 'All Types' && l.roomType !== selectedRoomType) return false;
-      if (l.monthlyRentPLN > maxRent) return false;
-      if (isSavedOnly && !savedIds.includes(l.id)) return false;
-      if (filterBillsIncludedOnly && !l.czynszIncluded) return false;
-      if (filterMeldunekOnly && !l.meldunekAllowed) return false;
-      if (selectedDate && new Date(l.availableDate) > new Date(selectedDate)) return false;
+    const list = listings.filter((l) => {
+      // City check
+      if (activeCityConfig) {
+        if (l.city.toLowerCase() !== activeCityConfig.name.toLowerCase() && l.city.toLowerCase() !== activeCityConfig.slug.toLowerCase()) {
+          return false;
+        }
+      } else if (searchState.city && searchState.city !== 'Anywhere in Poland' && searchState.city !== 'All Poland') {
+        if (l.city.toLowerCase() !== searchState.city.toLowerCase()) return false;
+      }
+
+      // Room type check
+      if (filterValues.roomType && filterValues.roomType !== 'All room types' && filterValues.roomType !== 'All Types') {
+        if (l.roomType !== filterValues.roomType) return false;
+      }
+
+      // Max rent
+      if (l.monthlyRentPLN > filterValues.maxRent) return false;
+
+      // Move in date: listing must be available on or before the selected target date
+      if (filterValues.moveInDate) {
+        if (new Date(l.availableDate) > new Date(filterValues.moveInDate)) return false;
+      }
+
+      // Furnished
+      if (filterValues.isFurnishedOnly && !l.isFurnished) return false;
+
+      // Bills included
+      if (filterValues.billsIncludedOnly && !l.billsIncluded) return false;
+
+      // Address registration
+      if (filterValues.meldunekOnly && !l.meldunekAllowed) return false;
+
+      // Flatmates count
+      if (filterValues.maxFlatmates !== null) {
+        if (filterValues.maxFlatmates === 0) {
+          if (l.flatmatesCount > 0) return false;
+        } else if (l.flatmatesCount > filterValues.maxFlatmates) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [listings, selectedCity, selectedRoomType, maxRent, isSavedOnly, savedIds, filterBillsIncludedOnly, filterMeldunekOnly, selectedDate]);
 
-  const CITIES = [
-    { key: 'All Poland', label: strings.searchCityAny },
-    { key: 'Warsaw', label: 'Warsaw' },
-    { key: 'Kraków', label: 'Kraków' },
-    { key: 'Wrocław', label: 'Wrocław' },
-    { key: 'Gdańsk', label: 'Gdańsk' },
-    { key: 'Lublin', label: 'Lublin' }
-  ];
-
-  const ROOM_TYPES = [
-    { key: 'All Types', label: strings.searchRoomTypeAny },
-    { key: 'Studio', label: 'Studio' },
-    { key: '1-Bedroom', label: '1-Bedroom' },
-    { key: 'Private Room', label: 'Private Room' },
-    { key: '2-Bedroom', label: '2-Bedroom' }
-  ];
-
-  const BUDGETS = [
-    { value: 4500, label: strings.searchBudgetAny },
-    { value: 2000, label: `< ${formatPLN(2000, locale)}` },
-    { value: 2600, label: `< ${formatPLN(2600, locale)}` },
-    { value: 3200, label: `< ${formatPLN(3200, locale)}` }
-  ];
+    // Sorting: Soonest move-in (default) · Price low to high · Newest
+    return list.sort((a, b) => {
+      if (filterValues.sortBy === 'price-asc') {
+        return a.monthlyRentPLN - b.monthlyRentPLN;
+      }
+      if (filterValues.sortBy === 'newest') {
+        return b.id.localeCompare(a.id);
+      }
+      // default: soonest move-in date
+      return new Date(a.availableDate).getTime() - new Date(b.availableDate).getTime();
+    });
+  }, [listings, activeCityConfig, searchState.city, filterValues]);
 
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-2.5 text-[13px] font-medium animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2 duration-150">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Header */}
+      {/* Header (§4.1) */}
       <Navbar
-        onOpenIntake={() => setIsIntakeOpen(true)}
-        onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
+        onOpenListPlace={() => setIsIntakeOpen(true)}
         savedCount={savedIds.length}
         locale={locale}
-        setLocale={setLocale}
+        onSelectLocale={(newLoc) => {
+          setLocale(newLoc);
+          switchLocale(newLoc === 'pl' ? 'pl' : 'en', currentRoute);
+        }}
         theme={theme}
         setTheme={setTheme}
         onOpenHelp={() => setIsHelpOpen(true)}
         onOpenLogin={() => {
-          setLoginReason('Sign up or log in to manage your saved apartments and contact hosts.');
+          setLoginReason('Sign up or log in to manage your saved rooms and contact tenants.');
           setIsLoginOpen(true);
         }}
         currentUser={currentUser}
         onLogout={() => {
           localStorage.removeItem('r8_user');
           setCurrentUser(null);
-          showToast(locale === 'pl' ? 'Wylogowano pomyślnie' : 'Logged out successfully');
+          showToast(locale === 'pl' ? 'Wylogowano' : 'Logged out');
         }}
-        onSelectCity={handleSelectCity}
+        onNavigateSaved={() => {
+          navigateTo(locale === 'pl' ? '/pl/saved' : '/saved');
+        }}
+        searchState={searchState}
+        onSearchChange={handleSearchChange}
+        onExpandSearch={() => {
+          const el = document.getElementById('search-hero');
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            navigateTo(locale === 'pl' ? '/pl' : '/');
+          }
+        }}
+        isCompactSearchVisible={true}
       />
 
+      {/* Route Views */}
       {currentRoute.type === 'listing-detail' && currentRoute.listingId ? (
         (() => {
           const detailListing = listings.find((l) => l.id === currentRoute.listingId) || listings[0];
           return (
             <ListingDetailPage
               listing={detailListing}
-              onBack={() => { window.location.hash = '#/rooms'; }}
+              onBack={() => {
+                window.history.back();
+              }}
               isSaved={savedIds.includes(detailListing.id)}
-              onToggleSave={handleToggleSave}
+              onToggleSave={(id) => handleToggleSave(id)}
               onOpenCesja={() => {
                 setPresetListingForCesja(detailListing);
                 setIsCesjaOpen(true);
@@ -384,682 +447,360 @@ export default function App() {
       ) : currentRoute.type === 'saved' ? (
         <SavedApartmentsPage
           savedListings={listings.filter((l) => savedIds.includes(l.id))}
-          onSelectListing={(l) => { window.location.hash = `#/listing/${l.id}`; }}
-          onRemoveSaved={handleToggleSave}
+          onSelectListing={(l) => navigateToListing(l.id, l.title, locale)}
+          onRemoveSaved={(id) => handleToggleSave(id)}
           onClearAll={() => setSavedIds([])}
-          onBrowseListings={() => { window.location.hash = '#/rooms'; }}
+          onBrowseListings={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
       ) : currentRoute.type === 'how-it-works' ? (
         <HowItWorksPage
-          onBack={() => { window.location.hash = '#/rooms'; }}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
-          onOpenBrowse={() => { window.location.hash = '#/rooms'; }}
+          onOpenBrowse={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
       ) : currentRoute.type === 'meldunek-guide' ? (
         <MeldunekGuidePage
-          onBack={() => { window.location.hash = '#/rooms'; }}
-          onBrowseRooms={() => { window.location.hash = '#/rooms'; }}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          onBrowseRooms={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
       ) : currentRoute.type === 'cesja-template' ? (
         <CesjaTemplatePage
-          onBack={() => { window.location.hash = '#/rooms'; }}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           onOpenCesjaModal={() => setIsCesjaOpen(true)}
           locale={locale}
         />
       ) : currentRoute.type === 'safety-guide' ? (
         <SafetyGuidePage
-          onBack={() => { window.location.hash = '#/rooms'; }}
-          onBrowseRooms={() => { window.location.hash = '#/rooms'; }}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          onBrowseRooms={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
       ) : currentRoute.type === 'terms' ? (
         <LegalTermsPrivacyPage
           view="terms"
-          onBack={() => { window.location.hash = '#/rooms'; }}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
       ) : currentRoute.type === 'privacy' ? (
         <LegalTermsPrivacyPage
           view="privacy"
-          onBack={() => { window.location.hash = '#/rooms'; }}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'cookies' ? (
+        <LegalTermsPrivacyPage
+          view="privacy"
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
       ) : (
-        <main className="flex-1 max-w-[1280px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12">
+        /* HOME & CITY PAGE TEMPLATE */
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12 text-left">
           
-          {/* 1. HERO SECTION: Housing Search First */}
-        <section className="pt-2 sm:pt-6 pb-2 text-center max-w-4xl mx-auto space-y-6">
-          
-          {/* Main Headline */}
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-              {strings.heroTitle}
-            </h1>
-            <p className="text-[15px] sm:text-[17px] text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              {strings.heroSubtitle}
-            </p>
-          </div>
-
-          {/* Airbnb-style Integrated Search Bar */}
-          <div className="bg-white border border-slate-200 shadow-xl rounded-2xl sm:rounded-full p-2 sm:p-2.5 text-left grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-0 items-center">
-            
-            {/* Where / City */}
-            <div className="px-4 py-2 hover:bg-slate-50 rounded-xl sm:rounded-full transition-colors">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                {strings.searchCity}
-              </label>
-              <select
-                value={selectedCity}
-                onChange={(e) => handleSelectCity(e.target.value)}
-                className="w-full bg-transparent text-[14px] font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                {CITIES.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* When / Move-in Date */}
-            <div className="px-4 py-2 hover:bg-slate-50 rounded-xl sm:rounded-full transition-colors sm:border-l sm:border-slate-200">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                {strings.searchDate}
-              </label>
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full bg-transparent text-[13px] font-semibold text-slate-800 outline-none cursor-pointer"
-              />
-            </div>
-
-            {/* Room Type */}
-            <div className="px-4 py-2 hover:bg-slate-50 rounded-xl sm:rounded-full transition-colors sm:border-l sm:border-slate-200">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                {strings.searchRoomType}
-              </label>
-              <select
-                value={selectedRoomType}
-                onChange={(e) => setSelectedRoomType(e.target.value)}
-                className="w-full bg-transparent text-[14px] font-bold text-slate-900 outline-none cursor-pointer"
-              >
-                {ROOM_TYPES.map((t) => (
-                  <option key={t.key} value={t.key}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Budget & Search Action */}
-            <div className="pl-4 pr-1.5 py-1.5 flex items-center justify-between sm:border-l sm:border-slate-200">
-              <div className="flex-1 pr-2">
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  {strings.searchBudget}
-                </label>
-                <select
-                  value={maxRent}
-                  onChange={(e) => setMaxRent(Number(e.target.value))}
-                  className="w-full bg-transparent text-[14px] font-bold text-slate-900 outline-none cursor-pointer"
-                >
-                  {BUDGETS.map((b) => (
-                    <option key={b.value} value={b.value}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const target = document.getElementById('rooms');
-                  if (target) target.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-12 h-12 rounded-xl sm:rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-sm"
-                aria-label="Search rooms"
-              >
-                <Search className="w-5 h-5 text-white" strokeWidth={2.2} />
-              </button>
-            </div>
-
-          </div>
-
-          {/* Secondary Link for departing tenants & Trust Highlights */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-[13px] pt-1">
-            <button
-              type="button"
-              onClick={() => setIsLeaveLeaseOpen(true)}
-              className="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-            >
-              <span>{strings.heroLeavingLink}</span>
-            </button>
-
-            <span className="hidden sm:inline text-slate-300">·</span>
-
-            <div className="flex items-center gap-3 text-slate-500 font-medium">
-              <span className="flex items-center gap-1">
-                <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2.5} />
-                <span>No broker fees</span>
-              </span>
-              <span>·</span>
-              <span className="flex items-center gap-1">
-                <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={2.5} />
-                <span>Landlord approved</span>
-              </span>
-            </div>
-          </div>
-
-        </section>
-
-        {/* 2. AVAILABLE ROOMS & FILTER BAR */}
-        <section id="rooms" className="space-y-6 pt-4 scroll-mt-24">
-          
-          {/* SEO City Landing Page Header (rendered when a city is active, e.g. #/warsaw/rooms) */}
-          {selectedCity !== 'All Poland' && CITIES_SEO_INFO[selectedCity] && (
+          {/* City Landing Template Header if on a city route */}
+          {activeCityConfig ? (
             <CityLandingHeader
-              cityInfo={CITIES_SEO_INFO[selectedCity]}
+              city={activeCityConfig}
               roomCount={filteredListings.length}
-              onClearCity={() => handleSelectCity('All Poland')}
+              onClearCity={() => {
+                handleSearchChange({ city: 'Anywhere in Poland' });
+                navigateTo(locale === 'pl' ? '/pl' : '/');
+              }}
               locale={locale}
             />
-          )}
-
-          {/* Section Header: Title & Clean City Tabs */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-slate-200">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                <span className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                  {selectedCity === 'All Poland' ? 'Poland Housing Marketplace' : `${selectedCity} Lease Handovers`}
-                </span>
+          ) : (
+            /* Home Hero Section (§4.2 expanded search) */
+            <section id="search-hero" className="pt-2 sm:pt-6 pb-2 text-center max-w-4xl mx-auto space-y-6">
+              <div className="space-y-3">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+                  {strings.heroTitle}
+                </h1>
+                <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                  {strings.heroSubtitle}
+                </p>
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                {selectedCity !== 'All Poland' 
-                  ? (selectedCity === 'Warsaw' || selectedCity === 'Lublin'
-                      ? `Student housing ${selectedCity} · Lease Takeover Poland`
-                      : selectedCity === 'Kraków'
-                        ? 'No agency commission flats Krakow · Verified Rooms'
-                        : `Rooms in ${selectedCity}`)
-                  : (locale === 'pl' ? 'Student housing Warsaw / Lublin & cesja umowy najmu' : 'Student housing Warsaw / Lublin & Lease Takeover Poland')}
-              </h2>
-              <p className="text-[13px] text-slate-500 mt-0.5">
-                {locale === 'pl'
-                  ? 'Oferty bezpośrednie od wyprowadzających się lokatorów. Bez prowizji agencji i pokoje z meldunkiem.'
-                  : 'Direct lease assignments from departing tenants. Zero broker commissions and rooms with Meldunek allowed.'}
-              </p>
-            </div>
 
-            {/* City Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-              {CITIES.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => handleSelectCity(c.key)}
-                  className={`px-3.5 py-1.5 text-[13px] rounded-full whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                    selectedCity === c.key
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20 font-semibold'
-                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/80 font-medium'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Filter Chips */}
-          <div className="flex flex-wrap items-center justify-between gap-3 text-[13px]">
-            <div className="flex flex-wrap items-center gap-2">
-              
-              {/* Target Search: Student housing Warsaw / Lublin */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedCity === 'Warsaw' || selectedCity === 'Lublin') {
-                    handleSelectCity('All Poland');
-                  } else {
-                    handleSelectCity('Warsaw');
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  selectedCity === 'Warsaw' || selectedCity === 'Lublin'
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                🎓 Student housing Warsaw / Lublin
-              </button>
-
-              {/* Target Search: No agency commission flats Krakow */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedCity === 'Kraków') {
-                    handleSelectCity('All Poland');
-                  } else {
-                    handleSelectCity('Kraków');
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  selectedCity === 'Kraków'
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                ⚡ No agency commission flats Krakow
-              </button>
-
-              {/* Max 2,500 PLN chip */}
-              <button
-                type="button"
-                onClick={() => setMaxRent(maxRent === 2500 ? 4500 : 2500)}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  maxRent === 2500
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                ≤ 2,500 PLN
-              </button>
-
-              {/* Private Room chip */}
-              <button
-                type="button"
-                onClick={() => setSelectedRoomType(selectedRoomType === 'Private Room' ? 'All Types' : 'Private Room')}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  selectedRoomType === 'Private Room'
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                Private Room
-              </button>
-
-              {/* Studio / 1-Bed chip */}
-              <button
-                type="button"
-                onClick={() => setSelectedRoomType(selectedRoomType === 'Studio' ? 'All Types' : 'Studio')}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  selectedRoomType === 'Studio'
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                Studio
-              </button>
-
-              {/* Bills Included chip */}
-              <button
-                type="button"
-                onClick={() => setFilterBillsIncludedOnly(!filterBillsIncludedOnly)}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  filterBillsIncludedOnly
-                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                {strings.billsIncluded}
-              </button>
-
-              {/* Target Search: Rooms with Meldunek allowed chip */}
-              <button
-                type="button"
-                onClick={() => setFilterMeldunekOnly(!filterMeldunekOnly)}
-                className={`px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                  filterMeldunekOnly
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold shadow-xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200/80'
-                }`}
-              >
-                ✓ {strings.meldunekAllowed}
-              </button>
-            </div>
-
-            {/* Active Result Count & Reset */}
-            <div className="flex items-center gap-3 text-slate-500">
-              <span className="font-semibold text-slate-700">
-                {isFiltering ? (
-                  <span className="inline-flex items-center gap-1.5 text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                    <span>{locale === 'pl' ? 'Aktualizowanie ofert...' : 'Updating rooms...'}</span>
-                  </span>
-                ) : (
-                  `${filteredListings.length} ${strings.roomsAvailable}`
-                )}
-              </span>
-
-              {(selectedCity !== 'All Poland' || selectedRoomType !== 'All Types' || maxRent < 4500 || filterBillsIncludedOnly || filterMeldunekOnly || isSavedOnly || selectedDate) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleSelectCity('All Poland');
-                    setSelectedRoomType('All Types');
-                    setMaxRent(4500);
-                    setFilterBillsIncludedOnly(false);
-                    setFilterMeldunekOnly(false);
-                    setIsSavedOnly(false);
-                    setSelectedDate('');
-                  }}
-                  className="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-semibold cursor-pointer"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>{strings.filterReset}</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* 3-Column Responsive Grid with Skeleton Loading State */}
-          {isFiltering ? (
-            <ListingGridSkeleton count={selectedCity === 'All Poland' ? 6 : Math.min(Math.max(filteredListings.length, 3), 6)} />
-          ) : filteredListings.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2 animate-in fade-in duration-200">
-              {filteredListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  isSaved={savedIds.includes(listing.id)}
-                  onToggleSave={handleToggleSave}
-                  onSelectListing={(l) => {
-                    window.location.hash = `#/listing/${l.id}`;
+              {/* Unified Expanded Search Bar (§4.2) */}
+              <div className="w-full max-w-3xl mx-auto">
+                <SearchBar
+                  mode="expanded"
+                  searchState={searchState}
+                  onSearchChange={handleSearchChange}
+                  onSearchSubmit={() => {
+                    const el = document.getElementById('rooms-grid');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
                   locale={locale}
                 />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 px-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                <Home className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900">
-                {locale === 'pl' ? 'Brak pokoi dla wybranych filtrów' : 'No rooms match these filters'}
-              </h3>
-              <p className="text-[13px] text-slate-500 max-w-sm mx-auto">
-                {locale === 'pl' ? 'Spróbuj wybrać inne miasto lub zresetować filtry.' : 'Try changing your city or increasing your budget range.'}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  handleSelectCity('All Poland');
-                  setSelectedRoomType('All Types');
-                  setMaxRent(4500);
-                  setFilterBillsIncludedOnly(false);
-                  setFilterMeldunekOnly(false);
-                  setIsSavedOnly(false);
-                  setSelectedDate('');
-                }}
-                className="px-4 py-2 bg-slate-900 text-white text-[13px] font-semibold rounded-xl hover:bg-slate-800 cursor-pointer"
-              >
-                {strings.filterReset}
-              </button>
-            </div>
+
+              {/* Value fact & Secondary Link */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsLeaveLeaseOpen(true)}
+                  className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+                >
+                  {strings.leavingEarlyQuestion}
+                </button>
+                <span className="hidden sm:inline text-slate-300">·</span>
+                <span className="text-slate-500 font-medium">
+                  {strings.noBrokerFeeFact}
+                </span>
+              </div>
+            </section>
           )}
 
-        </section>
-
-        {/* 3. HOW IT WORKS (Placed after listings, clean 3 steps) */}
-        <section id="how-it-works" className="pt-10 border-t border-slate-200 space-y-6 scroll-mt-24">
-          <div className="text-center max-w-2xl mx-auto space-y-1.5">
-            <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-              {strings.howItWorksTitle}
-            </h3>
-            <p className="text-[14px] text-slate-600">
-              {strings.howItWorksSub}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          {/* Rooms Grid Section */}
+          <section id="rooms-grid" className="space-y-6 pt-4 scroll-mt-24">
             
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-500/40 hover:shadow-lg transition-all duration-300 space-y-3 text-left group">
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 font-bold text-sm flex items-center justify-center border border-indigo-100 shadow-sm">
-                1
+            {/* Unified Filter Bar (§4.4) */}
+            <FiltersBar
+              filters={filterValues}
+              onFilterChange={(changes) => {
+                setFilterValues((prev) => ({ ...prev, ...changes }));
+                if (changes.maxRent !== undefined || changes.moveInDate !== undefined || changes.roomType !== undefined) {
+                  handleSearchChange({
+                    maxRent: changes.maxRent !== undefined ? changes.maxRent : searchState.maxRent,
+                    moveInDate: changes.moveInDate !== undefined ? changes.moveInDate : searchState.moveInDate,
+                    roomType: changes.roomType !== undefined ? changes.roomType : searchState.roomType
+                  });
+                }
+              }}
+              onResetFilters={() => {
+                setFilterValues({
+                  maxRent: 5000,
+                  moveInDate: '',
+                  roomType: 'All room types',
+                  isFurnishedOnly: false,
+                  billsIncludedOnly: false,
+                  meldunekOnly: false,
+                  maxFlatmates: null,
+                  sortBy: 'soonest'
+                });
+                handleSearchChange({
+                  city: 'Anywhere in Poland',
+                  maxRent: 5000,
+                  moveInDate: '',
+                  roomType: 'All room types'
+                });
+              }}
+              resultsCount={filteredListings.length}
+              locale={locale}
+            />
+
+            {/* Grid or Skeletons or Empty/Alerts State */}
+            {isFiltering ? (
+              <ListingGridSkeleton count={6} />
+            ) : filteredListings.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                {filteredListings.map((listing) => (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    isSaved={savedIds.includes(listing.id)}
+                    onToggleSave={(id, e) => handleToggleSave(id, e)}
+                    onSelectListing={(l) => navigateToListing(l.id, l.title, locale)}
+                    locale={locale}
+                  />
+                ))}
               </div>
-              <h4 className="font-bold text-[16px] text-slate-900 group-hover:text-indigo-600 transition-colors">
-                {strings.step1Title}
-              </h4>
-              <p className="text-[13px] text-slate-600 leading-relaxed">
-                {strings.step1Desc}
+            ) : (
+              /* Zero Results State with Alert Capture (§4.7, §6.3) */
+              <div className="space-y-6">
+                <div className="text-center py-8 px-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {activeCityConfig ? strings.noRoomsInCity : strings.noRoomsFound}
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    {locale === 'pl'
+                      ? 'Zmień kryteria wyszukiwania lub ustaw powiadomienie e-mail dla nowych ofert.'
+                      : 'Adjust your filters or set up an email alert to get notified when a new room is listed.'}
+                  </p>
+                </div>
+
+                <AlertCaptureCard
+                  city={activeCityConfig ? activeCityConfig.name : (searchState.city !== 'Anywhere in Poland' ? searchState.city : 'Poland')}
+                  locale={locale}
+                  onAlertRegistered={(email, city) => {
+                    showToast(locale === 'pl' ? `Powiadomienie zapisane dla: ${city}` : `Alert set for ${city}`);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* City Page Alert capture box if listings are present */}
+            {activeCityConfig && filteredListings.length > 0 && (
+              <div className="pt-6">
+                <AlertCaptureCard
+                  city={activeCityConfig.name}
+                  locale={locale}
+                  onAlertRegistered={(email, city) => {
+                    showToast(locale === 'pl' ? `Powiadomienie zapisane dla: ${city}` : `Alert set for ${city}`);
+                  }}
+                />
+              </div>
+            )}
+
+          </section>
+
+          {/* How It Works Section (§1 principles: Housing First, placed after rooms) */}
+          <section id="how-it-works-section" className="pt-10 border-t border-slate-200 space-y-6 scroll-mt-24">
+            <div className="text-center max-w-2xl mx-auto space-y-1.5">
+              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+                {strings.howItWorksTitle}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600">
+                {strings.howItWorksSub}
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-500/40 hover:shadow-lg transition-all duration-300 space-y-3 text-left group">
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 font-bold text-sm flex items-center justify-center border border-indigo-100 shadow-sm">
-                2
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-left">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
+                  1
+                </div>
+                <h4 className="font-bold text-sm text-slate-900">
+                  {strings.step1Title}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {strings.step1Desc}
+                </p>
               </div>
-              <h4 className="font-bold text-[16px] text-slate-900 group-hover:text-indigo-600 transition-colors">
-                {strings.step2Title}
-              </h4>
-              <p className="text-[13px] text-slate-600 leading-relaxed">
-                {strings.step2Desc}
-              </p>
-            </div>
 
-            <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-indigo-500/40 hover:shadow-lg transition-all duration-300 space-y-3 text-left group">
-              <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 font-bold text-sm flex items-center justify-center border border-indigo-100 shadow-sm">
-                3
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-left">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
+                  2
+                </div>
+                <h4 className="font-bold text-sm text-slate-900">
+                  {strings.step2Title}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {strings.step2Desc}
+                </p>
               </div>
-              <h4 className="font-bold text-[16px] text-slate-900 group-hover:text-indigo-600 transition-colors">
-                {strings.step3Title}
-              </h4>
-              <p className="text-[13px] text-slate-600 leading-relaxed">
-                {strings.step3Desc}
-              </p>
-            </div>
 
-          </div>
-        </section>
-
-        {/* 4. LEAVING YOUR LEASE EARLY? DEDICATED PROMO BANNER */}
-        <DepartingTenantBanner
-          onOpenLeaveLease={() => {
-            window.location.hash = '#/leave-your-lease';
-            setIsLeaveLeaseOpen(true);
-          }}
-          onOpenIntake={() => {
-            window.location.hash = '#/list-your-room';
-            setIsIntakeOpen(true);
-          }}
-          locale={locale}
-        />
-
-        {/* 5. HONEST TRUST & SAFETY SECTION */}
-        <section className="pt-6 border-t border-slate-200 space-y-6">
-          <div className="space-y-1 text-left">
-            <h3 className="text-xl font-bold text-slate-900 tracking-tight">
-              {strings.trustTitle}
-            </h3>
-            <p className="text-[13px] text-slate-500">
-              {locale === 'pl'
-                ? 'Co robimy, aby proces najmu był bezpieczny dla obcokrajowców i studentów:'
-                : 'How Relok8 safeguards international students and working expats:'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-left">
-            <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2">
-              <div className="flex items-center gap-2 text-[14px] font-bold text-slate-900">
-                <Check className="w-4 h-4 text-emerald-600" strokeWidth={2.5} />
-                <span>{locale === 'pl' ? 'Pisemna zgoda właściciela' : 'Landlord pre-approval'}</span>
+              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-left">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
+                  3
+                </div>
+                <h4 className="font-bold text-sm text-slate-900">
+                  {strings.step3Title}
+                </h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {strings.step3Desc}
+                </p>
               </div>
-              <p className="text-[13px] text-slate-600 leading-relaxed">
-                {locale === 'pl'
-                  ? 'Przygotowujemy oficjalną dokumentację cesji najmu, którą właściciel akceptuje przed podpisaniem umowy.'
-                  : 'We prepare the assignment documents and ensure the property owner approves before any agreement is signed.'}
-              </p>
             </div>
+          </section>
 
-            <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2">
-              <div className="flex items-center gap-2 text-[14px] font-bold text-slate-900">
-                <Check className="w-4 h-4 text-emerald-600" strokeWidth={2.5} />
-                <span>{locale === 'pl' ? 'Gwarancja meldunku' : 'Address registration (Meldunek)'}</span>
-              </div>
-              <p className="text-[13px] text-slate-600 leading-relaxed">
-                {locale === 'pl'
-                  ? 'Wszyscy właściciele lokali na Relok8 potwierdzają zgodę na rejestrację pobytu i nadanie numeru PESEL.'
-                  : 'Every room listed explicitly permits official city address registration needed for PESEL and residence permits.'}
-              </p>
-            </div>
+          {/* Leaving Early Banner */}
+          <DepartingTenantBanner
+            onOpenLeaveLease={() => setIsLeaveLeaseOpen(true)}
+            onOpenIntake={() => setIsIntakeOpen(true)}
+            locale={locale}
+          />
 
-            <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2">
-              <div className="flex items-center gap-2 text-[14px] font-bold text-slate-900">
-                <Check className="w-4 h-4 text-emerald-600" strokeWidth={2.5} />
-                <span>{locale === 'pl' ? 'Bezpieczny protokół zdawczy' : 'Handover protocol inspection'}</span>
-              </div>
-              <p className="text-[13px] text-slate-600 leading-relaxed">
-                {locale === 'pl'
-                  ? 'Kaucja jest rozliczana na podstawie podpisanego stanu liczników i wyposażenia lokalu.'
-                  : 'Security deposits are transferred with mutually signed meter readings and photographic handover checklists.'}
-              </p>
-            </div>
-          </div>
-        </section>
-
-      </main>
+        </main>
       )}
 
-      {/* Footer */}
+      {/* Footer (§4.6) */}
       <Footer
-        onOpenLeaveYourLease={() => {
-          window.location.hash = '#/leave-your-lease';
-          setIsLeaveLeaseOpen(true);
-        }}
-        onOpenHelp={() => {
-          window.location.hash = '#/help';
-          setIsHelpOpen(true);
-        }}
-        onOpenIntake={() => {
-          window.location.hash = '#/list-your-room';
-          setIsIntakeOpen(true);
-        }}
-        onSelectCity={(city) => {
-          handleSelectCity(city);
+        onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
+        onOpenHelp={() => setIsHelpOpen(true)}
+        onOpenSavingsCalculator={() => setIsCalculatorOpen(true)}
+        onOpenReportListing={() => {
+          showToast(locale === 'pl' ? 'Formularz zgłoszenia ogłoszenia: contact@relok8.online' : 'Listing report request logged');
         }}
         locale={locale}
         theme={theme}
       />
 
-      {/* Mobile Airbnb-style Bottom Navigation Bar */}
+      {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         currentPath={currentRoute.type}
         savedCount={savedIds.length}
-        isLoggedIn={!!currentUser}
-        onOpenIntake={() => setIsIntakeOpen(true)}
+        onNavigateHome={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+        onNavigateSaved={() => navigateTo(locale === 'pl' ? '/pl/saved' : '/saved')}
+        onOpenListRoom={() => setIsIntakeOpen(true)}
+        onOpenHelp={() => setIsHelpOpen(true)}
         onOpenLogin={() => {
-          setLoginReason('Sign up or log in to manage your saved apartments and contact hosts.');
+          setLoginReason('Sign up or log in to manage your account.');
           setIsLoginOpen(true);
         }}
         locale={locale}
       />
 
-      {/* Cookie Consent Banner */}
-      <CookieBanner locale={locale} />
-
       {/* Modals */}
-      {activeListing && (
-        <ListingDetailModal
-          isOpen={!!activeListing}
-          listing={activeListing}
-          isSaved={savedIds.includes(activeListing.id)}
-          onToggleSave={handleToggleSave}
-          onClose={() => {
-            setActiveListing(null);
-            if (window.location.hash.startsWith('#/room/')) {
-              navigateToCity(selectedCity);
-            }
-          }}
-          onInitiateCesja={(listing: Listing) => {
-            setPresetListingForCesja(listing);
-            setIsCesjaOpen(true);
-            setActiveListing(null);
-          }}
-          onInitiateDeposit={(_listing: Listing) => {
-            setIsDepositOpen(true);
-            setActiveListing(null);
-          }}
-          locale={locale}
-        />
-      )}
+      <IntakeModal
+        isOpen={isIntakeOpen}
+        onClose={() => setIsIntakeOpen(false)}
+        onSubmitListing={handleAddListing}
+        locale={locale}
+      />
 
-      {isIntakeOpen && (
-        <IntakeModal
-          isOpen={isIntakeOpen}
-          onClose={() => setIsIntakeOpen(false)}
-          onSubmitListing={handleAddListing}
-          locale={locale}
-        />
-      )}
+      <LeaveYourLeaseModal
+        isOpen={isLeaveLeaseOpen}
+        onClose={() => setIsLeaveLeaseOpen(false)}
+        onOpenIntake={() => {
+          setIsLeaveLeaseOpen(false);
+          setIsIntakeOpen(true);
+        }}
+        onOpenCesja={() => {
+          setIsLeaveLeaseOpen(false);
+          setIsCesjaOpen(true);
+        }}
+        locale={locale}
+      />
 
-      {isCesjaOpen && (
-        <CesjaGeneratorModal
-          isOpen={isCesjaOpen}
-          onClose={() => {
-            setIsCesjaOpen(false);
-            setPresetListingForCesja(null);
-          }}
-          presetListing={presetListingForCesja}
-          locale={locale}
-        />
-      )}
+      <DepositClearingModal
+        isOpen={isDepositOpen}
+        onClose={() => setIsDepositOpen(false)}
+        records={INITIAL_DEPOSIT_RECORDS}
+        onUpdateRecord={() => {}}
+        locale={locale}
+      />
 
-      {isDepositOpen && (
-        <DepositClearingModal
-          isOpen={isDepositOpen}
-          onClose={() => setIsDepositOpen(false)}
-          records={depositRecords}
-          onUpdateRecord={(updated) => {
-            setDepositRecords((prev) => prev.map((r) => r.id === updated.id ? updated : r));
-          }}
-          locale={locale}
-        />
-      )}
+      <CesjaGeneratorModal
+        isOpen={isCesjaOpen}
+        onClose={() => setIsCesjaOpen(false)}
+        presetListing={presetListingForCesja}
+        locale={locale}
+      />
 
-      {isLeaveLeaseOpen && (
-        <LeaveYourLeaseModal
-          isOpen={isLeaveLeaseOpen}
-          onClose={() => setIsLeaveLeaseOpen(false)}
-          onOpenIntake={() => {
-            setIsLeaveLeaseOpen(false);
-            setIsIntakeOpen(true);
-          }}
-          onOpenCesja={() => {
-            setIsLeaveLeaseOpen(false);
-            setIsCesjaOpen(true);
-          }}
-          locale={locale}
-        />
-      )}
+      <HelpModal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        locale={locale}
+      />
 
-      {isHelpOpen && (
-        <HelpModal
-          isOpen={isHelpOpen}
-          onClose={() => setIsHelpOpen(false)}
-          locale={locale}
-        />
-      )}
+      <PenaltyCalculatorModal
+        isOpen={isCalculatorOpen}
+        onClose={() => setIsCalculatorOpen(false)}
+        onOpenIntake={() => {
+          setIsCalculatorOpen(false);
+          setIsIntakeOpen(true);
+        }}
+        locale={locale}
+      />
 
-      {isLoginOpen && (
-        <LoginModal
-          isOpen={isLoginOpen}
-          onClose={() => {
-            setIsLoginOpen(false);
-            setLoginReason('');
-          }}
-          onLoginSuccess={(user) => {
-            setCurrentUser(user);
-            localStorage.setItem('r8_user', JSON.stringify(user));
-            showToast(locale === 'pl' ? `Witaj ponownie, ${user.name}!` : `Welcome back, ${user.name}!`);
-          }}
-          locale={locale}
-          actionReason={loginReason}
-        />
-      )}
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          localStorage.setItem('r8_user', JSON.stringify(user));
+          setIsLoginOpen(false);
+          showToast(locale === 'pl' ? `Witaj, ${user.name}!` : `Welcome back, ${user.name}!`);
+        }}
+        locale={locale}
+        contextMessage={loginReason}
+      />
+
+      <CookieBanner locale={locale} />
 
     </div>
   );

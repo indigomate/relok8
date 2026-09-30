@@ -17,7 +17,7 @@ export const TransferTracker: React.FC<TransferTrackerProps> = ({
   className = '',
   showTitle = true
 }) => {
-  const strings = t[locale];
+  const strings = (t[locale === 'pl' ? 'pl' : 'en'] as any);
 
   const steps = [
     { key: 'listed', label: strings.stepListed, sub: locale === 'pl' ? 'Dzień 1' : 'Day 1' },

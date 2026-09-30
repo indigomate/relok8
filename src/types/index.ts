@@ -1,4 +1,4 @@
-export interface DepartingTenant {
+export interface CurrentTenant {
   name: string;
   nationality: string;
   role: string;
@@ -10,38 +10,41 @@ export interface DepartingTenant {
 
 export interface Listing {
   id: string;
+  type: 'lease_takeover';
   title: string;
-  shortTitle?: string;
-  city: 'Warsaw' | 'Kraków' | 'Wrocław' | 'Gdańsk' | 'Poznań' | 'Lublin';
+  city: 'Kraków' | 'Warsaw' | 'Wrocław' | 'Gdańsk' | 'Lublin' | string;
   district: string;
   address: string;
-  roomType: 'Studio' | '1-Bedroom' | '2-Bedroom' | 'Private Room';
+  roomType: 'Private room' | 'Studio' | '1-bedroom' | '2-bedroom' | string;
   monthlyRentPLN: number;
   czynszAdminPLN: number;
-  czynszIncluded: boolean;
-  depositPLN: number; // Kaucja
+  billsIncluded: boolean;
+  czynszIncluded?: boolean;
+  depositPLN: number;
   availableDate: string;
   leaseEndDate: string;
   remainingMonths: number;
-  images: string[];
-  isFireSale?: boolean;
-  isGuestFavorite?: boolean;
-  isVerifiedTransfer?: boolean;
-  meldunekAllowed: boolean; // Address registration allowed for PESEL / TRC
+  squareMeters: number;
   isFurnished: boolean;
-  flatmatesInfo: string; // e.g. "Entire apartment" or "Shared with 2 students"
-  transitInfo: string; // e.g. "6 min walk to SGH · Metro M1"
-  landlordConsentStatus: 'Guaranteed Consent' | 'Pre-Approved' | 'Consent in Progress';
+  flatmatesCount: number;
+  distanceToCampus: string;
+  meldunekAllowed: boolean;
+  landlordApproved: boolean;
+  landlordConsentStatus?: string;
+  images: string[];
+  statusBadge?: string;
   landlordName: string;
   landlordContactEmail: string;
-  departingTenant: DepartingTenant;
+  currentTenant: CurrentTenant;
+  departingTenant?: CurrentTenant;
   amenities: string[];
   universitiesNearby: string[];
+  transitNearby?: string;
+  transitInfo?: string;
   metroNearby?: string;
   description: string;
-  squareMeters: number;
   floor: string;
-  depositSettlementType: 'P2P Direct Clearing' | 'Escrow Guarded';
+  depositSettlementType?: string;
   likesCount?: number;
   lat?: number;
   lng?: number;
@@ -52,8 +55,10 @@ export interface DepositClearingRecord {
   listingId: string;
   listingTitle: string;
   amountPLN: number;
-  departingTenantName: string;
-  incomingTenantName: string;
+  currentTenantName: string;
+  departingTenantName?: string;
+  newTenantName: string;
+  incomingTenantName?: string;
   landlordName: string;
   status: 'protocol_pending' | 'landlord_consent' | 'escrow_locked' | 'settled';
   inspectionDate: string;
@@ -74,14 +79,22 @@ export interface CesjaAgreementData {
   landlordName: string;
   landlordId: string;
   landlordAddress: string;
-  departingName: string;
-  departingPassport: string;
-  departingAddress: string;
-  departingIban: string;
-  incomingName: string;
-  incomingPassport: string;
-  incomingAddress: string;
-  incomingAffiliation: string;
+  currentTenantName?: string;
+  departingName?: string;
+  currentTenantPassport?: string;
+  departingPassport?: string;
+  currentTenantAddress?: string;
+  departingAddress?: string;
+  currentTenantIban?: string;
+  departingIban?: string;
+  newTenantName?: string;
+  incomingName?: string;
+  newTenantPassport?: string;
+  incomingPassport?: string;
+  newTenantAddress?: string;
+  incomingAddress?: string;
+  newTenantAffiliation?: string;
+  incomingAffiliation?: string;
   propertyAddress: string;
   originalLeaseDate: string;
   monthlyRentPLN: number;

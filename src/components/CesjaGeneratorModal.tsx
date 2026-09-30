@@ -28,7 +28,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
     landlordName: presetListing?.landlordName || 'Marek Wiśniewski',
     landlordId: 'PESEL: 78041209871 / ID: ABE 129841',
     landlordAddress: presetListing?.address || 'ul. Marszałkowska 10, Warszawa',
-    departingName: presetListing?.departingTenant.name || 'Matteo Rossi',
+    departingName: presetListing?.currentTenant?.name || (presetListing as any)?.departingTenant?.name || 'Piotr Kamiński',
     departingPassport: 'Passport: YA8921041 (Italy)',
     departingAddress: presetListing?.address || 'ul. Rakowiecka 32, Warszawa',
     departingIban: 'PL 42 1050 1445 1000 0098 7654 3210 (Santander Bank Polska)',

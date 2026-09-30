@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, Heart, Bookmark, Share2, MapPin, Check, Shield, FileCheck, 
-  Calendar, School, Train, AlertCircle, Sparkles, ChevronLeft, ChevronRight,
+  ArrowLeft, Heart, Bookmark, Share2, MapPin, Check, Shield, 
+  Calendar, School, Train, AlertCircle, ChevronLeft, ChevronRight,
   UserCheck, Building2, Key, Info, CheckCircle2, MessageSquare, Phone
 } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
+import { t } from '../utils/translations';
 
 interface ListingDetailPageProps {
   listing: Listing;
@@ -32,14 +33,25 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   onRequireLogin,
   onLike
 }) => {
+  const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [photoLoaded, setPhotoLoaded] = useState<Record<number, boolean>>({});
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(listing.likesCount || 24);
   const [copied, setCopied] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
+
+  const tenant = listing.currentTenant || (listing as any).departingTenant || {
+    name: 'Current Tenant',
+    nationality: 'Verified',
+    role: 'Student',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    verifiedDocs: ['Identity Verified', 'Active Lease'],
+    reasonForLeaving: 'Relocating for study/work commitments.'
+  };
+
   const [inquiryText, setInquiryText] = useState(
-    `Hi ${listing.departingTenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`
+    `Hi ${tenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`
   );
 
   const handleToggleLike = () => {
@@ -63,7 +75,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
     e.preventDefault();
     if (!currentUser) {
       if (onRequireLogin) {
-        onRequireLogin('Sign up or log in to message this tenant directly and coordinate the lease handover.');
+        onRequireLogin('Sign up or log in to message this tenant directly and coordinate the lease takeover.');
       }
       return;
     }
@@ -87,19 +99,22 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const handleTakeoverClick = () => {
     if (!currentUser) {
       if (onRequireLogin) {
-        onRequireLogin('Sign up or log in to step into this lease under Polish Civil Code Art. 509 KC.');
+        onRequireLogin('Sign up or log in to step into this lease takeover with official landlord approval.');
       }
       return;
     }
     onOpenCesja();
   };
 
+  const moveInDateFormatted = formatDate(listing.availableDate, locale);
+  const leaseEndDateFormatted = formatDate(listing.leaseEndDate, locale);
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
       
-      {/* Top Sticky Header */}
+      {/* Top Header */}
       <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           
           {/* Back & Breadcrumb */}
           <div className="flex items-center gap-2 text-xs sm:text-[13px] text-slate-500 overflow-hidden">
@@ -109,7 +124,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold transition-colors cursor-pointer shrink-0"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to listings</span>
+              <span>{locale === 'pl' ? 'Wróć do listy' : 'Back to rooms'}</span>
             </button>
             <span className="text-slate-300 hidden sm:inline">/</span>
             <span className="font-medium text-slate-700 hidden sm:inline">{listing.city}</span>
@@ -119,7 +134,6 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
 
           {/* Action Buttons: Like, Save, Share */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Share link button */}
             <button
               type="button"
               onClick={handleShare}
@@ -129,36 +143,33 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               {copied ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden sm:inline text-emerald-700">Link copied!</span>
+                  <span className="hidden sm:inline text-emerald-700">{locale === 'pl' ? 'Skopiowano!' : 'Link copied!'}</span>
                 </>
               ) : (
                 <>
                   <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Share</span>
+                  <span className="hidden sm:inline">{locale === 'pl' ? 'Udostępnij' : 'Share'}</span>
                 </>
               )}
             </button>
 
-            {/* Like button: only available on the listing page */}
             <button
               type="button"
               onClick={handleToggleLike}
               className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
                 isLiked
-                  ? 'bg-rose-50 border-rose-300 text-rose-700 scale-105 shadow-xs'
+                  ? 'bg-rose-50 border-rose-300 text-rose-700 shadow-xs'
                   : 'bg-white border-slate-200 text-slate-700 hover:text-rose-600 hover:border-rose-200'
               }`}
-              title={isLiked ? 'Unlike listing' : 'Like listing'}
             >
               <Heart
                 className={`w-4 h-4 transition-colors ${
                   isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-500'
                 }`}
               />
-              <span>{likesCount} {likesCount === 1 ? 'Like' : 'Likes'}</span>
+              <span>{likesCount}</span>
             </button>
 
-            {/* Save Apartment button */}
             <button
               type="button"
               onClick={() => onToggleSave(listing.id)}
@@ -167,21 +178,20 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs'
                   : 'bg-white border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-300'
               }`}
-              title={isSaved ? 'Remove from saved' : 'Save apartment'}
             >
               <Bookmark
                 className={`w-4 h-4 ${
                   isSaved ? 'fill-white text-white' : 'text-slate-500'
                 }`}
               />
-              <span className="hidden sm:inline">{isSaved ? 'Saved apartment' : 'Save apartment'}</span>
+              <span className="hidden sm:inline">{isSaved ? strings.saved : strings.save}</span>
             </button>
           </div>
 
         </div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-6 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-8">
         
         {/* Title & Location Header */}
         <div className="space-y-2">
@@ -189,45 +199,41 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
               {listing.city} · {listing.district}
             </span>
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              ✓ Rooms with Meldunek allowed
-            </span>
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-              0 PLN Broker Commission
-            </span>
-            {listing.landlordConsentStatus === 'Guaranteed Consent' && (
+            {listing.meldunekAllowed && (
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ✓ {strings.meldunekOkChip}
+              </span>
+            )}
+            {listing.landlordApproved && (
               <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white">
-                Landlord Consent Guaranteed (Art. 509 KC)
+                {strings.landlordApprovedChip}
               </span>
             )}
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             {listing.title}
           </h1>
 
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <MapPin className="w-4 h-4 text-indigo-600 shrink-0" />
             <span>{listing.address}</span>
-            {listing.metroNearby && (
+            {listing.distanceToCampus && (
               <>
                 <span className="text-slate-300">·</span>
-                <span className="text-slate-600 font-medium">{listing.metroNearby}</span>
+                <span className="text-slate-700 font-semibold">{listing.distanceToCampus}</span>
               </>
             )}
           </div>
         </div>
 
-        {/* Suspended Preview Image Gallery */}
+        {/* Image Gallery */}
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            
-            {/* Primary Big Photo (Span 3 cols) */}
             <div className="md:col-span-3 relative aspect-[16/10] md:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm group">
-              {/* Suspended Shimmer Placeholder */}
               {!photoLoaded[activePhotoIdx] && (
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse z-0 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full border-3 border-indigo-300 border-t-indigo-600 animate-spin opacity-50" />
+                <div className="absolute inset-0 bg-slate-200 animate-pulse z-0 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin opacity-50" />
                 </div>
               )}
 
@@ -244,7 +250,6 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                 }}
               />
 
-              {/* Prev / Next controls */}
               {listing.images.length > 1 && (
                 <div className="absolute inset-y-0 inset-x-3 flex items-center justify-between z-10 pointer-events-none">
                   <button
@@ -269,7 +274,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               </div>
             </div>
 
-            {/* Thumbnail Strip (Span 1 col) */}
+            {/* Thumbnail Strip */}
             <div className="flex md:flex-col gap-2.5 overflow-x-auto md:overflow-y-auto max-h-[460px] scrollbar-none">
               {listing.images.map((img, idx) => (
                 <button
@@ -277,7 +282,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                   type="button"
                   onClick={() => setActivePhotoIdx(idx)}
                   className={`relative aspect-[4/3] rounded-xl overflow-hidden border-2 transition-all shrink-0 w-28 md:w-full cursor-pointer ${
-                    activePhotoIdx === idx ? 'border-indigo-600 scale-[0.98] ring-2 ring-indigo-500/20' : 'border-transparent opacity-75 hover:opacity-100'
+                    activePhotoIdx === idx ? 'border-indigo-600 scale-[0.98]' : 'border-transparent opacity-75 hover:opacity-100'
                   }`}
                 >
                   <img
@@ -291,245 +296,197 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                 </button>
               ))}
             </div>
-
           </div>
         </div>
 
-        {/* Content Layout: 2 Columns */}
+        {/* Content Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
-          {/* Main Details (Col span 2) */}
           <div className="lg:col-span-2 space-y-8">
             
-            {/* Quick Specs Grid */}
+            {/* Quick Specs */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-4 rounded-xl bg-white border border-slate-200/90 space-y-1">
-                <span className="text-xs text-slate-500 block">Apartment Type</span>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-xs text-slate-500 block">{strings.searchRoomType}</span>
                 <span className="text-sm font-bold text-slate-900">{listing.roomType}</span>
               </div>
-              <div className="p-4 rounded-xl bg-white border border-slate-200/90 space-y-1">
-                <span className="text-xs text-slate-500 block">Size & Floor</span>
-                <span className="text-sm font-bold text-slate-900">{listing.squareMeters} m² · {listing.floor}</span>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-xs text-slate-500 block">Area & Floor</span>
+                <span className="text-sm font-bold text-slate-900">{listing.squareMeters} m² · {listing.floor || '2nd floor'}</span>
               </div>
-              <div className="p-4 rounded-xl bg-white border border-slate-200/90 space-y-1">
-                <span className="text-xs text-slate-500 block">Available Date</span>
-                <span className="text-sm font-bold text-slate-900">{formatDate(listing.availableDate, locale)}</span>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-xs text-slate-500 block">{strings.searchMoveInDate}</span>
+                <span className="text-sm font-bold text-slate-900">{moveInDateFormatted}</span>
               </div>
-              <div className="p-4 rounded-xl bg-white border border-slate-200/90 space-y-1">
-                <span className="text-xs text-slate-500 block">Lease Duration</span>
-                <span className="text-sm font-bold text-indigo-600">{listing.remainingMonths} months left</span>
+              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1">
+                <span className="text-xs text-slate-500 block">{strings.leaseTo}</span>
+                <span className="text-sm font-bold text-indigo-600">{leaseEndDateFormatted}</span>
               </div>
             </div>
 
             {/* Description */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-3">
-              <h2 className="text-lg font-bold text-slate-900">About this apartment & lease assignment</h2>
-              <p className="text-[14px] text-slate-600 leading-relaxed whitespace-pre-line">
+              <h2 className="text-lg font-bold text-slate-900">About this place</h2>
+              <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
                 {listing.description}
               </p>
             </div>
 
-            {/* Outgoing Tenant Verified Story */}
+            {/* Current Tenant Story */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4">
               <div className="flex items-center gap-3">
                 <img
-                  src={listing.departingTenant.avatar}
-                  alt={listing.departingTenant.name}
+                  src={tenant.avatar}
+                  alt={tenant.name}
                   className="w-12 h-12 rounded-full object-cover border-2 border-indigo-100"
                 />
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-900 text-base">{listing.departingTenant.name}</h3>
+                    <h3 className="font-bold text-slate-900 text-base">{tenant.name}</h3>
                     <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                       <UserCheck className="w-3 h-3" />
-                      <span>Verified Tenant</span>
+                      <span>{strings.currentTenant}</span>
                     </span>
                   </div>
                   <p className="text-xs text-slate-500">
-                    {listing.departingTenant.nationality} · {listing.departingTenant.role}
+                    {tenant.nationality} · {tenant.role}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5 text-xs text-slate-600">
-                <span className="font-semibold text-slate-800 block">Reason for early lease transfer:</span>
-                <p>"{listing.departingTenant.reasonForLeaving}"</p>
-              </div>
+              {tenant.reasonForLeaving && (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1 text-xs text-slate-600">
+                  <span className="font-semibold text-slate-800 block">Reason for lease takeover:</span>
+                  <p>"{tenant.reasonForLeaving}"</p>
+                </div>
+              )}
+            </div>
 
-              <div className="space-y-1.5">
-                <span className="text-xs font-semibold text-slate-700 block">Verified Tenant Credentials:</span>
-                <div className="flex flex-wrap gap-2">
-                  {listing.departingTenant.verifiedDocs.map((doc, idx) => (
-                    <span key={idx} className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>{doc}</span>
-                    </span>
+            {/* Amenities */}
+            {listing.amenities && listing.amenities.length > 0 && (
+              <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4">
+                <h2 className="text-lg font-bold text-slate-900">Amenities & furnishings</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-slate-700">
+                  {listing.amenities.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{item}</span>
+                    </div>
                   ))}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Amenities Grid */}
+            {/* Nearby Campuses & Transit */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Amenities & Furniture</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[13px] text-slate-700">
-                {listing.amenities.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Universities & Transit Connections */}
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Nearby Campuses & Transit</h2>
+              <h2 className="text-lg font-bold text-slate-900">Nearby universities & transit</h2>
               <div className="space-y-2.5">
-                {listing.universitiesNearby.map((uni, idx) => (
+                {listing.universitiesNearby && listing.universitiesNearby.map((uni, idx) => (
                   <div key={idx} className="flex items-center gap-2.5 text-xs text-slate-700 p-2.5 rounded-lg bg-indigo-50/50 border border-indigo-100">
                     <School className="w-4 h-4 text-indigo-600 shrink-0" />
                     <span className="font-medium">{uni}</span>
                   </div>
                 ))}
-                {listing.transitInfo && (
+                {(listing.transitNearby || (listing as any).transitInfo) && (
                   <div className="flex items-center gap-2.5 text-xs text-slate-700 p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                     <Train className="w-4 h-4 text-indigo-600 shrink-0" />
-                    <span className="font-medium">{listing.transitInfo}</span>
+                    <span className="font-medium">{listing.transitNearby || (listing as any).transitInfo}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Polish Legal Protections: Cesja Umowy Najmu */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-slate-50 border border-indigo-100 space-y-3">
-              <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
-                <Shield className="w-4 h-4" />
-                <span>Cesja umowy najmu wzór english (Art. 509 KC)</span>
+            {/* Landlord Approval Banner */}
+            <div className="p-6 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-3">
+              <div className="flex items-center gap-2 text-indigo-900 font-bold text-sm">
+                <Shield className="w-4 h-4 text-indigo-600" />
+                <span>Landlord approved lease takeover</span>
               </div>
               <p className="text-xs text-slate-600 leading-relaxed">
-                By taking over this lease, you step into the existing contract with zero price increases, guaranteed landlord approval, and official address registration (Meldunek) permitted for your PESEL or Karta Pobytu.
+                By taking over this lease, you step directly into the existing contract with zero agency commissions, landlord agreement, and full eligibility for address registration (meldunek) for your PESEL or residence permit.
               </p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={onOpenCesja}
+                  onClick={handleTakeoverClick}
                   className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer shadow-xs transition-colors"
                 >
-                  Generate Cesja Agreement
+                  Start lease takeover
                 </button>
                 <button
                   type="button"
                   onClick={onOpenDepositClearing}
                   className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold cursor-pointer transition-colors"
                 >
-                  View Deposit Protocol
+                  View handover protocol
                 </button>
               </div>
             </div>
 
           </div>
 
-          {/* Sticky Side Card: Price & Takeover Contact Form (Col span 1) */}
-          <div className="lg:col-span-1 lg:sticky lg:top-36 space-y-4">
-            
-            {/* Financial Card */}
-            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-200/50 space-y-5">
+          {/* Sticky Side Form */}
+          <div className="lg:col-span-1 lg:sticky lg:top-24 space-y-4">
+            <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-100 space-y-5">
               
-              {/* Price header */}
+              {/* Price */}
               <div className="space-y-1">
-                <span className="text-xs text-slate-500 font-medium">Monthly Rent</span>
+                <span className="text-xs text-slate-500 font-medium">Monthly rent</span>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl font-extrabold text-slate-900 tnum">
+                  <span className="text-3xl font-extrabold text-slate-900">
                     {formatPLN(listing.monthlyRentPLN, locale)}
                   </span>
-                  <span className="text-xs text-slate-500 font-normal">/ month</span>
+                  <span className="text-xs text-slate-500 font-normal"> / month</span>
                 </div>
                 <div className="text-xs text-emerald-700 font-medium">
-                  {listing.czynszIncluded ? '✓ Admin fee (czynsz) included' : `+ czynsz approx. ${listing.czynszAdminPLN} PLN`}
+                  {listing.billsIncluded || (listing as any).czynszIncluded
+                    ? '✓ Bills included'
+                    : `+ bills approx. ${listing.czynszAdminPLN} PLN`}
                 </div>
               </div>
 
-              {/* Price breakdown table */}
-              <div className="space-y-2 py-3 border-y border-slate-100 text-xs">
-                <div className="flex justify-between text-slate-600">
-                  <span>Refundable deposit (Kaucja)</span>
-                  <span className="font-bold text-slate-900 font-mono">{formatPLN(listing.depositPLN, locale)}</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Agency broker commission</span>
-                  <span className="font-bold text-emerald-600">0 PLN (Free)</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Lease ends</span>
-                  <span className="font-medium text-slate-900">{formatDate(listing.leaseEndDate, locale)}</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Address registration (Meldunek)</span>
-                  <span className="font-bold text-emerald-600">Permitted ✓</span>
-                </div>
+              {/* Deposit */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center text-xs">
+                <span className="text-slate-600 font-medium">{strings.deposit}</span>
+                <span className="font-bold text-slate-900">{formatPLN(listing.depositPLN, locale)}</span>
               </div>
 
-              {/* Takeover CTA */}
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={handleTakeoverClick}
-                  className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/20 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <FileCheck className="w-4 h-4" />
-                  <span>Take Over This Lease</span>
-                </button>
-
-                <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 pt-1">
-                  <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Landlord consent guaranteed under Polish law</span>
+              {/* Message Tenant Form */}
+              {inquirySent ? (
+                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-2 text-center">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 mx-auto" />
+                  <p className="font-bold">Inquiry sent to {tenant.name}!</p>
+                  <p className="text-[11px] text-emerald-700">They will reply to your registered email shortly to schedule a viewing.</p>
                 </div>
-              </div>
+              ) : (
+                <form onSubmit={handleSendInquiry} className="space-y-3">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Message the current tenant
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={inquiryText}
+                    onChange={(e) => setInquiryText(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 resize-none"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
+                  >
+                    Contact {tenant.name}
+                  </button>
+                </form>
+              )}
 
-              {/* Contact Message Form */}
-              <div className="pt-3 border-t border-slate-100 space-y-3">
-                <div className="text-xs font-bold text-slate-900">
-                  Message departing tenant directly
-                </div>
-
-                {inquirySent ? (
-                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-1">
-                    <span className="font-bold block">✓ Inquiry Sent!</span>
-                    <p>{listing.departingTenant.name} has been notified and will reply to your contact details.</p>
-                  </div>
-                ) : (
-                  <form onSubmit={handleSendInquiry} className="space-y-2.5">
-                    <textarea
-                      rows={3}
-                      value={inquiryText}
-                      onChange={(e) => setInquiryText(e.target.value)}
-                      className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none text-slate-800 bg-slate-50 resize-none"
-                    />
-                    <button
-                      type="submit"
-                      className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Send inquiry to tenant</span>
-                    </button>
-                  </form>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={handleTakeoverClick}
+                className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                Apply for lease takeover
+              </button>
 
             </div>
-
-            {/* Landlord Consent Badge Card */}
-            <div className="p-4 rounded-2xl bg-white border border-slate-200 space-y-2 text-xs">
-              <div className="flex items-center gap-2 font-bold text-slate-900">
-                <Building2 className="w-4 h-4 text-indigo-600" />
-                <span>Property Owner: {listing.landlordName}</span>
-              </div>
-              <p className="text-slate-500 leading-snug">
-                Written consent ready for immediate assignment without breaking penalty or additional contract fees.
-              </p>
-            </div>
-
           </div>
 
         </div>

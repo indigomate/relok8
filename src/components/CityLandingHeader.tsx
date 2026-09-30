@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { MapPin, School, Train, Share2, Check, ArrowLeft } from 'lucide-react';
-import { CitySeoInfo } from '../utils/router';
+import { CityConfig } from '../data/cities';
 import { SupportedLocale } from '../utils/formatters';
 
 interface CityLandingHeaderProps {
-  cityInfo: CitySeoInfo;
+  city: CityConfig;
   roomCount: number;
   onClearCity: () => void;
-  locale: SupportedLocale;
+  locale?: SupportedLocale;
 }
 
 export const CityLandingHeader: React.FC<CityLandingHeaderProps> = ({
-  cityInfo,
+  city,
   roomCount,
   onClearCity,
-  locale
+  locale = 'en'
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -24,13 +24,12 @@ export const CityLandingHeader: React.FC<CityLandingHeaderProps> = ({
     setTimeout(() => setCopied(false), 2500);
   };
 
+  const isPl = locale === 'pl';
+
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-6 text-left relative overflow-hidden">
-      {/* Decorative clean background accent */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-50/50 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-
       {/* Breadcrumb & Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-slate-500 relative z-10">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 relative z-10">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -38,93 +37,99 @@ export const CityLandingHeader: React.FC<CityLandingHeaderProps> = ({
             className="hover:text-indigo-600 transition-colors flex items-center gap-1 font-medium cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Wszystkie miasta w Polsce' : 'All Poland'}</span>
+            <span>{isPl ? 'Wszystkie miasta' : 'All cities'}</span>
           </button>
           <span>/</span>
-          <span className="font-semibold text-slate-900">{cityInfo.name}</span>
+          <span className="font-semibold text-slate-900">{city.name}</span>
         </div>
 
         {/* Share direct city landing link */}
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 hover:border-indigo-200 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:text-indigo-600 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-emerald-700">{locale === 'pl' ? 'Link skopiowany!' : 'Link copied!'}</span>
+              <span className="text-emerald-700">{isPl ? 'Link skopiowany!' : 'Link copied!'}</span>
             </>
           ) : (
             <>
               <Share2 className="w-3.5 h-3.5" />
-              <span>{locale === 'pl' ? 'Udostępnij stronę miasta' : 'Share city link'}</span>
+              <span>{isPl ? 'Udostępnij stronę miasta' : 'Share city link'}</span>
             </>
           )}
         </button>
       </div>
 
-      {/* Main Title & Subtitle */}
+      {/* Main Title & Subtitle - Template Driven */}
       <div className="space-y-2 relative z-10 max-w-3xl">
-        <div className="flex items-center gap-2 text-indigo-600 text-[12px] font-bold uppercase tracking-wider">
+        <div className="flex items-center gap-2 text-indigo-600 text-xs font-bold uppercase tracking-wider">
           <MapPin className="w-3.5 h-3.5" />
-          <span>{cityInfo.name}, Poland · Verified Direct Handovers</span>
+          <span>{city.name}, Poland</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          {cityInfo.heading}
+          {isPl ? `Pokoje na wynajem w ${city.name === 'Warsaw' ? 'Warszawie' : city.name === 'Kraków' ? 'Krakowie' : city.name === 'Wrocław' ? 'Wrocławiu' : city.name === 'Gdańsk' ? 'Gdańsku' : 'Lublinie'}` : `Rooms for rent in ${city.name}`}
         </h1>
-        <p className="text-[14px] sm:text-[15px] text-slate-600 leading-relaxed">
-          {cityInfo.tagline}
+        <p className="text-sm text-slate-600 leading-relaxed">
+          {isPl
+            ? `Przejmij aktywną umowę najmu w ${city.name === 'Warsaw' ? 'Warszawie' : city.name === 'Kraków' ? 'Krakowie' : city.name === 'Wrocław' ? 'Wrocławiu' : city.name === 'Gdańsk' ? 'Gdańsku' : 'Lublinie'} za zgodą właściciela. Zero prowizji agencji i pełne wsparcie przy meldunku.`
+            : `Take over an active lease in ${city.name} directly from the current tenant with official landlord approval and zero broker commissions.`}
         </p>
       </div>
 
-      {/* City Specific Facts Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2 relative z-10 text-[13px]">
+      {/* City Data Grid - Separate Universities and Transit */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2 relative z-10 text-xs">
         {/* Nearby Universities */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-1.5">
+        <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1.5">
           <div className="flex items-center gap-2 font-bold text-slate-900">
             <School className="w-4 h-4 text-indigo-600" />
-            <span>Key Universities</span>
+            <span>{isPl ? 'Uczelnie' : 'Universities'}</span>
           </div>
-          <p className="text-[12px] text-slate-600 leading-snug">
-            {cityInfo.universities.slice(0, 3).join(' · ')}
-          </p>
+          <ul className="text-slate-600 space-y-1 leading-snug">
+            {city.universities.map((uni, i) => (
+              <li key={i} className="truncate">• {uni}</li>
+            ))}
+          </ul>
         </div>
 
         {/* Public Transit */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-1.5">
+        <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1.5">
           <div className="flex items-center gap-2 font-bold text-slate-900">
             <Train className="w-4 h-4 text-indigo-600" />
-            <span>Transit & Metro</span>
+            <span>{isPl ? 'Komunikacja miejska' : 'Public transit'}</span>
           </div>
-          <p className="text-[12px] text-slate-600 leading-snug">
-            {cityInfo.transit}
-          </p>
+          <ul className="text-slate-600 space-y-1 leading-snug">
+            {city.transit.map((tr, i) => (
+              <li key={i} className="truncate">• {tr}</li>
+            ))}
+          </ul>
         </div>
 
-        {/* Guaranteed Standards */}
-        <div className="p-4 rounded-2xl bg-white border border-slate-200/90 space-y-1.5 sm:col-span-2 md:col-span-1">
+        {/* Key Neighborhoods */}
+        <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-1.5">
           <div className="flex items-center gap-2 font-bold text-slate-900">
-            <Check className="w-4 h-4 text-emerald-600" strokeWidth={2.5} />
-            <span>Tenant Safeguards</span>
+            <MapPin className="w-4 h-4 text-indigo-600" />
+            <span>{isPl ? 'Dzielnice' : 'Neighborhoods'}</span>
           </div>
-          <p className="text-[12px] text-slate-600 leading-snug">
-            0 PLN broker fees · Landlord consent confirmed · Address registration (Meldunek) permitted
+          <p className="text-slate-600 leading-relaxed">
+            {city.neighborhoods.join(' · ')}
           </p>
         </div>
       </div>
 
-      {/* Available Room Count Pill */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-200/80 text-[13px] relative z-10">
+      {/* Available Room Count */}
+      <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs relative z-10">
         <span className="font-semibold text-slate-900">
-          {roomCount} {roomCount === 1 ? 'room' : 'rooms'} currently available in {cityInfo.name}
+          {roomCount} {roomCount === 1 ? (isPl ? 'dostępny pokój' : 'room available') : (isPl ? 'dostępnych pokoi' : 'rooms available')} {isPl ? 'w' : 'in'} {city.name}
         </span>
         <button
           type="button"
           onClick={onClearCity}
           className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
         >
-          {locale === 'pl' ? 'Pokaż całą Polskę' : 'View all cities'}
+          {isPl ? 'Pokaż całą Polskę' : 'View anywhere in Poland'}
         </button>
       </div>
     </div>

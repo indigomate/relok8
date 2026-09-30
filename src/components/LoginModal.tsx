@@ -17,6 +17,7 @@ interface LoginModalProps {
   onLoginSuccess: (user: UserProfile) => void;
   locale: SupportedLocale;
   actionReason?: string;
+  contextMessage?: string;
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ 
@@ -24,8 +25,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onClose, 
   onLoginSuccess,
   locale,
-  actionReason 
+  actionReason,
+  contextMessage
 }) => {
+  const activeReason = contextMessage || actionReason;
   const [authMode, setAuthMode] = useState<'quick' | 'student' | 'email'>('quick');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');

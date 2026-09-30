@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Heart, MapPin, Check, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
@@ -7,19 +7,21 @@ import { t } from '../utils/translations';
 interface ListingCardProps {
   listing: Listing;
   isSaved?: boolean;
-  onToggleSave?: (id: string) => void;
+  onToggleSave?: (id: string, e?: React.MouseEvent) => void;
   onSelectListing: (listing: Listing) => void;
   locale?: SupportedLocale;
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({
   listing,
+  isSaved = false,
+  onToggleSave,
   onSelectListing,
   locale = 'en'
 }) => {
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isImgLoaded, setIsImgLoaded] = useState(false);
-  const strings = t[locale];
+  const strings = t[locale === 'pl' ? 'pl' : 'en'];
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -35,34 +37,68 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     setCurrentImgIndex((prev) => (prev === listing.images.length - 1 ? 0 : prev + 1));
   };
 
+  const handleHeartClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (onToggleSave) {
+      onToggleSave(listing.id, e);
+    }
+  };
+
+  // Facts line: 19 m² · Furnished · Private room · 2 flatmates
+  const factsList = [
+    listing.squareMeters ? `${listing.squareMeters} m²` : null,
+    listing.isFurnished ? (locale === 'pl' ? 'Umeblowane' : 'Furnished') : null,
+    listing.roomType,
+    listing.flatmatesCount && listing.flatmatesCount > 0
+      ? `${listing.flatmatesCount} ${locale === 'pl' ? strings.flatmates : 'flatmates'}`
+      : (locale === 'pl' ? 'Całe mieszkanie' : 'Entire place')
+  ].filter(Boolean);
+
+  // Chips: up to three chips, strictly from real fields
+  const chips: string[] = [];
+  if (listing.meldunekAllowed) {
+    chips.push(strings.meldunekOkChip);
+  }
+  if (listing.billsIncluded) {
+    chips.push(strings.billsIncludedChip);
+  }
+  if (listing.landlordApproved) {
+    chips.push(strings.landlordApprovedChip);
+  }
+
+  // Dates: Move in from 15 Oct 2026 · lease to 30 Jun 2027
+  const moveInDateFormatted = formatDate(listing.availableDate, locale);
+  const leaseEndDateFormatted = formatDate(listing.leaseEndDate, locale);
+
   return (
     <article
       onClick={() => onSelectListing(listing)}
       tabIndex={0}
-      role="button"
+      role="link"
+      aria-label={`${listing.title}, ${listing.district}, ${listing.city}`}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onSelectListing(listing);
         }
       }}
-      className="group rounded-2xl bg-white border border-slate-100 hover:border-indigo-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50 overflow-hidden cursor-pointer flex flex-col justify-between text-left focus:outline-none"
+      className="group relative rounded-xl bg-white border border-slate-200/80 hover:border-slate-300 transition-all duration-200 hover:shadow-lg overflow-hidden cursor-pointer flex flex-col justify-between text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
     >
-      {/* Image Container with fixed 4:3 Aspect Ratio & Suspended Preview */}
+      {/* 1. Photo (Aspect 4:3) with ONE status badge and Save (heart) button */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
-        {/* Suspended Preview Shimmer Skeleton */}
         {!isImgLoaded && (
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 animate-pulse z-0 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin opacity-40" />
+          <div className="absolute inset-0 bg-slate-200 animate-pulse z-0 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin opacity-40" />
           </div>
         )}
 
         <img
           src={listing.images[currentImgIndex] || listing.images[0]}
-          alt={`${listing.title} · Rooms with Meldunek allowed, student & expat housing in ${listing.city}`}
+          alt={listing.title}
           loading="lazy"
           onLoad={() => setIsImgLoaded(true)}
-          className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 relative z-1 ${
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
             isImgLoaded ? 'opacity-100' : 'opacity-0'
           }`}
           onError={(e) => {
@@ -71,45 +107,54 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           }}
         />
 
-        {/* Translucent Glassmorphic Badges */}
-        <div className="absolute top-3 left-3 z-10 flex gap-1.5 flex-wrap pointer-events-none select-none">
-          <span className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-black/40 backdrop-blur-md text-white border border-white/20">
-            {strings.noBrokerFee}
+        {/* Exactly ONE status badge */}
+        <div className="absolute top-3 left-3 z-10 pointer-events-none select-none">
+          <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 backdrop-blur-xs">
+            {listing.statusBadge || strings.landlordApprovedChip}
           </span>
-          {listing.landlordConsentStatus === 'Guaranteed Consent' && (
-            <span className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-emerald-500/80 backdrop-blur-md text-white border border-emerald-400/30">
-              {strings.landlordApproved}
-            </span>
-          )}
         </div>
 
-        {/* Carousel Navigation Arrows on Hover */}
+        {/* Save (heart) button on every card */}
+        <button
+          type="button"
+          onClick={handleHeartClick}
+          aria-label={isSaved ? 'Remove from saved' : 'Save listing'}
+          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-rose-600 flex items-center justify-center shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+        >
+          <Heart
+            className={`w-5 h-5 transition-colors ${
+              isSaved ? 'fill-rose-500 text-rose-500' : 'text-slate-700'
+            }`}
+          />
+        </button>
+
+        {/* Carousel Arrows on Hover */}
         {listing.images.length > 1 && (
           <>
             <button
               type="button"
               onClick={handlePrevImg}
               aria-label="Previous photo"
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <ChevronLeft className="w-4 h-4" strokeWidth={2} />
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               type="button"
               onClick={handleNextImg}
               aria-label="Next photo"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <ChevronRight className="w-4 h-4" strokeWidth={2} />
+              <ChevronRight className="w-4 h-4" />
             </button>
 
             {/* Dots */}
-            <div className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-1 pointer-events-none">
+            <div className="absolute bottom-2 inset-x-0 flex justify-center items-center gap-1 pointer-events-none">
               {listing.images.slice(0, 5).map((_, idx) => (
                 <div
                   key={idx}
-                  className={`h-1.5 rounded-full transition-all duration-200 ${
-                    idx === currentImgIndex ? 'w-3.5 bg-white' : 'w-1.5 bg-white/60'
+                  className={`h-1.5 rounded-full transition-all ${
+                    idx === currentImgIndex ? 'w-3 bg-white' : 'w-1.5 bg-white/60'
                   }`}
                 />
               ))}
@@ -118,48 +163,74 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         )}
       </div>
 
-      {/* Card Body */}
-      <div className="p-4 flex flex-col justify-between flex-1">
+      {/* Card Content - Strict Order from §4.3 */}
+      <div className="p-4 flex flex-col justify-between flex-1 gap-2.5">
         <div>
-          <h3 className="font-semibold text-slate-900 text-base truncate">
-            {listing.shortTitle || listing.title}
+          {/* 2. Title: max ~40 chars, lister written */}
+          <h3 className="font-semibold text-slate-900 text-base leading-snug line-clamp-1">
+            {listing.title}
           </h3>
-          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-indigo-600 shrink-0" strokeWidth={1.8} />
-            <span>{listing.city}, {listing.district}</span>
-            {listing.transitInfo && (
-              <>
-                <span className="text-slate-300">·</span>
-                <span className="text-slate-400 truncate">{listing.transitInfo}</span>
-              </>
-            )}
+
+          {/* 3. Location: Krowodrza, Kraków (own line, never truncated) */}
+          <p className="text-xs font-medium text-slate-600 mt-1">
+            {listing.district}, {listing.city}
           </p>
 
-          <div className="mt-3 flex gap-1.5 flex-wrap text-[11px]">
-            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium border border-emerald-200/60">
-              ✓ {strings.meldunekAllowed}
+          {/* 4. Dates: Move in from 15 Oct 2026 · lease to 30 Jun 2027 (most important line) */}
+          <p className="text-xs font-semibold text-indigo-950 mt-1.5 flex items-center gap-1.5">
+            <span>
+              {strings.moveInFrom} {moveInDateFormatted}
             </span>
-            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-              {listing.czynszIncluded ? strings.billsIncluded : `${strings.billsExtra} (~${listing.czynszAdminPLN} PLN)`}
+            <span className="text-slate-300" aria-hidden="true">·</span>
+            <span>
+              {strings.leaseTo} {leaseEndDateFormatted}
             </span>
-            {listing.flatmatesInfo && (
-              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
-                {listing.flatmatesInfo}
-              </span>
-            )}
-          </div>
+          </p>
+
+          {/* 5. Facts: 19 m² · Furnished · Private room · 2 flatmates */}
+          <p className="text-xs text-slate-500 mt-1.5 flex items-center flex-wrap gap-1.5">
+            {factsList.map((fact, i) => (
+              <React.Fragment key={i}>
+                <span>{fact}</span>
+                {i < factsList.length - 1 && (
+                  <span className="text-slate-300" aria-hidden="true">·</span>
+                )}
+              </React.Fragment>
+            ))}
+          </p>
+
+          {/* 6. Distance (own line, one item): 5 min walk to AGH */}
+          {listing.distanceToCampus && (
+            <p className="text-xs text-slate-600 mt-1 font-medium">
+              {listing.distanceToCampus}
+            </p>
+          )}
+
+          {/* 7. Up to three chips, strictly from real fields */}
+          {chips.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {chips.slice(0, 3).map((chipText, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700"
+                >
+                  {chipText}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Price & Deposit Layout */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex items-baseline justify-between">
+        {/* 8. Price: PLN 1,650 /mo · Deposit PLN 1,800 */}
+        <div className="pt-3 mt-1 border-t border-slate-100 flex items-baseline justify-between text-xs">
           <div>
-            <span className="text-lg font-extrabold text-slate-900 tnum">
+            <span className="text-base font-bold text-slate-900">
               {formatPLN(listing.monthlyRentPLN, locale)}
             </span>
-            <span className="text-xs text-slate-500 font-normal"> /mo</span>
+            <span className="text-slate-500 font-normal"> {strings.perMonth}</span>
           </div>
-          <span className="text-xs text-slate-400 font-medium">
-            Deposit: {formatPLN(listing.depositPLN, locale)}
+          <span className="text-slate-500">
+            {strings.deposit} {formatPLN(listing.depositPLN, locale)}
           </span>
         </div>
       </div>

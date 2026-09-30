@@ -126,7 +126,7 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
                       <span className="truncate">{listing.address}</span>
                     </div>
                     <div className="pt-1 flex items-center gap-2 text-[11px] text-emerald-700 font-medium">
-                      <span>✓ Rooms with Meldunek allowed</span>
+                      <span>✓ Address registration (meldunek) OK</span>
                     </div>
                   </div>
 

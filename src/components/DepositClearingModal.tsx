@@ -99,7 +99,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                   : 'text-[var(--r8-text-2)] hover:text-[var(--r8-text)]'
               }`}
             >
-              <span>{rec.departingTenantName} → {rec.incomingTenantName}</span>
+              <span>{rec.currentTenantName || rec.departingTenantName} → {rec.newTenantName || rec.incomingTenantName}</span>
               <span className="font-mono tnum">({formatPLN(rec.amountPLN, locale)})</span>
               {rec.status === 'settled' && <Check className="w-3.5 h-3.5 text-[var(--r8-success)]" strokeWidth={2.5} />}
             </button>
@@ -127,7 +127,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                     {locale === 'pl' ? 'Cedent (Zwrot)' : 'Departing (Refund)'}
                   </div>
                   <div className="text-sm font-semibold text-[var(--r8-text)] mt-0.5">
-                    {currentRecord.departingTenantName}
+                    {currentRecord.currentTenantName || currentRecord.departingTenantName}
                   </div>
                 </div>
 
@@ -136,7 +136,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                     {locale === 'pl' ? 'Cesjonariusz' : 'Incoming Tenant'}
                   </div>
                   <div className="text-sm font-semibold text-[var(--r8-text)] mt-0.5">
-                    {currentRecord.incomingTenantName}
+                    {currentRecord.newTenantName || currentRecord.incomingTenantName}
                   </div>
                 </div>
 
@@ -231,7 +231,7 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                           : `Direct Transfer (${formatPLN(currentRecord.amountPLN, locale)})`}
                       </h4>
                       <p className="text-[12px] text-[var(--r8-text-2)] mt-0.5">
-                        {currentRecord.incomingTenantName} → {currentRecord.departingTenantName}
+                        {currentRecord.newTenantName || currentRecord.incomingTenantName} → {currentRecord.currentTenantName || currentRecord.departingTenantName}
                       </p>
                     </div>
                   </div>
@@ -299,11 +299,11 @@ export const DepositClearingModal: React.FC<DepositClearingModalProps> = ({
                 <div className="p-3 bg-[var(--r8-surface-1)] rounded-[10px] border border-[var(--r8-border)] grid grid-cols-2 gap-3">
                   <div>
                     <span className="text-[var(--r8-text-3)] block text-[11px]">Cedent (Zwrot):</span>
-                    <strong>{currentRecord.departingTenantName}</strong>
+                    <strong>{currentRecord.currentTenantName || currentRecord.departingTenantName}</strong>
                   </div>
                   <div>
                     <span className="text-[var(--r8-text-3)] block text-[11px]">Cesjonariusz (Wpłacający):</span>
-                    <strong>{currentRecord.incomingTenantName}</strong>
+                    <strong>{currentRecord.newTenantName || currentRecord.incomingTenantName}</strong>
                   </div>
                 </div>
 

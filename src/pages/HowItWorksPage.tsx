@@ -103,7 +103,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
             <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Rooms with Meldunek allowed</span>
+                <span>Address registration (meldunek) OK</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
