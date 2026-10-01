@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, CheckCircle2, GraduationCap, Shield, Sparkles, ArrowRight } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
+import { signIn, signUp } from '../lib/supabase/client';
 
 export interface UserProfile {
   id: string;
@@ -53,15 +54,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'alex.student@gmail.com' })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) localStorage.setItem('r8_token', data.token);
-        onLoginSuccess(data.user);
+      const user = await signIn('alex.student@gmail.com');
+      if (user) {
+        onLoginSuccess(user);
         onClose();
         return;
       }
@@ -87,20 +82,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     const studentEmail = email || `student@${university.toLowerCase().replace(/[^a-z]/g, '')}.pl`;
     
     try {
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: studentEmail, 
-          name: name || 'International Student',
-          university,
-          role: 'student'
-        })
+      const user = await signUp({
+        email: studentEmail,
+        name: name || 'International Student',
+        university,
+        role: 'student'
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) localStorage.setItem('r8_token', data.token);
-        onLoginSuccess(data.user);
+      if (user) {
+        onLoginSuccess(user);
         onClose();
         return;
       }
@@ -125,15 +114,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.token) localStorage.setItem('r8_token', data.token);
-        onLoginSuccess(data.user);
+      const user = await signIn(email);
+      if (user) {
+        onLoginSuccess(user);
         onClose();
         return;
       }

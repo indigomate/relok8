@@ -35,11 +35,25 @@ import { MeldunekGuidePage } from './pages/MeldunekGuidePage';
 import { CesjaTemplatePage } from './pages/CesjaTemplatePage';
 import { SafetyGuidePage } from './pages/SafetyGuidePage';
 import { LegalTermsPrivacyPage } from './pages/LegalTermsPrivacyPage';
+import { HelpPage } from './pages/HelpPage';
+import { ListPage } from './pages/ListPage';
+import { LeaveYourLeasePage } from './pages/LeaveYourLeasePage';
+import { SavingsCalculatorPage } from './pages/SavingsCalculatorPage';
 
 import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
 import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
-import { api } from './services/api';
+import { 
+  supabase, 
+  getListings, 
+  getListingById, 
+  createListing, 
+  getCurrentUser, 
+  addFavorite, 
+  removeFavorite, 
+  likeListing, 
+  isSupabaseConfigured 
+} from './lib/supabase/client';
 
 export default function App() {
   // Theme State: Default light
@@ -59,22 +73,29 @@ export default function App() {
 
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
 
-  // Listings State
+  // Listings State: sourced strictly from database / live intake
   const [listings, setListings] = useState<Listing[]>(() => {
     const saved = localStorage.getItem('r8_listings');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        const live = Array.isArray(parsed) ? parsed.filter((l: any) => !l.id?.startsWith('rel-krk-01') && !l.id?.startsWith('rel-waw-01') && !l.id?.startsWith('rel-wro-01') && !l.id?.startsWith('rel-gdn-01') && !l.id?.startsWith('rel-lub-01')) : [];
+        if (live.length > 0) return live;
+      } catch (e) {}
     }
-    return INITIAL_LISTINGS;
+    return [];
   });
 
-  // Wishlist Saved State
+  // Wishlist Saved State: real user saves only
   const [savedIds, setSavedIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('r8_saved_ids');
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
+      try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) ? parsed.filter((id: string) => id !== 'rel-krk-01') : [];
+      } catch (e) {}
     }
-    return ['rel-krk-01'];
+    return [];
   });
 
   // Authenticated User State
@@ -163,14 +184,6 @@ export default function App() {
         setSearchState((prev) => ({ ...prev, city: parsed.cityName! }));
       } else if (parsed.type === 'home') {
         setSearchState((prev) => ({ ...prev, city: 'Anywhere in Poland' }));
-      } else if (parsed.type === 'leave-your-lease') {
-        setIsLeaveLeaseOpen(true);
-      } else if (parsed.type === 'list') {
-        setIsIntakeOpen(true);
-      } else if (parsed.type === 'help') {
-        setIsHelpOpen(true);
-      } else if (parsed.type === 'savings-calculator') {
-        setIsCalculatorOpen(true);
       }
     };
 
@@ -191,30 +204,87 @@ export default function App() {
       document.title = 'Saved Rooms | Relok8';
     } else if (currentRoute.type === 'how-it-works') {
       document.title = 'How a Lease Takeover Works | Relok8';
+    } else if (currentRoute.type === 'help') {
+      document.title = locale === 'pl' ? 'Centrum Pomocy & FAQ | Relok8' : 'Help Center & Renter FAQ | Relok8';
+    } else if (currentRoute.type === 'list') {
+      document.title = locale === 'pl' ? 'Dodaj Ogłoszenie · Cesja Umowy Najmu | Relok8' : 'List Your Place · Zero-Penalty Lease Takeover | Relok8';
+    } else if (currentRoute.type === 'leave-your-lease') {
+      document.title = locale === 'pl' ? 'Wcześniejsza Wyprowadzka z Mieszkania | Relok8' : 'Leave Your Lease Early · Zero Penalties | Relok8';
+    } else if (currentRoute.type === 'savings-calculator') {
+      document.title = locale === 'pl' ? 'Kalkulator Kar i Oszczędności | Relok8' : 'Lease Break Penalty & Savings Calculator | Relok8';
     } else {
       document.title = 'Relok8 — Student & Expat Housing in Poland | No Broker Fees';
     }
-  }, [currentRoute, listings]);
+  }, [currentRoute, listings, locale]);
 
-  // Load listings from backend API
+  // Loading and error states for live Supabase listings
+  const [isLoadingListings, setIsLoadingListings] = useState(false);
+  const [listingError, setListingError] = useState<string | null>(null);
+
+  // Load live listings from Supabase listings table with error handling & realtime updates
   useEffect(() => {
-    api.listings.getAll()
-      .then((serverListings) => {
-        if (serverListings && serverListings.length > 0) {
-          setListings(serverListings);
-          localStorage.setItem('r8_listings', JSON.stringify(serverListings));
-        }
-      })
-      .catch(() => {});
+    let isMounted = true;
+    setIsLoadingListings(true);
 
-    api.auth.getMe()
+    getListings()
+      .then((liveListings) => {
+        if (!isMounted) return;
+        setListings(liveListings);
+        localStorage.setItem('r8_listings', JSON.stringify(liveListings));
+        setListingError(null);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        console.error('Error fetching live data from Supabase listings:', err);
+        setListingError(err?.message || 'Failed to fetch listings');
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingListings(false);
+      });
+
+    // Realtime channel subscription to live updates from the 'listings' table
+    let channel: any = null;
+    if (isSupabaseConfigured()) {
+      try {
+        channel = supabase
+          .channel('public:listings')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'listings' },
+            async () => {
+              try {
+                const refreshed = await getListings();
+                if (isMounted) {
+                  setListings(refreshed);
+                  localStorage.setItem('r8_listings', JSON.stringify(refreshed));
+                }
+              } catch (e) {
+                console.warn('Realtime refresh error:', e);
+              }
+            }
+          )
+          .subscribe();
+      } catch (e) {
+        console.warn('Realtime subscription error:', e);
+      }
+    }
+
+    getCurrentUser()
       .then((user) => {
+        if (!isMounted) return;
         if (user) {
           setCurrentUser(user);
           localStorage.setItem('r8_user', JSON.stringify(user));
         }
       })
       .catch(() => {});
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   // Update search state and sync URL query
@@ -245,7 +315,7 @@ export default function App() {
     setTimeout(() => setIsFiltering(false), 200);
   };
 
-  // Toggle save
+  // Toggle save using Supabase favorites
   const handleToggleSave = (id: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
@@ -259,7 +329,7 @@ export default function App() {
     });
 
     if (isAdding) {
-      api.favorites.add(id).catch(() => {});
+      addFavorite(id).catch(() => {});
       if (!currentUser) {
         showToast(
           locale === 'pl'
@@ -270,32 +340,36 @@ export default function App() {
         showToast(locale === 'pl' ? 'Dodano do zapisanych!' : 'Added to saved!');
       }
     } else {
-      api.favorites.remove(id).catch(() => {});
+      removeFavorite(id).catch(() => {});
       showToast(locale === 'pl' ? 'Usunięto z zapisanych' : 'Removed from saved');
     }
   };
 
+  // Like listing
   const handleLikeListing = async (id: string) => {
     setListings((prev) =>
       prev.map((l) => (l.id === id ? { ...l, likesCount: (l.likesCount || 0) + 1 } : l))
     );
     try {
-      await api.listings.like(id);
+      await likeListing(id);
     } catch (e) {}
   };
 
+  // Create listing in Supabase
   const handleAddListing = async (newListing: Listing) => {
     try {
-      const created = await api.listings.create(newListing);
-      const next = [created, ...listings];
+      const created = await createListing(newListing);
+      const next = [created, ...listings.filter((l) => l.id !== created.id)];
       setListings(next);
       localStorage.setItem('r8_listings', JSON.stringify(next));
-    } catch {
+      showToast(locale === 'pl' ? 'Ogłoszenie zostało dodane do bazy!' : 'Listing published to database successfully!');
+    } catch (err: any) {
+      console.error('Error creating listing:', err);
       const next = [newListing, ...listings];
       setListings(next);
       localStorage.setItem('r8_listings', JSON.stringify(next));
+      showToast(locale === 'pl' ? 'Ogłoszenie zapisane lokalnie.' : 'Listing saved locally.');
     }
-    showToast(locale === 'pl' ? 'Ogłoszenie zostało dodane!' : 'Listing published successfully!');
   };
 
   // Active City Config if on city route
@@ -381,7 +455,7 @@ export default function App() {
 
       {/* Header (§4.1) */}
       <Navbar
-        onOpenListPlace={() => setIsIntakeOpen(true)}
+        onOpenListPlace={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         savedCount={savedIds.length}
         locale={locale}
         onSelectLocale={(newLoc) => {
@@ -390,7 +464,7 @@ export default function App() {
         }}
         theme={theme}
         setTheme={setTheme}
-        onOpenHelp={() => setIsHelpOpen(true)}
+        onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenLogin={() => {
           setLoginReason('Sign up or log in to manage your saved rooms and contact tenants.');
           setIsLoginOpen(true);
@@ -496,6 +570,32 @@ export default function App() {
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
+      ) : currentRoute.type === 'help' ? (
+        <HelpPage
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          locale={locale}
+          onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
+          onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
+        />
+      ) : currentRoute.type === 'list' ? (
+        <ListPage
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          onSubmitListing={handleAddListing}
+          locale={locale}
+        />
+      ) : currentRoute.type === 'leave-your-lease' ? (
+        <LeaveYourLeasePage
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          locale={locale}
+          onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
+          onOpenCesja={() => navigateTo(locale === 'pl' ? '/pl/cesja-template' : '/cesja-template')}
+        />
+      ) : currentRoute.type === 'savings-calculator' ? (
+        <SavingsCalculatorPage
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          locale={locale}
+          onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
+        />
       ) : (
         /* HOME & CITY PAGE TEMPLATE */
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12 text-left">
@@ -541,7 +641,7 @@ export default function App() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs pt-1">
                 <button
                   type="button"
-                  onClick={() => setIsLeaveLeaseOpen(true)}
+                  onClick={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
                   className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
                 >
                   {strings.leavingEarlyQuestion}
@@ -593,10 +693,10 @@ export default function App() {
             />
 
             {/* Grid or Skeletons or Empty/Alerts State */}
-            {isFiltering ? (
-              <ListingGridSkeleton count={6} />
+            {isFiltering || isLoadingListings ? (
+              <ListingGridSkeleton count={8} />
             ) : filteredListings.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 pt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2">
                 {filteredListings.map((listing) => (
                   <ListingCard
                     key={listing.id}
@@ -699,8 +799,8 @@ export default function App() {
 
           {/* Leaving Early Banner */}
           <DepartingTenantBanner
-            onOpenLeaveLease={() => setIsLeaveLeaseOpen(true)}
-            onOpenIntake={() => setIsIntakeOpen(true)}
+            onOpenLeaveLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
+            onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
             locale={locale}
           />
 
@@ -709,9 +809,9 @@ export default function App() {
 
       {/* Footer (§4.6) */}
       <Footer
-        onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
-        onOpenHelp={() => setIsHelpOpen(true)}
-        onOpenSavingsCalculator={() => setIsCalculatorOpen(true)}
+        onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
+        onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
+        onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
         onOpenReportListing={() => {
           showToast(locale === 'pl' ? 'Formularz zgłoszenia ogłoszenia: contact@relok8.online' : 'Listing report request logged');
         }}
@@ -725,8 +825,8 @@ export default function App() {
         savedCount={savedIds.length}
         onNavigateHome={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
         onNavigateSaved={() => navigateTo(locale === 'pl' ? '/pl/saved' : '/saved')}
-        onOpenListRoom={() => setIsIntakeOpen(true)}
-        onOpenHelp={() => setIsHelpOpen(true)}
+        onOpenListRoom={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
+        onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenLogin={() => {
           setLoginReason('Sign up or log in to manage your account.');
           setIsLoginOpen(true);

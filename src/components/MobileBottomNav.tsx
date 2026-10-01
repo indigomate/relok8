@@ -28,10 +28,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 }) => {
   const isExplore = currentPath === 'home' || currentPath === 'city';
   const isSaved = currentPath === 'saved';
+  const isHelp = currentPath === 'help';
+  const isList = currentPath === 'list';
 
   const handleListClick = () => {
     if (onOpenListRoom) onOpenListRoom();
     else if (onOpenIntake) onOpenIntake();
+    else window.location.pathname = locale === 'pl' ? '/pl/list' : '/list';
   };
 
   const handleHomeClick = () => {
@@ -42,6 +45,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const handleSavedClick = () => {
     if (onNavigateSaved) onNavigateSaved();
     else window.location.pathname = locale === 'pl' ? '/pl/saved' : '/saved';
+  };
+
+  const handleHelpClick = () => {
+    if (onOpenHelp) onOpenHelp();
+    else window.location.pathname = locale === 'pl' ? '/pl/help' : '/help';
   };
 
   return (
@@ -84,19 +92,23 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleListClick}
-        className="flex flex-col items-center gap-1 min-w-[52px] sm:min-w-[64px] py-1 cursor-pointer text-indigo-600 hover:text-indigo-700 transition-colors font-semibold"
+        className={`flex flex-col items-center gap-1 min-w-[52px] sm:min-w-[64px] py-1 cursor-pointer transition-colors ${
+          isList ? 'text-indigo-600 font-bold' : 'text-indigo-600 hover:text-indigo-700 font-semibold'
+        }`}
       >
-        <PlusCircle className="w-5 h-5 stroke-[2.2]" />
+        <PlusCircle className={`w-5 h-5 ${isList ? 'stroke-[2.8]' : 'stroke-[2.2]'}`} />
         <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Dodaj lokal' : 'List place'}</span>
       </button>
 
       {/* 4. Help */}
       <button
         type="button"
-        onClick={onOpenHelp}
-        className="flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors"
+        onClick={handleHelpClick}
+        className={`flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
+          isHelp ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+        }`}
       >
-        <HelpCircle className="w-5 h-5 stroke-[1.8]" />
+        <HelpCircle className={`w-5 h-5 ${isHelp ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
         <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Pomoc' : 'Help'}</span>
       </button>
 

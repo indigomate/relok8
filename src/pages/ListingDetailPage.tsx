@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { 
   ArrowLeft, Heart, Bookmark, Share2, MapPin, Check, Shield, 
   Calendar, School, Train, AlertCircle, ChevronLeft, ChevronRight,
-  UserCheck, Building2, Key, Info, CheckCircle2, MessageSquare, Phone
+  UserCheck, Building2, Key, Info, CheckCircle2, MessageSquare, Phone,
+  Maximize2
 } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
+import { ImageLightbox } from '../components/ImageLightbox';
 
 interface ListingDetailPageProps {
   listing: Listing;
@@ -40,6 +42,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const [likesCount, setLikesCount] = useState<number>(listing.likesCount || 24);
   const [copied, setCopied] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   const tenant = listing.currentTenant || (listing as any).departingTenant || {
     name: 'Current Tenant',
@@ -231,7 +234,11 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         {/* Image Gallery */}
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div className="md:col-span-3 relative aspect-[16/10] md:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm group">
+            <div 
+              onClick={() => setIsLightboxOpen(true)}
+              className="md:col-span-3 relative aspect-[16/10] md:aspect-[16/9] rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm group cursor-zoom-in"
+              title="Click to view full size photo"
+            >
               {!photoLoaded[activePhotoIdx] && (
                 <div className="absolute inset-0 bg-slate-200 animate-pulse z-0 flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin opacity-50" />
@@ -242,7 +249,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                 src={listing.images[activePhotoIdx] || listing.images[0]}
                 alt={`${listing.title} photo ${activePhotoIdx + 1}`}
                 onLoad={() => setPhotoLoaded((prev) => ({ ...prev, [activePhotoIdx]: true }))}
-                className={`w-full h-full object-cover transition-opacity duration-300 relative z-1 ${
+                className={`w-full h-full object-cover transition-all duration-300 relative z-1 group-hover:scale-[1.01] ${
                   photoLoaded[activePhotoIdx] ? 'opacity-100' : 'opacity-0'
                 }`}
                 onError={(e) => {
@@ -251,19 +258,41 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                 }}
               />
 
+              {/* View Full Size pill */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsLightboxOpen(true);
+                }}
+                className="absolute top-3 right-3 z-10 px-3 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-900 backdrop-blur-md text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md cursor-pointer pointer-events-auto"
+                aria-label="View full size photo"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>{locale === 'pl' ? 'Pełny rozmiar' : 'Full size'}</span>
+              </button>
+
               {listing.images.length > 1 && (
                 <div className="absolute inset-y-0 inset-x-3 flex items-center justify-between z-10 pointer-events-none">
                   <button
                     type="button"
-                    onClick={() => setActivePhotoIdx((prev) => (prev === 0 ? listing.images.length - 1 : prev - 1))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePhotoIdx((prev) => (prev === 0 ? listing.images.length - 1 : prev - 1));
+                    }}
                     className="w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-lg transition-transform hover:scale-105 pointer-events-auto cursor-pointer"
+                    aria-label="Previous photo"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => setActivePhotoIdx((prev) => (prev === listing.images.length - 1 ? 0 : prev + 1))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePhotoIdx((prev) => (prev === listing.images.length - 1 ? 0 : prev + 1));
+                    }}
                     className="w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-lg transition-transform hover:scale-105 pointer-events-auto cursor-pointer"
+                    aria-label="Next photo"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -518,6 +547,15 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           Contact {tenant.name.split(' ')[0]}
         </button>
       </div>
+
+      {/* Full-size Image Lightbox Modal */}
+      <ImageLightbox
+        images={listing.images}
+        initialIndex={activePhotoIdx}
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        title={listing.title}
+      />
 
     </div>
   );

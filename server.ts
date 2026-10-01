@@ -372,38 +372,9 @@ interface UserRecord {
   createdAt: string;
 }
 
-const inquiries: Inquiry[] = [
-  {
-    id: 'inq-sample-01',
-    listingId: 'rel-waw-01',
-    tenantName: 'Kaspar Becker',
-    tenantEmail: 'kaspar@student.uw.edu.pl',
-    message: 'Hello Matteo, I am taking over an Erasmus exchange at SGH in October. Is the room still available for an in-person viewing this Thursday?',
-    createdAt: new Date(Date.now() - 3600 * 1000 * 4).toISOString(),
-    status: 'viewing_scheduled',
-    replies: [
-      {
-        sender: 'Matteo Rossi (Current Tenant)',
-        text: 'Hi Kaspar! Yes, Thursday at 17:00 works perfectly. Landlord Marek Wiśniewski already approved the lease takeover.',
-        sentAt: new Date(Date.now() - 3600 * 1000 * 2).toISOString()
-      }
-    ]
-  }
-];
+const inquiries: Inquiry[] = [];
 
-const users: UserRecord[] = [
-  {
-    id: 'usr-demo-01',
-    name: 'Kaspar Becker',
-    email: 'kaspar@student.uw.edu.pl',
-    role: 'student',
-    university: 'University of Warsaw (UW)',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-    isVerified: true,
-    savedListingIds: ['rel-waw-01', 'rel-krk-02'],
-    createdAt: new Date().toISOString()
-  }
-];
+const users: UserRecord[] = [];
 
 // Helper to extract user from token or header
 function getAuthUser(req: Request): UserRecord | undefined {

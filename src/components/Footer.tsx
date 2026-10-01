@@ -76,10 +76,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a
                   href="/leave-your-lease"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onOpenLeaveYourLease();
-                  }}
+                  onClick={(e) => handleLink('/leave-your-lease', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerLeaveLease}
@@ -88,14 +85,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a
                   href="/savings-calculator"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (onOpenSavingsCalculator) {
-                      onOpenSavingsCalculator();
-                    } else {
-                      handleLink('/savings-calculator', e);
-                    }
-                  }}
+                  onClick={(e) => handleLink('/savings-calculator', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerSavingsCalc}
@@ -113,10 +103,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a
                   href="/help"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onOpenHelp();
-                  }}
+                  onClick={(e) => handleLink('/help', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerFaq}

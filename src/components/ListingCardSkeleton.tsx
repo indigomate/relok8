@@ -80,12 +80,12 @@ interface ListingGridSkeletonProps {
   count?: number;
 }
 
-export const ListingGridSkeleton: React.FC<ListingGridSkeletonProps> = ({ count = 6 }) => {
+export const ListingGridSkeleton: React.FC<ListingGridSkeletonProps> = ({ count = 8 }) => {
   return (
     <div
       role="status"
       aria-label="Loading available rooms"
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-2"
     >
       {Array.from({ length: count }).map((_, index) => (
         <ListingCardSkeleton key={`skeleton-card-${index}`} />
