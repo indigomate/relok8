@@ -197,6 +197,45 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 space-y-8">
         
+        {/* Apartment Schema.org JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Apartment',
+              name: listing.title,
+              description: listing.description,
+              image: listing.images,
+              address: {
+                '@type': 'PostalAddress',
+                addressLocality: listing.city,
+                streetAddress: listing.address,
+                addressCountry: 'PL'
+              },
+              numberOfRooms: listing.roomType === 'Studio' ? 1 : 2,
+              floorSize: {
+                '@type': 'QuantitativeValue',
+                value: listing.squareMeters,
+                unitCode: 'MTK'
+              },
+              offers: {
+                '@type': 'Offer',
+                price: listing.monthlyRentPLN,
+                priceCurrency: 'PLN',
+                availability: 'https://schema.org/InStock',
+                validFrom: listing.availableDate,
+                priceSpecification: {
+                  '@type': 'UnitPriceSpecification',
+                  price: listing.monthlyRentPLN,
+                  priceCurrency: 'PLN',
+                  unitText: 'MONTH'
+                }
+              }
+            })
+          }}
+        />
+
         {/* Title & Location Header */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">

@@ -75,8 +75,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, locale })
               <strong>{locale === 'pl' ? 'Pytania lub pomoc?' : 'Questions or need assistance?'}</strong>
               <div className="text-slate-500 mt-0.5">
                 {locale === 'pl'
-                  ? 'Skontaktuj się bezpośrednio z założycielem: help@relok8.online'
-                  : 'Contact the founder directly: help@relok8.online'}
+                  ? 'Napisz do nas bezpośrednio: info@relok8.online'
+                  : 'Contact our team directly: info@relok8.online'}
               </div>
             </div>
           </div>

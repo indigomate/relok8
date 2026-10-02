@@ -193,14 +193,15 @@ export const HelpPage: React.FC<HelpPageProps> = ({
     if (!supportMessage || !supportEmail) return;
     setTicketStatus('submitting');
     try {
-      await fetch('/api/inquiries', {
+      await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          listingId: 'support-inquiry',
-          tenantName: supportEmail.split('@')[0],
-          tenantEmail: supportEmail,
-          message: supportMessage
+          name: supportEmail.split('@')[0],
+          email: supportEmail,
+          subject: 'Help Center Inquiry',
+          message: supportMessage,
+          topic: selectedCategory
         })
       });
     } catch (e) {}
@@ -292,7 +293,11 @@ export const HelpPage: React.FC<HelpPageProps> = ({
         </div>
 
         {/* FAQs Accordion List */}
-        <div className="space-y-3">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            {locale === 'pl' ? 'Często zadawane pytania' : 'Frequently asked questions'}
+          </h2>
+          <div className="space-y-3">
           {filteredFaqs.length > 0 ? (
             filteredFaqs.map((faq) => {
               const isOpen = expandedId === faq.id;
@@ -353,63 +358,69 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               </p>
             </div>
           )}
+          </div>
         </div>
 
         {/* Quick Resource Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-          <div
-            onClick={() => navigateTo(locale === 'pl' ? '/pl/cesja-template' : '/cesja-template')}
-            className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <FileCheck className="w-4 h-4" />
+        <div className="space-y-4 pt-4">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            {locale === 'pl' ? 'Wzory dokumentów i przewodniki' : 'Templates and guides'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div
+              onClick={() => navigateTo(locale === 'pl' ? '/pl/cesja-template' : '/cesja-template')}
+              className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <FileCheck className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900">
+                {locale === 'pl' ? 'Wzór Umowy Cesji' : 'Bilingual Cesja Template'}
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {locale === 'pl' ? 'Oficjalny polsko-angielski wzór porozumienia pod Art. 509 KC.' : 'Standardized Polish-English contract template pre-formatted for landlords.'}
+              </p>
             </div>
-            <h4 className="font-bold text-sm text-slate-900">
-              {locale === 'pl' ? 'Wzór Umowy Cesji' : 'Bilingual Cesja Template'}
-            </h4>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              {locale === 'pl' ? 'Oficjalny polsko-angielski wzór porozumienia pod Art. 509 KC.' : 'Standardized Polish-English contract template pre-formatted for landlords.'}
-            </p>
-          </div>
 
-          <div
-            onClick={() => navigateTo(locale === 'pl' ? '/pl/meldunek-guide' : '/meldunek-guide')}
-            className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <BookOpen className="w-4 h-4" />
+            <div
+              onClick={() => navigateTo(locale === 'pl' ? '/pl/meldunek-guide' : '/meldunek-guide')}
+              className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <BookOpen className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900">
+                {locale === 'pl' ? 'Przewodnik po Meldunku' : 'Meldunek & PESEL Guide'}
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {locale === 'pl' ? 'Jak zarejestrować pobyt w urzędzie dzielnicy w 15 minut.' : 'How to register your temporary address and get a PESEL number in 15 minutes.'}
+              </p>
             </div>
-            <h4 className="font-bold text-sm text-slate-900">
-              {locale === 'pl' ? 'Przewodnik po Meldunku' : 'Meldunek & PESEL Guide'}
-            </h4>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              {locale === 'pl' ? 'Jak zarejestrować pobyt w urzędzie dzielnicy w 15 minut.' : 'How to register your temporary address and get a PESEL number in 15 minutes.'}
-            </p>
-          </div>
 
-          <div
-            onClick={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
-            className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
+            <div
+              onClick={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
+              className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900">
+                {locale === 'pl' ? 'Kalkulator Oszczędności' : 'Penalty Calculator'}
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {locale === 'pl' ? 'Oblicz ile zaoszczędzisz przekazując umowę zamiast jej zrywania.' : 'Calculate exact deposit and rent liabilities saved by executing a lease takeover.'}
+              </p>
             </div>
-            <h4 className="font-bold text-sm text-slate-900">
-              {locale === 'pl' ? 'Kalkulator Oszczędności' : 'Penalty Calculator'}
-            </h4>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              {locale === 'pl' ? 'Oblicz ile zaoszczędzisz przekazując umowę zamiast jej zrywania.' : 'Calculate exact deposit and rent liabilities saved by executing a lease takeover.'}
-            </p>
           </div>
         </div>
 
         {/* Contact Support Direct Ticket Box */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs">
           <div className="space-y-1">
-            <h3 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+            <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
               <Mail className="w-5 h-5 text-indigo-600" />
               <span>{locale === 'pl' ? 'Nadal potrzebujesz pomocy?' : 'Still have a question?'}</span>
-            </h3>
+            </h2>
             <p className="text-xs sm:text-sm text-slate-600">
               {locale === 'pl'
                 ? 'Nasz zespół odpowiada na zapytania studentów i ekspatów w ciągu 1-2 godzin w godzinach roboczych.'
@@ -470,7 +481,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
                 <span className="text-xs text-slate-500">
-                  Direct founder contact: <a href="mailto:help@relok8.online" className="text-indigo-600 font-semibold underline">help@relok8.online</a>
+                  Direct contact: <a href="mailto:info@relok8.online" className="text-indigo-600 font-semibold underline">info@relok8.online</a>
                 </span>
                 <button
                   type="submit"

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Globe, Menu, User, Heart, Sun, Moon, HelpCircle, 
+  Globe, Menu, User, Heart, HelpCircle, 
   MessageSquare, Home, Settings, LogOut, Check
 } from 'lucide-react';
 import { Relok8Logo } from './BrandLogo';
@@ -14,6 +14,9 @@ export interface UserProfile {
   email: string;
   role?: string;
   avatar?: string;
+  phone?: string;
+  university?: string;
+  isVerified?: boolean;
 }
 
 interface NavbarProps {
@@ -21,8 +24,8 @@ interface NavbarProps {
   savedCount: number;
   locale: SupportedLocale;
   onSelectLocale: (locale: SupportedLocale) => void;
-  theme: 'dark' | 'light';
-  setTheme: (th: 'dark' | 'light') => void;
+  theme?: 'dark' | 'light';
+  setTheme?: (th: 'dark' | 'light') => void;
   onOpenHelp: () => void;
   onOpenLogin: () => void;
   currentUser?: UserProfile | null;
@@ -77,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         
         {/* Left: Brand Logo */}
         <a
-          href="/"
+          href={locale === 'pl' ? '/pl' : '/'}
           onClick={(e) => {
             e.preventDefault();
             window.history.pushState({}, '', locale === 'pl' ? '/pl' : '/');
@@ -339,33 +342,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
 
-                {/* Dark mode toggle & Logout (§4.1: dark-mode toggle lives in account menu) */}
-                <div className="p-2 space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-2">
-                      {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4 text-slate-400" />}
-                      <span>{theme === 'dark' ? strings.lightMode : strings.darkMode}</span>
-                    </div>
-                  </button>
-
-                  {currentUser && onLogout && (
+                {/* Logout (§4.1) */}
+                {currentUser && onLogout && (
+                  <div className="p-2 space-y-1">
                     <button
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
                         onLogout();
                       }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>{strings.logOut}</span>
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

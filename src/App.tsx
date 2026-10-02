@@ -39,6 +39,7 @@ import { HelpPage } from './pages/HelpPage';
 import { ListPage } from './pages/ListPage';
 import { LeaveYourLeasePage } from './pages/LeaveYourLeasePage';
 import { SavingsCalculatorPage } from './pages/SavingsCalculatorPage';
+import { AccountPage } from './pages/AccountPage';
 
 import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
@@ -191,30 +192,240 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [locale]);
 
-  // Sync title and SEO meta
+  // Dynamic SEO Synchronization (Titles, Meta Descriptions, Canonical URLs & OpenGraph)
   useEffect(() => {
+    let pageTitle = 'Relok8 — Student & Expat Housing in Poland | No Broker Fees';
+    let metaDesc = 'Direct lease takeovers under Polish Civil Code Art. 509 KC. Find verified rooms in Warsaw, Kraków, Wrocław, Gdańsk & Lublin with 0 PLN broker fees and guaranteed meldunek.';
+    const canonicalPath = currentRoute.path || (locale === 'pl' ? '/pl' : '/');
+    const canonicalUrl = `https://relok8.online${canonicalPath === '/' ? '' : canonicalPath}`;
+
     if (currentRoute.type === 'city' && currentRoute.cityName) {
-      document.title = `Rooms in ${currentRoute.cityName} · No Broker Fees | Relok8`;
+      pageTitle = locale === 'pl'
+        ? `Pokoje w ${currentRoute.cityName} · Bez Prowizji Agencyjnej | Relok8`
+        : `Rooms in ${currentRoute.cityName} · No Broker Fees · Lease Takeovers | Relok8`;
+      metaDesc = locale === 'pl'
+        ? `Wynajmij pokój lub mieszkanie w ${currentRoute.cityName}. Przejęcie aktywnej umowy najmu (Art. 509 KC), 0 zł prowizji i gwarantowany meldunek.`
+        : `Find student and expat rooms for rent in ${currentRoute.cityName}, Poland. Landlord-approved lease transfers with 0 PLN agency commissions.`;
     } else if (currentRoute.type === 'listing-detail' && currentRoute.listingId) {
       const found = listings.find((l) => l.id === currentRoute.listingId);
       if (found) {
-        document.title = `${found.title} · ${found.city} | Relok8`;
+        pageTitle = `${found.title} · ${found.city} | Relok8`;
+        metaDesc = `${found.roomType} in ${found.district}, ${found.city}. ${formatPLN(found.monthlyRentPLN, locale)}/month. Landlord-approved lease takeover under Art. 509 KC.`;
       }
     } else if (currentRoute.type === 'saved') {
-      document.title = 'Saved Rooms | Relok8';
+      pageTitle = locale === 'pl' ? 'Zapisane Pokoje i Mieszkania | Relok8' : 'Saved Rooms & Shortlist | Relok8';
+      metaDesc = 'Compare your saved student apartments and lease transfers across Poland.';
     } else if (currentRoute.type === 'how-it-works') {
-      document.title = 'How a Lease Takeover Works | Relok8';
+      pageTitle = locale === 'pl' ? 'Jak Działa Cesja Umowy Najmu? | Relok8' : 'How a Lease Takeover Works in Poland (Art. 509 KC) | Relok8';
+      metaDesc = 'Step-by-step guide to peer-to-peer lease assignments in Poland. Exit early without deposit loss and move into pre-approved rooms with 0 broker fees.';
     } else if (currentRoute.type === 'help') {
-      document.title = locale === 'pl' ? 'Centrum Pomocy & FAQ | Relok8' : 'Help Center & Renter FAQ | Relok8';
+      pageTitle = locale === 'pl' ? 'Centrum Pomocy & FAQ Najemcy | Relok8' : 'Help Center & Renter FAQ · Lease Transfers | Relok8';
+      metaDesc = 'Answers to frequent questions about Art. 509 KC lease assignments, deposit return protocols, meldunek registration, and avoiding early exit penalties.';
     } else if (currentRoute.type === 'list') {
-      document.title = locale === 'pl' ? 'Dodaj Ogłoszenie · Cesja Umowy Najmu | Relok8' : 'List Your Place · Zero-Penalty Lease Takeover | Relok8';
+      pageTitle = locale === 'pl' ? 'Dodaj Ogłoszenie · Cesja Umowy Najmu | Relok8' : 'List Your Place · Zero-Penalty Lease Takeover | Relok8';
+      metaDesc = 'Moving out early? List your room in Warsaw, Kraków, or Wrocław for free and transfer your lease without losing your security deposit.';
     } else if (currentRoute.type === 'leave-your-lease') {
-      document.title = locale === 'pl' ? 'Wcześniejsza Wyprowadzka z Mieszkania | Relok8' : 'Leave Your Lease Early · Zero Penalties | Relok8';
+      pageTitle = locale === 'pl' ? 'Wcześniejsza Wyprowadzka z Mieszkania | Relok8' : 'Leave Your Lease Early in Poland · Zero Penalties | Relok8';
+      metaDesc = 'Learn how to legally exit a fixed-term lease in Poland without penalty fees using Article 509 KC lease assignment.';
     } else if (currentRoute.type === 'savings-calculator') {
-      document.title = locale === 'pl' ? 'Kalkulator Kar i Oszczędności | Relok8' : 'Lease Break Penalty & Savings Calculator | Relok8';
-    } else {
-      document.title = 'Relok8 — Student & Expat Housing in Poland | No Broker Fees';
+      pageTitle = locale === 'pl' ? 'Kalkulator Kar i Oszczędności Najmu | Relok8' : 'Lease Break Penalty & Savings Calculator | Relok8';
+      metaDesc = 'Calculate exact financial liabilities avoided by executing a lease handover instead of breaking your contract unilaterally in Poland.';
+    } else if (currentRoute.type === 'meldunek-guide') {
+      pageTitle = locale === 'pl' ? 'Poradnik Meldunku dla Studentów i Obcokrajowców | Relok8' : 'Poland Meldunek Guide · Address Registration & PESEL | Relok8';
+      metaDesc = 'Complete step-by-step guide for international students and expats registering their address (meldunek) and obtaining a PESEL number in Poland.';
+    } else if (currentRoute.type === 'safety-guide') {
+      pageTitle = locale === 'pl' ? 'Zasady Bezpiecznego Najmu w Polsce | Relok8' : 'Renter Safety Guide & Anti-Scam Checklist | Relok8';
+      metaDesc = 'How to verify rental contracts, avoid deposit scams, and secure landlord approvals in Poland.';
+    } else if (currentRoute.type === 'cesja-template') {
+      pageTitle = locale === 'pl' ? 'Wzór Umowy Cesji Najmu (Art. 509 KC) | Relok8' : 'Tripartite Lease Assignment Template (Art. 509 KC) | Relok8';
+      metaDesc = 'Download verified bilingual Polish-English lease takeover contract template compliant with Article 509 of the Polish Civil Code.';
+    } else if (currentRoute.type === 'account') {
+      pageTitle = locale === 'pl' ? 'Konto Użytkownika | Relok8' : 'User Account & Profile | Relok8';
+      metaDesc = 'Manage your saved rooms, lease transfer listings, and account settings on Relok8.';
     }
+
+    document.title = pageTitle;
+
+    // Update canonical link
+    let canonicalTag = document.querySelector('link[rel="canonical"]');
+    if (!canonicalTag) {
+      canonicalTag = document.createElement('link');
+      canonicalTag.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalTag);
+    }
+    canonicalTag.setAttribute('href', canonicalUrl);
+
+    // Update meta description
+    let metaDescTag = document.querySelector('meta[name="description"]');
+    if (!metaDescTag) {
+      metaDescTag = document.createElement('meta');
+      metaDescTag.setAttribute('name', 'description');
+      document.head.appendChild(metaDescTag);
+    }
+    metaDescTag.setAttribute('content', metaDesc);
+
+    // Update OpenGraph tags
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', pageTitle);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', metaDesc);
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
+
+    // Update Twitter tags
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute('content', pageTitle);
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (twDesc) twDesc.setAttribute('content', metaDesc);
+
+    // Dynamic Schema.org Structured Data (JSON-LD)
+    const schemaGraph: any[] = [
+      {
+        '@type': 'BreadcrumbList',
+        'itemListElement': [
+          {
+            '@type': 'ListItem',
+            'position': 1,
+            'name': 'Home',
+            'item': 'https://relok8.online' + (locale === 'pl' ? '/pl' : '')
+          },
+          ...(currentRoute.type === 'city' && currentRoute.cityName
+            ? [
+                {
+                  '@type': 'ListItem',
+                  'position': 2,
+                  'name': currentRoute.cityName,
+                  'item': canonicalUrl
+                }
+              ]
+            : currentRoute.type === 'listing-detail' && currentRoute.listingId
+            ? [
+                {
+                  '@type': 'ListItem',
+                  'position': 2,
+                  'name': 'Listings',
+                  'item': 'https://relok8.online' + (locale === 'pl' ? '/pl' : '')
+                },
+                {
+                  '@type': 'ListItem',
+                  'position': 3,
+                  'name': pageTitle,
+                  'item': canonicalUrl
+                }
+              ]
+            : currentRoute.type !== 'home'
+            ? [
+                {
+                  '@type': 'ListItem',
+                  'position': 2,
+                  'name': pageTitle.split('·')[0].split('|')[0].trim(),
+                  'item': canonicalUrl
+                }
+              ]
+            : [])
+        ]
+      }
+    ];
+
+    if (currentRoute.type === 'listing-detail' && currentRoute.listingId) {
+      const found = listings.find((l) => l.id === currentRoute.listingId);
+      if (found) {
+        schemaGraph.push({
+          '@type': 'Apartment',
+          'name': found.title,
+          'description': found.description,
+          'url': canonicalUrl,
+          'image': found.images,
+          'address': {
+            '@type': 'PostalAddress',
+            'streetAddress': found.address,
+            'addressLocality': found.city,
+            'addressCountry': 'PL'
+          },
+          'offers': {
+            '@type': 'Offer',
+            'price': found.monthlyRentPLN,
+            'priceCurrency': 'PLN',
+            'availability': 'https://schema.org/InStock',
+            'validFrom': found.availableDate
+          }
+        });
+      }
+    } else if (currentRoute.type === 'help') {
+      schemaGraph.push({
+        '@type': 'FAQPage',
+        'mainEntity': [
+          {
+            '@type': 'Question',
+            'name': 'What is a lease transfer (Cesja umowy najmu) under Polish law?',
+            'acceptedAnswer': {
+              '@type': 'Answer',
+              'text': 'A Cesja umowy najmu is a legal contract assignment pursuant to Article 509 of the Polish Civil Code (Kodeks Cywilny) transferring tenant obligations to a replacement tenant with landlord consent.'
+            }
+          },
+          {
+            '@type': 'Question',
+            'name': 'Can foreign students and expats register their address (Meldunek) to get a PESEL?',
+            'acceptedAnswer': {
+              '@type': 'Answer',
+              'text': 'Yes. Every foreign citizen staying in Poland over 30 days can register temporary residence (meldunek czasowy) at the local district office (Urząd Dzielnicy) and receive a PESEL number for free.'
+            }
+          },
+          {
+            '@type': 'Question',
+            'name': 'How is the security deposit settled during a lease transfer?',
+            'acceptedAnswer': {
+              '@type': 'Answer',
+              'text': 'The incoming tenant reimburses the departing tenant directly upon signing the tripartite handover protocol, avoiding landlord cancellation penalties.'
+            }
+          }
+        ]
+      });
+    } else if (currentRoute.type === 'how-it-works' || currentRoute.type === 'leave-your-lease') {
+      schemaGraph.push({
+        '@type': 'HowTo',
+        'name': 'How to Transfer a Residential Lease in Poland (Art. 509 KC)',
+        'description': 'Step-by-step procedure to legally hand over an active apartment lease in Poland without losing your deposit.',
+        'step': [
+          {
+            '@type': 'HowToStep',
+            'position': 1,
+            'name': 'Obtain Landlord Written Consent',
+            'text': 'Notify your landlord that you will introduce a replacement tenant on the same contractual terms.'
+          },
+          {
+            '@type': 'HowToStep',
+            'position': 2,
+            'name': 'List Your Room on Relok8',
+            'text': 'Publish a free room listing to connect with verified students and expats.'
+          },
+          {
+            '@type': 'HowToStep',
+            'position': 3,
+            'name': 'Execute Tripartite Cesja Protocol',
+            'text': 'Sign the bilingual tripartite agreement under Polish Civil Code Art. 509.'
+          },
+          {
+            '@type': 'HowToStep',
+            'position': 4,
+            'name': 'Deposit Handover Inspection',
+            'text': 'The incoming tenant reimburses your security deposit upon key handover.'
+          }
+        ]
+      });
+    }
+
+    let schemaTag = document.getElementById('r8-dynamic-schema') as HTMLScriptElement | null;
+    if (!schemaTag) {
+      schemaTag = document.createElement('script');
+      schemaTag.id = 'r8-dynamic-schema';
+      schemaTag.type = 'application/ld+json';
+      document.head.appendChild(schemaTag);
+    }
+    schemaTag.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@graph': schemaGraph
+    });
   }, [currentRoute, listings, locale]);
 
   // Loading and error states for live Supabase listings
@@ -443,7 +654,7 @@ export default function App() {
   }, [listings, activeCityConfig, searchState.city, filterValues]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen w-full overflow-x-hidden bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
       {/* Toast Notification */}
       {toastMessage && (
@@ -596,6 +807,30 @@ export default function App() {
           locale={locale}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
+      ) : currentRoute.type === 'account' ? (
+        <AccountPage
+          currentUser={currentUser}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          locale={locale}
+          savedListings={listings.filter((l) => savedIds.includes(l.id))}
+          onSelectListing={(l) => navigateToListing(l.id, l.title, locale)}
+          onRemoveSaved={(id) => handleToggleSave(id)}
+          onRequireLogin={() => {
+            setLoginReason(locale === 'pl' ? 'Zaloguj się, aby zarządzać swoim kontem.' : 'Sign in to access your account dashboard.');
+            setIsLoginOpen(true);
+          }}
+          onUpdateUser={(updated) => {
+            setCurrentUser(updated);
+            showToast(locale === 'pl' ? 'Profil zaktualizowany' : 'Profile updated');
+          }}
+          onOpenListPlace={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
+          onLogout={() => {
+            localStorage.removeItem('r8_user');
+            setCurrentUser(null);
+            showToast(locale === 'pl' ? 'Wylogowano' : 'Logged out');
+            navigateTo(locale === 'pl' ? '/pl' : '/');
+          }}
+        />
       ) : (
         /* HOME & CITY PAGE TEMPLATE */
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12 text-left">
@@ -656,6 +891,9 @@ export default function App() {
 
           {/* Rooms Grid Section */}
           <section id="rooms-grid" className="space-y-6 pt-4 scroll-mt-24">
+            <h2 className="sr-only">
+              {locale === 'pl' ? 'Dostępne pokoje i mieszkania na cesję w Polsce' : 'Available student rooms and lease takeovers in Poland'}
+            </h2>
             
             {/* Unified Filter Bar (§4.4) */}
             <FiltersBar
@@ -750,9 +988,9 @@ export default function App() {
           {/* How It Works Section (§1 principles: Housing First, placed after rooms) */}
           <section id="how-it-works-section" className="pt-10 border-t border-slate-200 space-y-6 scroll-mt-24">
             <div className="text-center max-w-2xl mx-auto space-y-1.5">
-              <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                 {strings.howItWorksTitle}
-              </h3>
+              </h2>
               <p className="text-xs sm:text-sm text-slate-600">
                 {strings.howItWorksSub}
               </p>
@@ -763,9 +1001,9 @@ export default function App() {
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
                   1
                 </div>
-                <h4 className="font-bold text-sm text-slate-900">
+                <h3 className="font-bold text-sm text-slate-900">
                   {strings.step1Title}
-                </h4>
+                </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {strings.step1Desc}
                 </p>
@@ -775,9 +1013,9 @@ export default function App() {
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
                   2
                 </div>
-                <h4 className="font-bold text-sm text-slate-900">
+                <h3 className="font-bold text-sm text-slate-900">
                   {strings.step2Title}
-                </h4>
+                </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {strings.step2Desc}
                 </p>
@@ -787,9 +1025,9 @@ export default function App() {
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
                   3
                 </div>
-                <h4 className="font-bold text-sm text-slate-900">
+                <h3 className="font-bold text-sm text-slate-900">
                   {strings.step3Title}
-                </h4>
+                </h3>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {strings.step3Desc}
                 </p>
@@ -813,7 +1051,7 @@ export default function App() {
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
         onOpenReportListing={() => {
-          showToast(locale === 'pl' ? 'Formularz zgłoszenia ogłoszenia: contact@relok8.online' : 'Listing report request logged');
+          showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Report listing sent to info@relok8.online');
         }}
         locale={locale}
         theme={theme}
@@ -825,6 +1063,7 @@ export default function App() {
         savedCount={savedIds.length}
         onNavigateHome={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
         onNavigateSaved={() => navigateTo(locale === 'pl' ? '/pl/saved' : '/saved')}
+        onNavigateAccount={() => navigateTo(locale === 'pl' ? '/pl/account' : '/account')}
         onOpenListRoom={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenLogin={() => {
@@ -832,6 +1071,7 @@ export default function App() {
           setIsLoginOpen(true);
         }}
         locale={locale}
+        currentUser={currentUser}
       />
 
       {/* Modals */}

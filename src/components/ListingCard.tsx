@@ -95,8 +95,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
         <img
           src={listing.images[currentImgIndex] || listing.images[0]}
-          alt={listing.title}
+          alt={`${listing.title} - ${listing.roomType} in ${listing.district}, ${listing.city} Poland`}
           loading="lazy"
+          decoding="async"
+          width="400"
+          height="300"
           onLoad={() => setIsImgLoaded(true)}
           className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
             isImgLoaded ? 'opacity-100' : 'opacity-0'

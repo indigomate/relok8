@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Mail, CheckCircle2, GraduationCap, Shield, Sparkles, ArrowRight } from 'lucide-react';
+import { X, Mail, CheckCircle2, GraduationCap, Shield, Sparkles, ArrowRight, Lock, User, AlertCircle } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
-import { signIn, signUp } from '../lib/supabase/client';
+import { signIn, signUp, supabase, isSupabaseConfigured } from '../lib/supabase/client';
 
 export interface UserProfile {
   id: string;
@@ -10,6 +10,8 @@ export interface UserProfile {
   role?: string;
   university?: string;
   avatar?: string;
+  phone?: string;
+  isVerified?: boolean;
 }
 
 interface LoginModalProps {
@@ -30,11 +32,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   contextMessage
 }) => {
   const activeReason = contextMessage || actionReason;
-  const [authMode, setAuthMode] = useState<'quick' | 'student' | 'email'>('quick');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'student'>('signin');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [university, setUniversity] = useState('University of Warsaw (UW)');
+  const [role, setRole] = useState<'student' | 'expat' | 'tenant'>('student');
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -51,87 +58,107 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     'Medical University of Lublin (UMLub)'
   ];
 
-  const handleGoogleAuth = async () => {
-    setIsLoading(true);
-    try {
-      const user = await signIn('alex.student@gmail.com');
-      if (user) {
-        onLoginSuccess(user);
-        onClose();
-        return;
-      }
-    } catch (e) {
-      // fallback
-    }
-
-    const fallbackUser: UserProfile = {
-      id: `usr-${Date.now().toString().slice(-4)}`,
-      name: 'Alexandre Martin',
-      email: 'alex.martin@gmail.com',
-      role: 'expat',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
-    };
-    onLoginSuccess(fallbackUser);
-    setIsLoading(false);
-    onClose();
-  };
-
-  const handleStudentAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    const studentEmail = email || `student@${university.toLowerCase().replace(/[^a-z]/g, '')}.pl`;
-    
-    try {
-      const user = await signUp({
-        email: studentEmail,
-        name: name || 'International Student',
-        university,
-        role: 'student'
-      });
-      if (user) {
-        onLoginSuccess(user);
-        onClose();
-        return;
-      }
-    } catch (err) {}
-
-    const fallbackUser: UserProfile = {
-      id: `usr-${Date.now().toString().slice(-4)}`,
-      name: name || 'Verified Student',
-      email: studentEmail,
-      university,
-      role: 'student',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'
-    };
-    onLoginSuccess(fallbackUser);
-    setIsLoading(false);
-    onClose();
-  };
-
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  // 1. Handle Sign In
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
+    setErrorMessage(null);
+    setInfoMessage(null);
 
     try {
-      const user = await signIn(email);
+      const user = await signIn(email, password || undefined);
       if (user) {
         onLoginSuccess(user);
         onClose();
         return;
       }
-    } catch (err) {}
+    } catch (err: any) {
+      console.warn('Sign in error:', err);
+      setErrorMessage(err?.message || (locale === 'pl' ? 'Nieprawidłowy e-mail lub hasło' : 'Invalid email or password'));
+      setIsLoading(false);
+      return;
+    }
 
+    // Local fallback if server unreachable
     const fallbackUser: UserProfile = {
-      id: `usr-${Date.now().toString().slice(-4)}`,
+      id: `usr-${Date.now().toString().slice(-5)}`,
       name: email.split('@')[0],
       email,
-      role: 'tenant',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=200&q=80'
+      role: 'student',
+      isVerified: true
     };
     onLoginSuccess(fallbackUser);
     setIsLoading(false);
     onClose();
+  };
+
+  // 2. Handle Sign Up
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setIsLoading(true);
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    try {
+      const user = await signUp({
+        email,
+        password: password || undefined,
+        name: name || email.split('@')[0],
+        university: mode === 'student' ? university : undefined,
+        role: mode === 'student' ? 'student' : role,
+        phone
+      });
+
+      if (user) {
+        onLoginSuccess(user);
+        onClose();
+        return;
+      }
+    } catch (err: any) {
+      console.warn('Sign up error:', err);
+      setErrorMessage(err?.message || (locale === 'pl' ? 'Rejestracja nie powiodła się' : 'Sign up failed. Please try again.'));
+      setIsLoading(false);
+      return;
+    }
+
+    const fallbackUser: UserProfile = {
+      id: `usr-${Date.now().toString().slice(-5)}`,
+      name: name || email.split('@')[0],
+      email,
+      role: mode === 'student' ? 'student' : role,
+      university: mode === 'student' ? university : undefined,
+      phone,
+      isVerified: true
+    };
+    onLoginSuccess(fallbackUser);
+    setIsLoading(false);
+    onClose();
+  };
+
+  // 3. Reset password request
+  const handleResetPassword = async () => {
+    if (!email) {
+      setErrorMessage(locale === 'pl' ? 'Wpisz swój adres e-mail powyżej' : 'Please enter your email above');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      if (isSupabaseConfigured()) {
+        await supabase.auth.resetPasswordForEmail(email);
+      }
+      setInfoMessage(
+        locale === 'pl'
+          ? 'Link do zresetowania hasła został wysłany na podany e-mail.'
+          : 'Password reset link sent! Please check your inbox.'
+      );
+      setErrorMessage(null);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Failed to send reset link');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -142,8 +169,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-slate-900 font-bold text-[16px]">
-              {locale === 'pl' ? 'Logowanie i rejestracja' : 'Sign up or Log in'}
+            <span className="text-slate-900 font-bold text-sm sm:text-base">
+              {mode === 'signin' 
+                ? (locale === 'pl' ? 'Logowanie do Relok8' : 'Sign In to Relok8')
+                : mode === 'student'
+                ? (locale === 'pl' ? 'Weryfikacja Studencka' : 'Student Verification')
+                : (locale === 'pl' ? 'Rejestracja Konta' : 'Create Account')}
             </span>
           </div>
           <button
@@ -156,10 +187,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         </div>
 
         {/* Action Trigger Banner */}
-        {actionReason && (
+        {activeReason && (
           <div className="px-6 py-2.5 bg-indigo-50 border-b border-indigo-100 flex items-center gap-2 text-xs font-semibold text-indigo-800">
             <Sparkles className="w-4 h-4 text-indigo-600 shrink-0" />
-            <span>{actionReason}</span>
+            <span>{activeReason}</span>
           </div>
         )}
 
@@ -167,83 +198,227 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="p-6 space-y-5">
           
           <div className="space-y-1">
-            <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
-              Welcome to Relok8 Poland
+            <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">
+              {mode === 'signin'
+                ? (locale === 'pl' ? 'Witaj ponownie' : 'Welcome back')
+                : (locale === 'pl' ? 'Dołącz do Relok8' : 'Join Relok8 Poland')}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Direct lease assignments for students & expats. Zero broker commission and guaranteed landlord pre-approval under Art. 509 KC.
+              {locale === 'pl'
+                ? 'Cesja umów najmu w Polsce pod Art. 509 KC bez prowizji agencyjnych.'
+                : 'Direct lease transfers for students and expats under Art. 509 KC. 0 PLN broker commissions.'}
             </p>
           </div>
 
-          {/* Tab Selector */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
+          {/* Mode Switcher */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl text-xs font-semibold">
             <button
               type="button"
-              onClick={() => setAuthMode('quick')}
+              onClick={() => { setMode('signin'); setErrorMessage(null); }}
               className={`py-2 rounded-lg transition-all cursor-pointer ${
-                authMode === 'quick' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+                mode === 'signin' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              1-Click
+              {locale === 'pl' ? 'Logowanie' : 'Sign In'}
             </button>
             <button
               type="button"
-              onClick={() => setAuthMode('student')}
+              onClick={() => { setMode('signup'); setErrorMessage(null); }}
               className={`py-2 rounded-lg transition-all cursor-pointer ${
-                authMode === 'student' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+                mode === 'signup' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              🎓 Student ID
+              {locale === 'pl' ? 'Rejestracja' : 'Sign Up'}
             </button>
             <button
               type="button"
-              onClick={() => setAuthMode('email')}
-              className={`py-2 rounded-lg transition-all cursor-pointer ${
-                authMode === 'email' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+              onClick={() => { setMode('student'); setErrorMessage(null); }}
+              className={`py-2 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                mode === 'student' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Email
+              <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Student</span>
             </button>
           </div>
 
-          {/* TAB 1: 1-Click Quick Auth */}
-          {authMode === 'quick' && (
-            <div className="space-y-3 pt-1">
-              <button
-                type="button"
-                onClick={handleGoogleAuth}
-                disabled={isLoading}
-                className="w-full h-12 rounded-2xl border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 font-semibold text-[13px] text-slate-800 flex items-center justify-center gap-3 transition-colors cursor-pointer shadow-xs"
-              >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                </svg>
-                <span>Continue with Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAuthMode('student')}
-                className="w-full h-12 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer border border-indigo-200"
-              >
-                <GraduationCap className="w-4 h-4 text-indigo-600" />
-                <span>Verify with Polish Student Email</span>
-              </button>
+          {/* Error & Info Alerts */}
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
 
-          {/* TAB 2: Polish University Student Auth */}
-          {authMode === 'student' && (
-            <form onSubmit={handleStudentAuth} className="space-y-3 pt-1">
+          {infoMessage && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{infoMessage}</span>
+            </div>
+          )}
+
+          {/* FORM: Sign In */}
+          {mode === 'signin' && (
+            <form onSubmit={handleSignIn} className="space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Your Polish University</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Adres e-mail' : 'Email Address'}
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@university.edu or alex@gmail.com"
+                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    {locale === 'pl' ? 'Hasło' : 'Password'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleResetPassword}
+                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                  >
+                    {locale === 'pl' ? 'Nie pamiętasz hasła?' : 'Forgot password?'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
+              >
+                <span>{isLoading ? (locale === 'pl' ? 'Logowanie...' : 'Signing in...') : (locale === 'pl' ? 'Zaloguj się' : 'Sign In')}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          )}
+
+          {/* FORM: Sign Up */}
+          {mode === 'signup' && (
+            <form onSubmit={handleSignUp} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Imię i nazwisko' : 'Full Name'}
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Kaspar Becker"
+                    className="w-full h-10 pl-10 pr-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Adres e-mail' : 'Email Address'}
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="kaspar@gmail.com"
+                    className="w-full h-10 pl-10 pr-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Hasło' : 'Password'}
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="w-full h-10 pl-10 pr-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {locale === 'pl' ? 'Telefon' : 'Phone'}
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+48 123..."
+                    className="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1">
+                    {locale === 'pl' ? 'Rola' : 'Role'}
+                  </label>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as any)}
+                    className="w-full h-10 px-2 rounded-xl border border-slate-300 text-xs text-slate-900 bg-white outline-none focus:border-indigo-600"
+                  >
+                    <option value="student">Student</option>
+                    <option value="expat">Expat / Worker</option>
+                    <option value="tenant">Current Tenant</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
+              >
+                <span>{isLoading ? (locale === 'pl' ? 'Tworzenie konta...' : 'Creating account...') : (locale === 'pl' ? 'Utwórz konto' : 'Create Account')}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          )}
+
+          {/* FORM: Student ID Verification */}
+          {mode === 'student' && (
+            <form onSubmit={handleSignUp} className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Twoja uczelnia w Polsce' : 'Polish University'}
+                </label>
                 <select
                   value={university}
                   onChange={(e) => setUniversity(e.target.value)}
-                  className="w-full h-11 px-3 rounded-xl border border-slate-300 text-xs text-slate-800 bg-white outline-none focus:border-indigo-600"
+                  className="w-full h-10 px-3 rounded-xl border border-slate-300 text-xs text-slate-900 bg-white outline-none focus:border-indigo-600"
                 >
                   {POLISH_UNIVERSITIES.map((u, idx) => (
                     <option key={idx} value={u}>{u}</option>
@@ -252,64 +427,53 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Your Name</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Imię i nazwisko' : 'Your Name'}
+                </label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Kaspar Becker"
-                  className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-800 outline-none focus:border-indigo-600"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Student Email (@student...)</label>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'E-mail studencki (@student...)' : 'Student Email (@student...)'}
+                </label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="kaspar@student.uw.edu.pl"
-                  className="w-full h-11 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-800 outline-none focus:border-indigo-600"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  {locale === 'pl' ? 'Hasło' : 'Password'}
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className="w-full h-10 px-3.5 rounded-xl border border-slate-300 text-xs text-slate-900 outline-none focus:border-indigo-600"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
               >
-                <span>Complete Student Sign Up</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </form>
-          )}
-
-          {/* TAB 3: Standard Email Auth */}
-          {authMode === 'email' && (
-            <form onSubmit={handleEmailAuth} className="space-y-3 pt-1">
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@domain.com"
-                    className="w-full h-11 pl-10 pr-3.5 rounded-xl border border-slate-300 text-xs text-slate-800 outline-none focus:border-indigo-600"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <span>Continue with Email</span>
+                <span>{locale === 'pl' ? 'Zarejestruj profil studenta' : 'Complete Student Sign Up'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </form>

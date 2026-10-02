@@ -8,11 +8,13 @@ interface MobileBottomNavProps {
   isLoggedIn?: boolean;
   onNavigateHome?: () => void;
   onNavigateSaved?: () => void;
+  onNavigateAccount?: () => void;
   onOpenIntake?: () => void;
   onOpenListRoom?: () => void;
   onOpenLogin: () => void;
   onOpenHelp?: () => void;
   locale: SupportedLocale;
+  currentUser?: any | null;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
@@ -20,16 +22,19 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   savedCount,
   onNavigateHome,
   onNavigateSaved,
+  onNavigateAccount,
   onOpenIntake,
   onOpenListRoom,
   onOpenLogin,
   onOpenHelp,
-  locale
+  locale,
+  currentUser
 }) => {
   const isExplore = currentPath === 'home' || currentPath === 'city';
   const isSaved = currentPath === 'saved';
   const isHelp = currentPath === 'help';
   const isList = currentPath === 'list';
+  const isAccount = currentPath === 'account';
 
   const handleListClick = () => {
     if (onOpenListRoom) onOpenListRoom();
@@ -50,6 +55,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const handleHelpClick = () => {
     if (onOpenHelp) onOpenHelp();
     else window.location.pathname = locale === 'pl' ? '/pl/help' : '/help';
+  };
+
+  const handleAccountClick = () => {
+    if (currentUser) {
+      if (onNavigateAccount) onNavigateAccount();
+      else window.location.pathname = locale === 'pl' ? '/pl/account' : '/account';
+    } else {
+      onOpenLogin();
+    }
   };
 
   return (
@@ -115,10 +129,12 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* 5. Account */}
       <button
         type="button"
-        onClick={onOpenLogin}
-        className="flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer text-slate-500 hover:text-slate-900 transition-colors"
+        onClick={handleAccountClick}
+        className={`flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
+          isAccount ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+        }`}
       >
-        <User className="w-5 h-5 stroke-[1.8]" />
+        <User className={`w-5 h-5 ${isAccount ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
         <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Profil' : 'Profile'}</span>
       </button>
     </nav>

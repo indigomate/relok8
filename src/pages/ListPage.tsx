@@ -7,6 +7,7 @@ import { Listing } from '../types';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { t } from '../utils/translations';
 import { navigateTo } from '../utils/router';
+import { PhotoUploader } from '../components/PhotoUploader';
 
 interface ListPageProps {
   onBack: () => void;
@@ -45,33 +46,26 @@ export const ListPage: React.FC<ListPageProps> = ({
   const [isFurnished, setIsFurnished] = useState(true);
   const [meldunekAllowed, setMeldunekAllowed] = useState(true);
   const [landlordApproved, setLandlordApproved] = useState(true);
-  const [customPhotoUrl, setCustomPhotoUrl] = useState('');
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
-  const PHOTO_PRESETS = [
-    { label: 'Warsaw Studio', path: '/images/listing_warsaw_mokotow_1790621438299.jpg' },
-    { label: 'Kraków Room', path: '/images/listing_krakow_loft_1790621454348.jpg' },
-    { label: 'Wrocław Nordic', path: '/images/listing_wroclaw_nordic_1790621466153.jpg' },
-    { label: 'Central Warsaw', path: '/images/listing_warsaw_center_1790621476399.jpg' }
-  ];
-  const [photos, setPhotos] = useState<string[]>([PHOTO_PRESETS[0].path]);
-
-  const handleAddCustomPhoto = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (customPhotoUrl && customPhotoUrl.startsWith('http')) {
-      setPhotos((prev) => [...prev, customPhotoUrl]);
-      setCustomPhotoUrl('');
-    }
-  };
-
-  const handleRemovePhoto = (idx: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== idx));
-  };
+  // Real photos uploaded from device or captured from site camera
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (photos.length === 0) {
+      setPhotoError(
+        locale === 'pl'
+          ? 'Proszę dodać co najmniej jedno zdjęcie pokoju ze swojego urządzenia lub zrobić zdjęcie aparatem.'
+          : 'Please upload from your device or take a picture of the room before publishing.'
+      );
+      return;
+    }
+
+    setPhotoError(null);
     setIsSubmitting(true);
 
-    const finalImages = photos.length > 0 ? photos : [PHOTO_PRESETS[0].path];
+    const finalImages = photos;
 
     const created: Listing = {
       id: `rel-${city.substring(0, 3).toLowerCase()}-${Date.now().toString().slice(-4)}`,
@@ -97,7 +91,7 @@ export const ListPage: React.FC<ListPageProps> = ({
       landlordApproved,
       statusBadge: 'Active takeover',
       landlordName,
-      landlordContactEmail: 'landlord@relok8.online',
+      landlordContactEmail: 'info@relok8.online',
       likesCount: 1,
       currentTenant: {
         name: tenantName,
@@ -529,44 +523,33 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </p>
                 </div>
 
-                {/* Photo Previews */}
+                {/* Photo Upload & Camera Capture Component */}
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-slate-700">
-                    {locale === 'pl' ? 'Zdjęcia oferty (min. 1 zdjęcie)' : 'Listing Photos (at least 1 photo)'}
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {photos.map((photo, i) => (
-                      <div key={i} className="relative aspect-[4/3] rounded-xl overflow-hidden border border-slate-200 group bg-slate-100">
-                        <img src={photo} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
-                        {photos.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemovePhoto(i)}
-                            className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-slate-800">
+                      {locale === 'pl' ? 'Zdjęcia oferty (min. 1 zdjęcie)' : 'Listing Photos (at least 1 photo)'} *
+                    </label>
+                    <span className="text-[11px] text-slate-500">
+                      {locale === 'pl' ? 'Prawdziwe zdjęcia z Twojego lokalu' : 'Real photos from your place'}
+                    </span>
                   </div>
 
-                  {/* Add Preset or URL */}
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <span className="text-xs text-slate-500 self-center">
-                      {locale === 'pl' ? 'Szybkie zdjęcia demonstracyjne:' : 'Quick photo templates:'}
-                    </span>
-                    {PHOTO_PRESETS.map((p, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setPhotos((prev) => [...prev, p.path])}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer"
-                      >
-                        + {p.label}
-                      </button>
-                    ))}
-                  </div>
+                  <PhotoUploader
+                    photos={photos}
+                    onChange={(newPhotos) => {
+                      setPhotos(newPhotos);
+                      if (newPhotos.length > 0) setPhotoError(null);
+                    }}
+                    locale={locale}
+                    maxPhotos={8}
+                  />
+
+                  {photoError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{photoError}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Landlord & Meldunek Consent Checks */}

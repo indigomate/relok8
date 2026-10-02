@@ -1,38 +1,285 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <!-- Homepage -->
   <url>
-    <loc>https://relok8.online</loc>
-    <changefreq>always</changefreq>
+    <loc>https://relok8.online/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://relok8.online/" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://relok8.online/pl</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://relok8.online/" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- City Landing Pages -->
+  <url>
+    <loc>https://relok8.online/warsaw</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/warsaw" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/warsaw" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/warsaw</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/warsaw" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/warsaw" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/krakow</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/krakow" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/krakow" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/krakow</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/krakow" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/krakow" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/wroclaw</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/wroclaw" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/wroclaw" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/wroclaw</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/wroclaw" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/wroclaw" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/gdansk</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/gdansk" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/gdansk" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/gdansk</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/gdansk" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/gdansk" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/lublin</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/lublin" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/lublin" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/lublin</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/lublin" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/lublin" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/poznan</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/poznan" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/poznan" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/poznan</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/poznan" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/poznan" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Core Product & Conversion Pages -->
+  <url>
     <loc>https://relok8.online/leave-your-lease</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/leave-your-lease" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/leave-your-lease" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/leave-your-lease</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/leave-your-lease" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/leave-your-lease" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/list" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/list" />
+    <lastmod>2026-10-02</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://relok8.online/rooms/warsaw</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://relok8.online/pl/list</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/list" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/list" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/how-it-works</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/how-it-works" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/how-it-works" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/how-it-works</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/how-it-works" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/how-it-works" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/savings-calculator</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/savings-calculator" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/savings-calculator" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://relok8.online/rooms/krakow</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://relok8.online/pl/savings-calculator</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/savings-calculator" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/savings-calculator" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Legal & Student Relocation Guides -->
+  <url>
+    <loc>https://relok8.online/meldunek-guide</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/meldunek-guide" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/meldunek-guide" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/meldunek-guide</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/meldunek-guide" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/meldunek-guide" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/safety-guide</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/safety-guide" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/safety-guide" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://relok8.online/rooms/wroclaw</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://relok8.online/pl/safety-guide</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/safety-guide" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/safety-guide" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/cesja-template</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/cesja-template" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/cesja-template" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/cesja-template</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/cesja-template" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/cesja-template" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://relok8.online/help</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/help" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/help" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://relok8.online/rooms/lublin</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://relok8.online/pl/help</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/help" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/help" />
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
+
+  <!-- Legal & Terms Pages -->
   <url>
-    <loc>https://relok8.online/rooms/gdansk</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
+    <loc>https://relok8.online/legal/terms</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/legal/privacy</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/legal/cookies</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
   </url>
 </urlset>

@@ -100,9 +100,9 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
               </span>
             </div>
 
-            <h1 className="text-xl md:text-2xl font-bold text-[var(--r8-text)] tracking-tight">
+            <h2 className="text-xl md:text-2xl font-bold text-[var(--r8-text)] tracking-tight">
               {listing.title}
-            </h1>
+            </h2>
             <p className="text-[13px] text-[var(--r8-text-2)] flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[var(--r8-indigo-400)] shrink-0" strokeWidth={1.75} />
               <span>{listing.address} ({listing.district}, {listing.city})</span>
@@ -134,7 +134,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                         : 'border-transparent opacity-60 hover:opacity-90'
                     }`}
                   >
-                    <img src={img} alt="thumbnail" className="w-full h-full object-cover" />
+                    <img src={img} alt={`${listing.title} thumbnail ${i + 1}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -64,7 +64,11 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
         </div>
 
         {/* 4-Step Process Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            {locale === 'pl' ? 'Jak działa cesja w 4 prostych krokach' : 'How the 4-step lease takeover works'}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
             {
               step: '1',
@@ -95,14 +99,15 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
               <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
             </div>
           ))}
+          </div>
         </div>
 
         {/* Built-in Interactive Calculator */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs">
           <div className="space-y-1">
-            <h3 className="text-xl font-bold text-slate-900">
+            <h2 className="text-xl font-bold text-slate-900">
               {locale === 'pl' ? 'Kalkulator oszczędności przy cesji' : 'Lease Transfer Savings Calculator'}
-            </h3>
+            </h2>
             <p className="text-xs sm:text-sm text-slate-500">
               {locale === 'pl' ? 'Sprawdź ile zaoszczędzisz przekazując umowę zamiast jej jednostronnego zerwania:' : 'Calculate how much money you save by finding a replacement tenant rather than breaking the lease:'}
             </p>
@@ -192,9 +197,9 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
         {/* FAQ crosslink */}
         <div className="p-6 rounded-3xl bg-white border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="space-y-1 text-left">
-            <h4 className="font-bold text-sm text-slate-900">
+            <h3 className="font-bold text-sm text-slate-900">
               {locale === 'pl' ? 'Masz pytania dotyczące zgody właściciela lub protokołu?' : 'Have questions regarding landlord approval or the handover protocol?'}
-            </h4>
+            </h3>
             <p className="text-xs text-slate-500">
               {locale === 'pl' ? 'Zobacz szczegółowe odpowiedzi w naszym Centrum Pomocy.' : 'Read detailed explanations in our dedicated Help Center.'}
             </p>

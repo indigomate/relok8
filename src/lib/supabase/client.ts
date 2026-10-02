@@ -502,73 +502,94 @@ export async function removeFavorite(listingId: string): Promise<void> {
   }
 }
 
-export async function signIn(email: string): Promise<any> {
+export async function signIn(email: string, password?: string): Promise<any> {
   if (isSupabaseConfigured()) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email === email) {
-        return await getCurrentUser();
-      }
-
-      const { error } = await supabase.auth.signInWithOtp({ email });
-      if (!error) {
-        return {
-          id: 'supa-' + Math.random().toString(36).substring(7),
-          name: email.split('@')[0],
+      if (password) {
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
-          isVerified: true
-        };
+          password
+        });
+        if (error) throw error;
+        if (data.session) {
+          return await getCurrentUser();
+        }
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email === email) {
+          return await getCurrentUser();
+        }
+
+        const { error } = await supabase.auth.signInWithOtp({ email });
+        if (!error) {
+          return {
+            id: 'supa-' + Math.random().toString(36).substring(7),
+            name: email.split('@')[0],
+            email,
+            isVerified: true
+          };
+        }
       }
-    } catch (e) {
-      console.warn('Supabase signIn fallback:', e);
+    } catch (e: any) {
+      console.warn('Supabase signIn:', e?.message || e);
+      if (password) throw e;
     }
   }
 
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
+    body: JSON.stringify({ email, password })
   });
-  if (!res.ok) throw new Error('Login failed');
+  if (!res.ok) throw new Error('Invalid email or password');
   const data = await res.json();
   if (data.token) localStorage.setItem('r8_token', data.token);
   return data.user;
 }
 
-export async function signUp(payload: { email: string; name?: string; university?: string; role?: string }): Promise<any> {
+export async function signUp(payload: { email: string; password?: string; name?: string; university?: string; role?: string; phone?: string }): Promise<any> {
   if (isSupabaseConfigured()) {
     try {
-      const generatedPassword = 'R8_' + Math.random().toString(36).slice(2) + '!2026';
+      const securePassword = payload.password || ('R8_' + Math.random().toString(36).slice(2) + '!2026');
       const { data, error } = await supabase.auth.signUp({
         email: payload.email,
-        password: generatedPassword,
+        password: securePassword,
         options: {
           data: {
             full_name: payload.name || payload.email.split('@')[0],
             university: payload.university || '',
-            role: payload.role || 'student'
+            role: payload.role || 'student',
+            phone_number: payload.phone || ''
           }
         }
       });
-      if (!error && data.user) {
+
+      if (error) throw error;
+
+      if (data.user) {
         await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: payload.name || payload.email.split('@')[0],
+          phone_number: payload.phone || null,
+          whatsapp_number: payload.phone || null,
           is_verified: true
         });
+
         const userProf = {
           id: data.user.id,
           name: payload.name || payload.email.split('@')[0],
           email: payload.email,
           university: payload.university,
-          role: payload.role,
+          role: payload.role || 'student',
+          phone: payload.phone || '',
           isVerified: true
         };
         localStorage.setItem('r8_user', JSON.stringify(userProf));
         return userProf;
       }
-    } catch (e) {
-      console.warn('Supabase signUp fallback:', e);
+    } catch (e: any) {
+      console.warn('Supabase signUp:', e?.message || e);
+      if (payload.password) throw e;
     }
   }
 
@@ -583,9 +604,85 @@ export async function signUp(payload: { email: string; name?: string; university
   return data.user;
 }
 
+export async function updateUserProfile(userId: string, updates: { full_name?: string; avatar_url?: string; phone_number?: string; whatsapp_number?: string }): Promise<any> {
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.warn('Supabase update profile error:', e);
+    }
+  }
+  return updates;
+}
+
+export async function getUserListings(userId: string): Promise<Listing[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+  try {
+    const { data, error } = await supabase
+      .from('listings')
+      .select('*, listing_images(*), profiles(*)')
+      .eq('owner_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(mapSupabaseListingToApp);
+  } catch (err) {
+    console.error('Error fetching user listings:', err);
+    return [];
+  }
+}
+
+export async function getUserInquiries(userId: string): Promise<any[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+  try {
+    const { data, error } = await supabase
+      .from('matches_and_inquiries')
+      .select('*, listings(*)')
+      .eq('student_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.warn('Error fetching user inquiries:', err);
+    return [];
+  }
+}
+
+export function onAuthStateChange(callback: (user: any | null) => void): () => void {
+  if (!isSupabaseConfigured()) {
+    return () => {};
+  }
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (session?.user) {
+      const user = await getCurrentUser();
+      callback(user);
+    } else {
+      callback(null);
+    }
+  });
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}
+
 export async function signOut(): Promise<void> {
   if (isSupabaseConfigured()) {
-    supabase.auth.signOut().catch(() => {});
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
   }
   localStorage.removeItem('r8_token');
   localStorage.removeItem('r8_user');

@@ -81,7 +81,11 @@ zawarta w trybie art. 509 i nast. Kodeksu Cywilnego
         </div>
 
         {/* Clause Preview Card */}
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="space-y-3">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            Official Bilingual Cesja Agreement Preview
+          </h2>
+          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs">
           <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
             <div className="flex items-center gap-2 font-mono text-xs text-indigo-200">
               <FileCheck className="w-4 h-4 text-indigo-400" />
@@ -110,9 +114,14 @@ zawarta w trybie art. 509 i nast. Kodeksu Cywilnego
             {sampleBilingualClause}
           </div>
         </div>
+        </div>
 
         {/* Key Legal Clauses breakdown */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+            Key Legal Clauses in the Agreement
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600">
           <div className="p-6 rounded-2xl bg-white border border-slate-200 space-y-2">
             <h3 className="font-bold text-slate-900 text-sm">Clause 1: Art. 509 KC Assignment</h3>
             <p>
@@ -140,6 +149,7 @@ zawarta w trybie art. 509 i nast. Kodeksu Cywilnego
               Confirms the incoming tenant’s legal basis to register at the municipal district office (Urząd Dzielnicy) for their PESEL.
             </p>
           </div>
+        </div>
         </div>
 
       </div>

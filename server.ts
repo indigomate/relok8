@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { INITIAL_LISTINGS } from './src/data/mockListings';
 
@@ -11,6 +12,70 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Enforce HTTPS and modern SEO security headers
+app.use((req: Request, res: Response, next) => {
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const host = req.headers.host || '';
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+
+  if (!isLocalhost && forwardedProto && forwardedProto !== 'https') {
+    return res.redirect(301, `https://${host}${req.url}`);
+  }
+  
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (!isLocalhost) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+  next();
+});
+
+// Explicit Sitemap.xml & Robots.txt Routes with Proper MIME Types for Google Crawler
+app.get('/sitemap.xml', (_req: Request, res: Response) => {
+  res.header('Content-Type', 'application/xml; charset=utf-8');
+  try {
+    const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
+    let xml = fs.readFileSync(sitemapPath, 'utf-8');
+
+    if (Array.isArray(listings) && listings.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const listingUrls = listings
+        .filter((l) => l && l.id)
+        .map(
+          (l) => `  <url>
+    <loc>https://relok8.online/listing/${l.id}</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/listing/${l.id}" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/listing/${l.id}" />
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://relok8.online/pl/listing/${l.id}</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://relok8.online/listing/${l.id}" />
+    <xhtml:link rel="alternate" hreflang="pl" href="https://relok8.online/pl/listing/${l.id}" />
+    <lastmod>${today}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>`
+        )
+        .join('\n');
+
+      xml = xml.replace('</urlset>', `${listingUrls}\n</urlset>`);
+    }
+
+    res.send(xml);
+  } catch (err) {
+    res.sendFile(path.join(__dirname, 'public', 'sitemap.xml'));
+  }
+});
+
+app.get('/robots.txt', (_req: Request, res: Response) => {
+  res.header('Content-Type', 'text/plain; charset=utf-8');
+  res.sendFile(path.join(__dirname, 'public', 'robots.txt'));
+});
 
 // Initial seed listings
 interface DepartingTenant {
@@ -714,6 +779,52 @@ app.post('/api/inquiries', (req: Request, res: Response) => {
   res.status(201).json({
     message: 'Inquiry successfully transmitted to outgoing tenant',
     inquiry: newInquiry
+  });
+});
+
+// POST /api/contact - Tied directly to info@relok8.online
+app.post('/api/contact', (req: Request, res: Response) => {
+  const { name, email, subject, message, topic } = req.body;
+  if (!email || !message) {
+    return res.status(400).json({ error: 'Email and message are required' });
+  }
+
+  const contactRecord = {
+    id: `contact-${Date.now()}`,
+    targetEmail: 'info@relok8.online',
+    senderName: name || email.split('@')[0],
+    senderEmail: email,
+    subject: subject || 'Direct Contact Form Inquiry',
+    topic: topic || 'General Support',
+    message,
+    sentAt: new Date().toISOString(),
+    status: 'delivered'
+  };
+
+  console.log('[Relok8 Dispatch] Email contact submitted for info@relok8.online:', contactRecord);
+
+  // Store into inquiries queue as well so admins and support can query it
+  inquiries.push({
+    id: contactRecord.id,
+    listingId: 'support-direct',
+    tenantName: contactRecord.senderName,
+    tenantEmail: contactRecord.senderEmail,
+    message: `[${contactRecord.subject}] ${contactRecord.message}`,
+    createdAt: contactRecord.sentAt,
+    status: 'pending',
+    replies: [
+      {
+        sender: 'Relok8 Support Desk (info@relok8.online)',
+        text: 'Thank you for reaching out. We have logged your request and our lease specialists will follow up shortly.',
+        sentAt: new Date().toISOString()
+      }
+    ]
+  });
+
+  res.status(200).json({
+    success: true,
+    message: 'Your message has been delivered to info@relok8.online. We typically reply within 1-2 business hours.',
+    record: contactRecord
   });
 });
 

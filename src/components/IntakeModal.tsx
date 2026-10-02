@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { X, Check, ArrowRight, ArrowLeft, UploadCloud, ImagePlus, Trash2 } from 'lucide-react';
+import { X, Check, ArrowRight, ArrowLeft, UploadCloud, ImagePlus, Trash2, AlertCircle } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
+import { PhotoUploader } from './PhotoUploader';
 
 interface IntakeModalProps {
   isOpen: boolean;
@@ -36,21 +37,24 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
   const [reasonForLeaving, setReasonForLeaving] = useState('Completing university semester');
   const [distanceToCampus, setDistanceToCampus] = useState('5 min walk to campus');
   const [flatmatesCount, setFlatmatesCount] = useState(2);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
-  const PHOTO_PRESETS = [
-    { label: 'Kraków Room', path: '/images/listing_krakow_loft_1790621454348.jpg' },
-    { label: 'Warsaw Studio', path: '/images/listing_warsaw_mokotow_1790621438299.jpg' },
-    { label: 'Wrocław Nordic', path: '/images/listing_wroclaw_nordic_1790621466153.jpg' },
-    { label: 'Central Room', path: '/images/listing_warsaw_center_1790621476399.jpg' }
-  ];
-  const [photos, setPhotos] = useState<string[]>([PHOTO_PRESETS[0].path]);
+  const [photos, setPhotos] = useState<string[]>([]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (photos.length === 0) {
+      setPhotoError(
+        locale === 'pl'
+          ? 'Proszę dodać co najmniej jedno zdjęcie pokoju ze swojego urządzenia lub zrobić zdjęcie aparatem.'
+          : 'Please upload from your device or take a picture of the room.'
+      );
+      return;
+    }
 
-    const finalImages = photos.length > 0 ? photos : [PHOTO_PRESETS[0].path];
+    const finalImages = photos;
 
     const created: Listing = {
       id: `rel-${city.substring(0, 3).toLowerCase()}-${Date.now().toString().slice(-4)}`,
@@ -333,6 +337,27 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
 
           {step === 3 && (
             <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-800">
+                  {locale === 'pl' ? 'Zdjęcia oferty (wgraj z urządzenia lub zrób zdjęcie)' : 'Listing photos (upload from device or take photo)'} *
+                </label>
+                <PhotoUploader
+                  photos={photos}
+                  onChange={(newPhotos) => {
+                    setPhotos(newPhotos);
+                    if (newPhotos.length > 0) setPhotoError(null);
+                  }}
+                  locale={locale}
+                  maxPhotos={6}
+                />
+                {photoError && (
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{photoError}</span>
+                  </div>
+                )}
+              </div>
+
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                 <div className="font-bold text-slate-900 text-sm">{title}</div>
                 <div className="text-slate-600">{district}, {city}</div>

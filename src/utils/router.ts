@@ -9,6 +9,7 @@ export type RouteType =
   | 'saved'
   | 'messages'
   | 'dashboard'
+  | 'account'
   | 'help'
   | 'how-it-works'
   | 'savings-calculator'
@@ -110,18 +111,18 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
     return { type: 'leave-your-lease', locale, path: pathname, searchParams };
   }
 
+  // User Account & Dashboard
+  if (first === 'account' || first === 'my-account' || first === 'profile' || first === 'dashboard' || first === 'my-listings') {
+    return { type: 'account', locale, path: pathname, searchParams };
+  }
+
   // Messages
   if (first === 'messages' || first === 'inbox') {
-    return { type: 'messages', locale, path: pathname, searchParams };
+    return { type: 'account', locale, path: pathname, searchParams };
   }
 
-  // Dashboard
-  if (first === 'dashboard' || first === 'my-listings') {
-    return { type: 'dashboard', locale, path: pathname, searchParams };
-  }
-
-  // How it works
-  if (first === 'how-it-works') {
+  // How it works / About
+  if (first === 'how-it-works' || first === 'about' || first === 'about-us') {
     return { type: 'how-it-works', locale, path: pathname, searchParams };
   }
 

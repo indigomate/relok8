@@ -1,7 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /admin/
-Disallow: /checkout/
+Disallow: /account
+Disallow: /pl/account
 
+# Host & XML Sitemap
+Host: https://relok8.online
 Sitemap: https://relok8.online/sitemap.xml

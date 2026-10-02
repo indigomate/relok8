@@ -66,7 +66,7 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2">
               <li>
                 <a
-                  href="/how-it-works"
+                  href={`${locale === 'pl' ? '/pl' : ''}/how-it-works`}
                   onClick={(e) => handleLink('/how-it-works', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -75,7 +75,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/leave-your-lease"
+                  href={`${locale === 'pl' ? '/pl' : ''}/leave-your-lease`}
                   onClick={(e) => handleLink('/leave-your-lease', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -84,7 +84,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/savings-calculator"
+                  href={`${locale === 'pl' ? '/pl' : ''}/savings-calculator`}
                   onClick={(e) => handleLink('/savings-calculator', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -102,7 +102,7 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2">
               <li>
                 <a
-                  href="/help"
+                  href={`${locale === 'pl' ? '/pl' : ''}/help`}
                   onClick={(e) => handleLink('/help', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -111,11 +111,29 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/safety"
-                  onClick={(e) => handleLink('/safety', e)}
+                  href={`${locale === 'pl' ? '/pl' : ''}/safety-guide`}
+                  onClick={(e) => handleLink('/safety-guide', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerSafetyTips}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`${locale === 'pl' ? '/pl' : ''}/meldunek-guide`}
+                  onClick={(e) => handleLink('/meldunek-guide', e)}
+                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                >
+                  {locale === 'pl' ? 'Poradnik meldunku (PESEL)' : 'Meldunek Registration Guide'}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`${locale === 'pl' ? '/pl' : ''}/cesja-template`}
+                  onClick={(e) => handleLink('/cesja-template', e)}
+                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                >
+                  {locale === 'pl' ? 'Wzór cesji (Art. 509 KC)' : 'Cesja Contract Template'}
                 </a>
               </li>
               <li>
@@ -132,7 +150,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="mailto:contact@relok8.online"
+                  href="mailto:info@relok8.online"
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerContact}
@@ -149,8 +167,8 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2">
               <li>
                 <a
-                  href="/about"
-                  onClick={(e) => handleLink('/about', e)}
+                  href={`${locale === 'pl' ? '/pl' : ''}/how-it-works`}
+                  onClick={(e) => handleLink('/how-it-works', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerAbout}
@@ -158,7 +176,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="mailto:contact@relok8.online"
+                  href="mailto:info@relok8.online"
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
                   {strings.footerContact}
@@ -166,7 +184,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/legal/terms"
+                  href={`${locale === 'pl' ? '/pl' : ''}/legal/terms`}
                   onClick={(e) => handleLink('/legal/terms', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -175,7 +193,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/legal/privacy"
+                  href={`${locale === 'pl' ? '/pl' : ''}/legal/privacy`}
                   onClick={(e) => handleLink('/legal/privacy', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -184,7 +202,7 @@ export const Footer: React.FC<FooterProps> = ({
               </li>
               <li>
                 <a
-                  href="/legal/cookies"
+                  href={`${locale === 'pl' ? '/pl' : ''}/legal/cookies`}
                   onClick={(e) => handleLink('/legal/cookies', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
@@ -200,7 +218,7 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="pt-6 border-t border-slate-200/80 text-[11px] text-slate-500 leading-relaxed">
           <p>{strings.footerLegalNotice}</p>
           <p className="mt-1 text-slate-400">
-            Relok8 Sp. z o.o. (w organizacji) · Al. Jerozolimskie 81, 02-001 Warszawa · NIP/KRS w toku rejestracji · contact@relok8.online
+            Relok8 Sp. z o.o. (w organizacji) · Al. Jerozolimskie 81, 02-001 Warszawa · NIP/KRS w toku rejestracji · info@relok8.online
           </p>
         </div>
 
