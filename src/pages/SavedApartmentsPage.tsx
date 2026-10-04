@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bookmark, ArrowLeft, Trash2, MapPin, Building, Sparkles } from 'lucide-react';
+import { Bookmark, ArrowLeft, Trash2, MapPin, Building } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 

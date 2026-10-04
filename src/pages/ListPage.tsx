@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, CheckCircle2, UploadCloud, ImagePlus, Trash2, 
-  MapPin, Home, DollarSign, Calendar, Shield, Sparkles, AlertCircle 
+  MapPin, Home, DollarSign, Calendar, Shield, ShieldCheck, AlertCircle 
 } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
@@ -144,7 +144,7 @@ export const ListPage: React.FC<ListPageProps> = ({
         {/* Hero Section */}
         <div className="space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
             <span>{locale === 'pl' ? 'Cesja bez prowizji · 0 zł opłat' : 'Zero Broker Fees · Free Listing'}</span>
           </div>
 

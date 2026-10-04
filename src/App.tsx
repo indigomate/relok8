@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useUser } from '@clerk/react';
 import { 
   Search, ArrowRight, Check, CheckCircle2, RefreshCw, 
   MapPin, Calendar, Home, DollarSign, Shield, Users, Heart
@@ -108,6 +109,31 @@ export default function App() {
     return null;
   });
 
+  // Clerk Authentication Sync
+  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
+
+  useEffect(() => {
+    if (isClerkLoaded) {
+      if (clerkUser) {
+        const mappedUser: UserProfile = {
+          id: clerkUser.id,
+          name: clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User',
+          email: clerkUser.primaryEmailAddress?.emailAddress || '',
+          avatar: clerkUser.imageUrl,
+          role: (clerkUser.publicMetadata?.role as string) || 'student',
+          isVerified: clerkUser.primaryEmailAddress?.verification?.status === 'verified',
+          phone: clerkUser.primaryPhoneNumber?.phoneNumber || ''
+        };
+        setCurrentUser(mappedUser);
+        localStorage.setItem('r8_user', JSON.stringify(mappedUser));
+      } else {
+        // If logged out from Clerk, clear local storage session
+        setCurrentUser(null);
+        localStorage.removeItem('r8_user');
+      }
+    }
+  }, [clerkUser, isClerkLoaded]);
+
   // Search State: single source of truth synced with URL query
   const [searchState, setSearchState] = useState<SearchState>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -160,8 +186,15 @@ export default function App() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginMode, setLoginMode] = useState<'signin' | 'signup'>('signin');
   const [loginReason, setLoginReason] = useState('');
   const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
+
+  const handleOpenLogin = (mode: 'signin' | 'signup' = 'signin', reason: string = '') => {
+    setLoginMode(mode);
+    setLoginReason(reason);
+    setIsLoginOpen(true);
+  };
 
   // Toast State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -676,9 +709,8 @@ export default function App() {
         theme={theme}
         setTheme={setTheme}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
-        onOpenLogin={() => {
-          setLoginReason('Sign up or log in to manage your saved rooms and contact tenants.');
-          setIsLoginOpen(true);
+        onOpenLogin={(mode) => {
+          handleOpenLogin(mode || 'signin', 'Sign up or log in to manage your saved rooms and contact tenants.');
         }}
         currentUser={currentUser}
         onLogout={() => {
@@ -1130,6 +1162,7 @@ export default function App() {
       <LoginModal
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
+        initialMode={loginMode}
         onLoginSuccess={(user) => {
           setCurrentUser(user);
           localStorage.setItem('r8_user', JSON.stringify(user));

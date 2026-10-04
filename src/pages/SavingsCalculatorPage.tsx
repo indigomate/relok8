@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Calculator, CheckCircle2, Shield, ArrowRight, 
-  Sparkles, DollarSign, FileCheck, HelpCircle 
+  DollarSign, FileCheck, HelpCircle 
 } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { navigateTo } from '../utils/router';

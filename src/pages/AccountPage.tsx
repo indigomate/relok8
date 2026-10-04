@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UserProfile as ClerkUserProfile } from '@clerk/react';
 import { 
   ArrowLeft, User, Heart, Home, MessageSquare, Shield, 
   Settings, LogOut, CheckCircle2, AlertCircle, Mail, Phone, 
@@ -740,83 +741,44 @@ export const AccountPage: React.FC<AccountPageProps> = ({
           </div>
         )}
 
-        {/* TAB 4: Security & Login */}
+        {/* TAB 4: Security & Clerk Account Management */}
         {activeTab === 'security' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs max-w-xl">
-            <div className="space-y-1">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Key className="w-5 h-5 text-indigo-600" />
-                <span>{locale === 'pl' ? 'Bezpieczeństwo i hasło' : 'Security & Password'}</span>
-              </h2>
-              <p className="text-xs text-slate-500">
-                {locale === 'pl'
-                  ? 'Zarządzaj zabezpieczeniami konta i zaktualizuj swoje hasło dostępowe.'
-                  : 'Manage your account credentials powered by Supabase authentication.'}
-              </p>
-            </div>
-
-            {securityMsg && (
-              <div
-                className={`p-3.5 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
-                  securityMsg.type === 'success'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : 'bg-rose-50 border-rose-200 text-rose-800'
-                }`}
-              >
-                {securityMsg.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                )}
-                <span>{securityMsg.text}</span>
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
+              <div className="space-y-1">
+                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Key className="w-5 h-5 text-indigo-600" />
+                  <span>{locale === 'pl' ? 'Bezpieczeństwo i konto Clerk' : 'Clerk Account & Security'}</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {locale === 'pl'
+                    ? 'Zarządzaj zabezpieczeniami konta, hasłem, urządzeniami i logowaniem dwuetapowym.'
+                    : 'Manage your credentials, two-factor authentication, active sessions, and connected login methods.'}
+                </p>
               </div>
-            )}
 
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {locale === 'pl' ? 'Nowe hasło' : 'New Password'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
+              {/* Official Clerk User Profile UI */}
+              <div className="pt-2 flex justify-center w-full">
+                <ClerkUserProfile 
+                  routing="hash"
+                  appearance={{
+                    elements: {
+                      rootBox: 'w-full',
+                      card: 'w-full shadow-none border border-slate-200 rounded-2xl p-2 sm:p-4',
+                      navbar: 'border-r border-slate-200',
+                      headerTitle: 'text-lg font-bold text-slate-900',
+                      formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold'
+                    }
+                  }}
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {locale === 'pl' ? 'Powtórz nowe hasło' : 'Confirm New Password'}
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
-                />
+              <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">
+                <span className="font-bold text-slate-700 block">GDPR & Data Protection</span>
+                <p>
+                  Under EU General Data Protection Regulation (RODO), you have the right to inspect or export your stored data. Email <a href="mailto:info@relok8.online" className="text-indigo-600 font-semibold underline">info@relok8.online</a> for data requests.
+                </p>
               </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isUpdatingPassword}
-                  className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
-                >
-                  {isUpdatingPassword ? (locale === 'pl' ? 'Aktualizacja...' : 'Updating...') : (locale === 'pl' ? 'Zmień hasło' : 'Update Password')}
-                </button>
-              </div>
-            </form>
-
-            <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">
-              <span className="font-bold text-slate-700 block">GDPR & Data Protection</span>
-              <p>
-                Under EU General Data Protection Regulation (RODO), you have the right to inspect or export your stored data. Email <a href="mailto:info@relok8.online" className="text-indigo-600 font-semibold underline">info@relok8.online</a> for data requests.
-              </p>
             </div>
           </div>
         )}

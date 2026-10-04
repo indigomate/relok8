@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, FileText, CheckCircle2, ShieldCheck, ArrowRight, 
-  Sparkles, Download, HelpCircle, AlertCircle, Building2, Users 
+  Download, HelpCircle, AlertCircle, Building2, Users 
 } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { navigateTo } from '../utils/router';

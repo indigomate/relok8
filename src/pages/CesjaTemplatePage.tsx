@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, FileCheck, Shield, Copy, Check, Download, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileCheck, Shield, ShieldCheck, Copy, Check, Download } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface CesjaTemplatePageProps {
@@ -54,7 +54,7 @@ zawarta w trybie art. 509 i nast. Kodeksu Cywilnego
         {/* Hero */}
         <div className="space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-800 text-xs font-bold uppercase tracking-wider border border-indigo-200">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
             <span>Legal Document · Art. 509 KC</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">

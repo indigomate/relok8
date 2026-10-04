@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, CheckCircle2, Shield, FileCheck, Key, HelpCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Shield, ShieldCheck, FileCheck, Key, HelpCircle, ArrowRight } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface HowItWorksPageProps {
@@ -32,7 +32,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
         {/* Hero Section */}
         <div className="space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/70 text-indigo-800 text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
             <span>Official Guide · Art. 509 KC</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">

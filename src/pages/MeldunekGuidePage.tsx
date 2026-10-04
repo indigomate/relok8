@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, CheckCircle2, FileText, Building2, HelpCircle, Shield, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, Building2, HelpCircle, Shield, ShieldCheck } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface MeldunekGuidePageProps {
@@ -30,7 +30,7 @@ export const MeldunekGuidePage: React.FC<MeldunekGuidePageProps> = ({
         {/* Hero */}
         <div className="space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider border border-emerald-200">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Expat & Student Guide 2026</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">

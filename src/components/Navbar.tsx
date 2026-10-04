@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Globe, Menu, User, Heart, HelpCircle, 
-  MessageSquare, Home, Settings, LogOut, Check
+  MessageSquare, Home, Settings, LogOut, Check, LogIn
 } from 'lucide-react';
+import { UserButton, Show, useClerk } from '@clerk/react';
 import { Relok8Logo } from './BrandLogo';
 import { SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
@@ -27,7 +28,7 @@ interface NavbarProps {
   theme?: 'dark' | 'light';
   setTheme?: (th: 'dark' | 'light') => void;
   onOpenHelp: () => void;
-  onOpenLogin: () => void;
+  onOpenLogin: (mode?: 'signin' | 'signup') => void;
   currentUser?: UserProfile | null;
   onLogout?: () => void;
   onNavigateSaved: () => void;
@@ -55,6 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isCompactSearchVisible = true
 }) => {
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
+  const clerk = useClerk();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -176,6 +178,31 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
+          {/* Clerk Auth Controls (Visible in Header) */}
+          <Show when="signed-in">
+            <div className="flex items-center">
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: 'w-8 h-8 rounded-full border border-slate-200 shadow-xs ring-2 ring-indigo-500/20 hover:ring-indigo-500/50 transition-all cursor-pointer',
+                    userButtonPopoverCard: 'shadow-2xl border border-slate-200 rounded-2xl'
+                  }
+                }}
+              />
+            </div>
+          </Show>
+
+          <Show when="signed-out">
+            <button
+              type="button"
+              onClick={() => onOpenLogin('signin')}
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 rounded-full transition-all shadow-xs cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>{strings.logIn}</span>
+            </button>
+          </Show>
+
           {/* Account Menu (Dropdown) */}
           <div className="relative" ref={dropdownRef}>
             <button
@@ -213,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         type="button"
                         onClick={() => {
                           setIsDropdownOpen(false);
-                          onOpenLogin();
+                          onOpenLogin('signup');
                         }}
                         className="mt-2.5 w-full py-1.5 text-center text-xs font-bold bg-white text-indigo-900 rounded-lg hover:bg-slate-100 transition-colors shadow-xs"
                       >
@@ -225,7 +252,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        onOpenLogin();
+                        onOpenLogin('signin');
                       }}
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-slate-800 hover:bg-slate-50 flex items-center justify-between"
                     >
@@ -235,7 +262,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        onOpenLogin();
+                        onOpenLogin('signup');
                       }}
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
                     >
@@ -332,6 +359,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
+                        clerk.openUserProfile();
+                      }}
+                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
+                    >
+                      <Settings className="w-4 h-4 text-indigo-600" />
+                      <span>{locale === 'pl' ? 'Bezpieczeństwo i profil Clerk' : 'Manage Clerk Account'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsDropdownOpen(false);
                         onOpenHelp();
                       }}
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
@@ -347,8 +385,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="p-2 space-y-1">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         setIsDropdownOpen(false);
+                        try {
+                          await clerk.signOut();
+                        } catch (e) {}
                         onLogout();
                       }}
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"

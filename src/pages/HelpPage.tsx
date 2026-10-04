@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowLeft, Search, HelpCircle, Shield, FileCheck, CheckCircle2, 
   AlertCircle, Mail, Phone, ExternalLink, ChevronDown, ChevronUp,
-  Sparkles, BookOpen, MessageSquare, Send
+  ShieldCheck, BookOpen, MessageSquare, Send
 } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
@@ -402,7 +402,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
             >
               <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
+                <ShieldCheck className="w-4 h-4" />
               </div>
               <h3 className="font-bold text-sm text-slate-900">
                 {locale === 'pl' ? 'Kalkulator Oszczędności' : 'Penalty Calculator'}
