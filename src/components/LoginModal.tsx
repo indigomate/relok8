@@ -92,9 +92,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (typeof window !== 'undefined') {
       const p = window.location.pathname.toLowerCase();
       const h = window.location.hash.toLowerCase();
-      if (h.includes('sign-')) {
+      if (h.includes('sign-') || h.includes('factor-')) {
         history.replaceState(null, '', window.location.pathname + window.location.search);
-      } else if (p.includes('sign-up') || p.includes('sign-in') || p.includes('login') || p.includes('register')) {
+      } else if (p.includes('sign-up') || p.includes('sign-in') || p.includes('login') || p.includes('register') || p.includes('factor-')) {
         const homePath = window.location.pathname.startsWith('/pl') ? '/pl' : '/';
         history.replaceState(null, '', homePath + window.location.search);
       }

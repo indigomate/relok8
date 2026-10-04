@@ -49,9 +49,16 @@ export function slugify(text: string): string {
  */
 export function parseRoute(pathname: string = window.location.pathname, hash: string = window.location.hash, search: string = window.location.search): ParsedRoute {
   // If an old hash route is present (e.g. #/krakow/rooms, #/saved, #/listing/rel-01), redirect to clean path
+  // CRITICAL: NEVER intercept or rewrite Clerk internal auth hashes (#/factor-one, #/factor-two, #/sso-callback, #/verify)
   if (hash && hash.startsWith('#/')) {
     const rawHash = hash.replace(/^#\/?/, '').trim();
-    if (rawHash) {
+    const isClerkAuth = rawHash.startsWith('factor-') || 
+                        rawHash.startsWith('sso-callback') || 
+                        rawHash.startsWith('verify') || 
+                        rawHash.startsWith('sign-in') || 
+                        rawHash.startsWith('sign-up') ||
+                        rawHash.startsWith('reset-password');
+    if (rawHash && !isClerkAuth) {
       const targetPath = '/' + rawHash;
       try {
         window.history.replaceState({}, '', targetPath + search);
@@ -73,6 +80,15 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
 
   const first = (segments[0] || '').toLowerCase();
   const second = (segments[1] || '').toLowerCase();
+
+  // If browser got stuck on an orphaned Clerk factor path (/factor-one, /factor-two) from previous redirects:
+  if (first.startsWith('factor-') || first === 'sso-callback') {
+    try {
+      window.history.replaceState({}, '', (locale === 'pl' ? '/pl' : '/') + (search || ''));
+      pathname = locale === 'pl' ? '/pl' : '/';
+    } catch (e) {}
+    return { type: 'home', locale, path: pathname, searchParams };
+  }
 
   // Root / or /pl
   if (!first) {

@@ -3,7 +3,7 @@ import {
   Globe, Menu, User, Heart, HelpCircle, 
   MessageSquare, Home, Settings, LogOut, Check, LogIn
 } from 'lucide-react';
-import { UserButton, Show, useClerk } from '@clerk/react';
+import { Show, useClerk } from '@clerk/react';
 import { Relok8Logo } from './BrandLogo';
 import { SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
@@ -177,20 +177,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
             )}
           </div>
-
-          {/* Clerk Auth Controls (Visible in Header) */}
-          <Show when="signed-in">
-            <div className="flex items-center">
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: 'w-8 h-8 rounded-full border border-slate-200 shadow-xs ring-2 ring-indigo-500/20 hover:ring-indigo-500/50 transition-all cursor-pointer',
-                    userButtonPopoverCard: 'shadow-2xl border border-slate-200 rounded-2xl'
-                  }
-                }}
-              />
-            </div>
-          </Show>
 
           <Show when="signed-out">
             <button
