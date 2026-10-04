@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile as ClerkUserProfile } from '@clerk/react';
+import { UserProfile as ClerkUserProfile, useUser, useClerk } from '@clerk/react';
 import { 
   ArrowLeft, User, Heart, Home, MessageSquare, Shield, 
   Settings, LogOut, CheckCircle2, AlertCircle, Mail, Phone, 
@@ -43,6 +43,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   onOpenListPlace,
   onLogout
 }) => {
+  const { user: clerkUser } = useUser();
+  const clerk = useClerk();
   const [activeTab, setActiveTab] = useState<'profile' | 'saved' | 'listings' | 'inquiries' | 'security' | 'support'>('profile');
 
   // Edit profile state
@@ -52,6 +54,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   const [userRole, setUserRole] = useState(currentUser?.role || 'student');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
+
+  // Account deletion state
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // My listings state
   const [userListings, setUserListings] = useState<Listing[]>([]);
@@ -120,11 +127,39 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     setProfileSuccessMsg(null);
 
     try {
+      // 1. Sync profile attributes and metadata to Clerk if session active
+      if (clerkUser) {
+        const parts = fullName.trim().split(/\s+/);
+        const firstName = parts[0] || '';
+        const lastName = parts.slice(1).join(' ') || '';
+
+        await clerkUser.update({
+          firstName,
+          lastName
+        }).catch(() => {
+          // If first/last name editing is disabled in Clerk dashboard, continue
+        });
+
+        await clerkUser.updateMetadata({
+          unsafeMetadata: {
+            ...(clerkUser.unsafeMetadata || {}),
+            role: userRole,
+            university,
+            phone
+          }
+        }).catch((err) => {
+          console.warn('Clerk metadata sync notice:', err);
+        });
+      }
+
+      // 2. Sync to Supabase if configured
       if (isSupabaseConfigured()) {
         await updateUserProfile(currentUser.id, {
           full_name: fullName,
           phone_number: phone,
           whatsapp_number: phone
+        }).catch((err) => {
+          console.warn('Supabase sync notice:', err);
         });
       }
 
@@ -136,7 +171,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         role: userRole
       };
 
-      localStorage.setItem('r8_user', JSON.stringify(updatedUser));
+      try {
+        localStorage.setItem('r8_user', JSON.stringify(updatedUser));
+      } catch (e) {}
+
       onUpdateUser(updatedUser);
       setProfileSuccessMsg(locale === 'pl' ? 'Profil zaktualizowany pomyślnie!' : 'Profile details saved successfully!');
       setTimeout(() => setProfileSuccessMsg(null), 3500);
@@ -144,6 +182,31 @@ export const AccountPage: React.FC<AccountPageProps> = ({
       setProfileSuccessMsg(err?.message || 'Error updating profile');
     } finally {
       setIsSavingProfile(false);
+    }
+  };
+
+  // Handle direct account deletion with Clerk
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    setDeleteError(null);
+    try {
+      if (clerkUser) {
+        await clerkUser.delete();
+      }
+      try {
+        await clerk.signOut();
+      } catch (e) {}
+      localStorage.removeItem('r8_user');
+      onLogout();
+      onBack();
+    } catch (err: any) {
+      setDeleteError(
+        err?.errors?.[0]?.longMessage ||
+        err?.errors?.[0]?.message ||
+        err?.message ||
+        (locale === 'pl' ? 'Nie udało się usunąć konta.' : 'Failed to delete account.')
+      );
+      setIsDeletingAccount(false);
     }
   };
 
@@ -744,8 +807,40 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         {/* TAB 4: Security & Clerk Account Management */}
         {activeTab === 'security' && (
           <div className="space-y-6">
+            {/* Identity & Verification Status Card */}
             <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
-              <div className="space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    {locale === 'pl' ? 'Stan weryfikacji konta' : 'Account Verification Status'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-extrabold text-slate-900">{currentUser.email}</span>
+                    {currentUser.isVerified ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {locale === 'pl' ? 'Zweryfikowany' : 'Verified'}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        {locale === 'pl' ? 'Weryfikacja w toku' : 'Verification Pending'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-left sm:text-right">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    {locale === 'pl' ? 'Rola profilu' : 'Active Role'}
+                  </span>
+                  <span className="inline-block mt-0.5 px-3 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-800 capitalize border border-slate-200">
+                    {currentUser.role || 'student'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1 pt-2">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Key className="w-5 h-5 text-indigo-600" />
                   <span>{locale === 'pl' ? 'Bezpieczeństwo i konto Clerk' : 'Clerk Account & Security'}</span>
@@ -753,7 +848,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                 <p className="text-xs text-slate-500">
                   {locale === 'pl'
                     ? 'Zarządzaj zabezpieczeniami konta, hasłem, urządzeniami i logowaniem dwuetapowym.'
-                    : 'Manage your credentials, two-factor authentication, active sessions, and connected login methods.'}
+                    : 'Manage your credentials, password reset, two-factor authentication, active sessions, and connected login methods.'}
                 </p>
               </div>
 
@@ -771,6 +866,65 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                     }
                   }}
                 />
+              </div>
+
+              {/* Danger Zone: Account Deletion */}
+              <div className="pt-6 border-t border-slate-200">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 space-y-3">
+                  <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
+                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{locale === 'pl' ? 'Strefa niebezpieczna: Usuń konto' : 'Danger Zone: Delete Account'}</span>
+                  </div>
+                  <p className="text-xs text-rose-700 leading-relaxed">
+                    {locale === 'pl'
+                      ? 'Trwałe usunięcie konta z platformy Relok8 oraz serwerów Clerk. Wszystkie Twoje dane sesji, wiadomości i zapisane pokoje zostaną bezpowrotnie usunięte.'
+                      : 'Permanently removes your account from Relok8 and authentication servers. Your profile, active lease inquiries, and saved shortlists will be erased.'}
+                  </p>
+
+                  {showDeleteConfirm ? (
+                    <div className="p-4 rounded-xl bg-white border border-rose-300 space-y-3 shadow-xs">
+                      <p className="text-xs font-bold text-rose-900">
+                        {locale === 'pl'
+                          ? 'Czy jesteś pewien? Tej operacji nie można cofnąć.'
+                          : 'Are you sure? This action is permanent and cannot be undone.'}
+                      </p>
+                      {deleteError && (
+                        <p className="text-xs text-rose-600 font-semibold">{deleteError}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isDeletingAccount}
+                          onClick={handleDeleteAccount}
+                          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isDeletingAccount
+                            ? (locale === 'pl' ? 'Usuwanie...' : 'Deleting account...')
+                            : (locale === 'pl' ? 'Tak, usuń bezpowrotnie' : 'Yes, permanently delete')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isDeletingAccount}
+                          onClick={() => {
+                            setShowDeleteConfirm(false);
+                            setDeleteError(null);
+                          }}
+                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                        >
+                          {locale === 'pl' ? 'Anuluj' : 'Cancel'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="px-4 py-2 bg-white hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-300 transition-colors cursor-pointer"
+                    >
+                      {locale === 'pl' ? 'Usuń konto Relok8' : 'Delete Relok8 Account'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">

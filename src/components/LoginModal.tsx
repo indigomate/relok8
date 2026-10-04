@@ -105,14 +105,28 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Automatically trigger success callback and close modal when Clerk authentication completes
   useEffect(() => {
     if (isOpen && isLoaded && isSignedIn && user) {
+      const unsafeMeta = (user.unsafeMetadata || {}) as Record<string, any>;
+      const publicMeta = (user.publicMetadata || {}) as Record<string, any>;
+
+      const role = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
+      const isEmailVerified = user.primaryEmailAddress?.verification?.status === 'verified';
+      const isVerified = Boolean(publicMeta.isVerified ?? (unsafeMeta.isVerified ?? isEmailVerified));
+      const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
+      const phone = user.primaryPhoneNumber?.phoneNumber || (unsafeMeta.phone as string) || (publicMeta.phone as string) || '';
+      const name = user.fullName || 
+        [user.firstName, user.lastName].filter(Boolean).join(' ') || 
+        user.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+        'User';
+
       const profile: UserProfile = {
         id: user.id,
-        name: user.fullName || user.firstName || user.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User',
+        name,
         email: user.primaryEmailAddress?.emailAddress || '',
         avatar: user.imageUrl,
-        role: (user.publicMetadata?.role as string) || 'student',
-        isVerified: user.primaryEmailAddress?.verification?.status === 'verified',
-        phone: user.primaryPhoneNumber?.phoneNumber || ''
+        role,
+        isVerified,
+        phone,
+        university
       };
       onLoginSuccess(profile);
       handleDismiss();

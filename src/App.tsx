@@ -109,30 +109,50 @@ export default function App() {
     return null;
   });
 
-  // Clerk Authentication Sync
-  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
+  // Clerk Authentication Sync - authoritative source of truth for user & session state
+  const { user: clerkUser, isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn } = useUser();
 
+  // Sync user state and metadata whenever Clerk session loads or updates
   useEffect(() => {
-    if (isClerkLoaded) {
-      if (clerkUser) {
-        const mappedUser: UserProfile = {
-          id: clerkUser.id,
-          name: clerkUser.fullName || clerkUser.firstName || clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 'User',
-          email: clerkUser.primaryEmailAddress?.emailAddress || '',
-          avatar: clerkUser.imageUrl,
-          role: (clerkUser.publicMetadata?.role as string) || 'student',
-          isVerified: clerkUser.primaryEmailAddress?.verification?.status === 'verified',
-          phone: clerkUser.primaryPhoneNumber?.phoneNumber || ''
-        };
-        setCurrentUser(mappedUser);
+    if (!isClerkLoaded) return;
+
+    if (isClerkSignedIn && clerkUser) {
+      const unsafeMeta = (clerkUser.unsafeMetadata || {}) as Record<string, any>;
+      const publicMeta = (clerkUser.publicMetadata || {}) as Record<string, any>;
+
+      const role = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
+      const isEmailVerified = clerkUser.primaryEmailAddress?.verification?.status === 'verified';
+      const isVerified = Boolean(publicMeta.isVerified ?? (unsafeMeta.isVerified ?? isEmailVerified));
+      const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
+      const phone = clerkUser.primaryPhoneNumber?.phoneNumber || (unsafeMeta.phone as string) || (publicMeta.phone as string) || '';
+      const name = clerkUser.fullName || 
+        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || 
+        clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+        'User';
+
+      const mappedUser: UserProfile = {
+        id: clerkUser.id,
+        name,
+        email: clerkUser.primaryEmailAddress?.emailAddress || '',
+        avatar: clerkUser.imageUrl,
+        role,
+        isVerified,
+        phone,
+        university
+      };
+
+      setCurrentUser(mappedUser);
+      try {
         localStorage.setItem('r8_user', JSON.stringify(mappedUser));
-      } else {
-        // If logged out from Clerk, clear local storage session
-        setCurrentUser(null);
+      } catch (e) {}
+    } else {
+      // Session inactive, logged out, or account deleted: clear auth state immediately
+      setCurrentUser(null);
+      try {
         localStorage.removeItem('r8_user');
-      }
+      } catch (e) {}
     }
-  }, [clerkUser, isClerkLoaded]);
+  }, [clerkUser, isClerkLoaded, isClerkSignedIn]);
 
   // Search State: single source of truth synced with URL query
   const [searchState, setSearchState] = useState<SearchState>(() => {
