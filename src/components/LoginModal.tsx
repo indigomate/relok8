@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
-import { SignIn, SignUp, useUser } from '@clerk/react';
+import { SignIn, SignUp, useUser, useAuth } from '@clerk/react';
 
 export interface UserProfile {
   id: string;
@@ -24,10 +24,12 @@ interface LoginModalProps {
   initialMode?: 'signin' | 'signup';
 }
 
-export const LoginModal: React.FC<LoginModalProps> = ({ 
+export const LoginModal: React.FC<LoginModalProps> = React.memo(({ 
   isOpen, 
   onClose, 
   onLoginSuccess,
+  locale,
+  contextMessage,
   initialMode = 'signin'
 }) => {
   const [mode, setMode] = useState<'signin' | 'signup'>(() => {
@@ -44,25 +46,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     return initialMode;
   });
 
-  const { isLoaded, isSignedIn, user } = useUser();
+  const prevIsOpenRef = useRef(false);
 
-  // Listen to hash changes triggered by Clerk's internal switch links (Already have an account? Sign in / Sign up)
+  // Sync mode ONLY when modal transitions from closed to open.
+  // Never reset or overwrite mode while user is actively filling in credentials.
   useEffect(() => {
-    const handleHashChange = () => {
-      const h = window.location.hash.toLowerCase();
-      if (h.includes('sign-up')) {
-        setMode('signup');
-      } else if (h.includes('sign-in')) {
-        setMode('signin');
-      }
-    };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  // Sync initialMode when modal opens
-  useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       const p = window.location.pathname.toLowerCase();
       const h = window.location.hash.toLowerCase();
       if (p.includes('sign-up') || p.includes('register') || h.includes('sign-up')) {
@@ -73,7 +62,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         setMode(initialMode);
       }
     }
+    prevIsOpenRef.current = isOpen;
   }, [isOpen, initialMode]);
+
+  const { isLoaded: isAuthLoaded, isSignedIn: isAuthSignedIn } = useAuth();
+  const { isLoaded: isUserLoaded, isSignedIn: isUserSignedIn, user } = useUser();
+  const isSignedIn = Boolean(isAuthSignedIn || isUserSignedIn);
+  const isLoaded = Boolean(isAuthLoaded && isUserLoaded);
+
+  // Listen to hash changes only for explicit sign-up / sign-in switch links (#/sign-up or #/sign-in)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const h = window.location.hash.toLowerCase();
+      if (h === '#/sign-up' || h === '#sign-up') {
+        setMode('signup');
+      } else if (h === '#/sign-in' || h === '#sign-in') {
+        setMode('signin');
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -94,7 +103,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       const h = window.location.hash.toLowerCase();
       if (h.includes('sign-') || h.includes('factor-')) {
         history.replaceState(null, '', window.location.pathname + window.location.search);
-      } else if (p.includes('sign-up') || p.includes('sign-in') || p.includes('login') || p.includes('register') || p.includes('factor-')) {
+      }
+      if (p.includes('sign-up') || p.includes('sign-in') || p.includes('login') || p.includes('register') || p.includes('factor-')) {
         const homePath = window.location.pathname.startsWith('/pl') ? '/pl' : '/';
         history.replaceState(null, '', homePath + window.location.search);
       }
@@ -105,24 +115,35 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Automatically trigger success callback and close modal when Clerk authentication completes
   useEffect(() => {
     if (isOpen && isLoaded && isSignedIn && user) {
-      const unsafeMeta = (user.unsafeMetadata || {}) as Record<string, any>;
-      const publicMeta = (user.publicMetadata || {}) as Record<string, any>;
+      const unsafeMeta = ((user.unsafeMetadata || (user as any).unsafe_metadata) || {}) as Record<string, any>;
+      const publicMeta = ((user.publicMetadata || (user as any).public_metadata) || {}) as Record<string, any>;
 
-      const role = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
-      const isEmailVerified = user.primaryEmailAddress?.verification?.status === 'verified';
+      const rawRole = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
+      const role = (rawRole === 'member' || !['student', 'expat', 'landlord', 'tenant'].includes(rawRole)) ? 'student' : rawRole;
+
+      const primaryEmail = user.primaryEmailAddress || 
+        user.emailAddresses?.find(e => e.id === (user as any).primaryEmailAddressId || e.id === (user as any).primary_email_address_id) ||
+        user.emailAddresses?.[0];
+      const isEmailVerified = primaryEmail?.verification?.status === 'verified';
       const isVerified = Boolean(publicMeta.isVerified ?? (unsafeMeta.isVerified ?? isEmailVerified));
+
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
-      const phone = user.primaryPhoneNumber?.phoneNumber || (unsafeMeta.phone as string) || (publicMeta.phone as string) || '';
+      const phone = user.primaryPhoneNumber?.phoneNumber || 
+        (user.phoneNumbers?.[0] as any)?.phoneNumber || 
+        (user.phoneNumbers?.[0] as any)?.phone_number || 
+        (unsafeMeta.phone as string) || (publicMeta.phone as string) || '';
+
       const name = user.fullName || 
-        [user.firstName, user.lastName].filter(Boolean).join(' ') || 
-        user.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+        (user as any).name ||
+        [user.firstName || (user as any).first_name, user.lastName || (user as any).last_name].filter(Boolean).join(' ') || 
+        primaryEmail?.emailAddress?.split('@')[0] || 
         'User';
 
       const profile: UserProfile = {
         id: user.id,
         name,
-        email: user.primaryEmailAddress?.emailAddress || '',
-        avatar: user.imageUrl,
+        email: primaryEmail?.emailAddress || '',
+        avatar: user.imageUrl || (user as any).image_url,
         role,
         isVerified,
         phone,
@@ -133,7 +154,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     }
   }, [isOpen, isLoaded, isSignedIn, user, onLoginSuccess]);
 
-  if (!isOpen) return null;
+  // If modal is not open, or user is already authenticated by ClerkProvider, prevent render
+  if (!isOpen || isSignedIn) return null;
 
   return (
     <div 
@@ -144,7 +166,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         }
       }}
     >
-      <div className="relative my-8 animate-in zoom-in-95 duration-150">
+      <div className="relative my-8 animate-in zoom-in-95 duration-150 max-w-md w-full">
         {/* Floating close button */}
         <button
           type="button"
@@ -155,19 +177,53 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           <X className="w-4 h-4" />
         </button>
 
-        {/* Pure Official Clerk UI Component - zero surrounding wrapper UI */}
-        {mode === 'signup' ? (
-          <SignUp 
-            routing="hash"
-            signInUrl="#/sign-in"
-          />
-        ) : (
-          <SignIn 
-            routing="hash"
-            signUpUrl="#/sign-up"
-          />
+        {/* Tab switch header so user can easily toggle between Sign In and Sign Up */}
+        <div className="flex items-center justify-center mb-3 bg-slate-100/90 p-1 rounded-xl shadow-xs border border-slate-200/80">
+          <button
+            type="button"
+            onClick={() => setMode('signin')}
+            className={`flex-1 py-1.5 px-4 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              mode === 'signin'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {locale === 'pl' ? 'Logowanie' : 'Sign In'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('signup')}
+            className={`flex-1 py-1.5 px-4 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              mode === 'signup'
+                ? 'bg-white text-slate-900 shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {locale === 'pl' ? 'Rejestracja' : 'Sign Up'}
+          </button>
+        </div>
+
+        {contextMessage && (
+          <div className="mb-3 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-lg text-xs text-indigo-700 text-center font-medium">
+            {contextMessage}
+          </div>
         )}
+
+        {/* Official Clerk UI with hash routing and preserved multi-step state */}
+        <div className="flex justify-center">
+          {mode === 'signup' ? (
+            <SignUp 
+              routing="hash"
+              signInUrl="#/sign-in"
+            />
+          ) : (
+            <SignIn 
+              routing="hash"
+              signUpUrl="#/sign-up"
+            />
+          )}
+        </div>
       </div>
     </div>
   );
-};
+});

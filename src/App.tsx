@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useUser } from '@clerk/react';
+import { useUser, useAuth } from '@clerk/react';
 import { 
   Search, ArrowRight, Check, CheckCircle2, RefreshCw, 
   MapPin, Calendar, Home, DollarSign, Shield, Users, Heart
@@ -110,31 +110,43 @@ export default function App() {
   });
 
   // Clerk Authentication Sync - authoritative source of truth for user & session state
-  const { user: clerkUser, isLoaded: isClerkLoaded, isSignedIn: isClerkSignedIn } = useUser();
+  const { isSignedIn: isClerkSignedIn, isLoaded: isAuthLoaded } = useAuth();
+  const { user: clerkUser, isLoaded: isClerkLoaded } = useUser();
 
   // Sync user state and metadata whenever Clerk session loads or updates
   useEffect(() => {
-    if (!isClerkLoaded) return;
+    if (!isClerkLoaded || !isAuthLoaded) return;
 
     if (isClerkSignedIn && clerkUser) {
-      const unsafeMeta = (clerkUser.unsafeMetadata || {}) as Record<string, any>;
-      const publicMeta = (clerkUser.publicMetadata || {}) as Record<string, any>;
+      const unsafeMeta = ((clerkUser.unsafeMetadata || (clerkUser as any).unsafe_metadata) || {}) as Record<string, any>;
+      const publicMeta = ((clerkUser.publicMetadata || (clerkUser as any).public_metadata) || {}) as Record<string, any>;
 
-      const role = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
-      const isEmailVerified = clerkUser.primaryEmailAddress?.verification?.status === 'verified';
+      const rawRole = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
+      const role = (rawRole === 'member' || !['student', 'expat', 'landlord', 'tenant'].includes(rawRole)) ? 'student' : rawRole;
+
+      const primaryEmail = clerkUser.primaryEmailAddress || 
+        clerkUser.emailAddresses?.find(e => e.id === (clerkUser as any).primaryEmailAddressId || e.id === (clerkUser as any).primary_email_address_id) ||
+        clerkUser.emailAddresses?.[0];
+      const isEmailVerified = primaryEmail?.verification?.status === 'verified';
       const isVerified = Boolean(publicMeta.isVerified ?? (unsafeMeta.isVerified ?? isEmailVerified));
+
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
-      const phone = clerkUser.primaryPhoneNumber?.phoneNumber || (unsafeMeta.phone as string) || (publicMeta.phone as string) || '';
+      const phone = clerkUser.primaryPhoneNumber?.phoneNumber || 
+        (clerkUser.phoneNumbers?.[0] as any)?.phoneNumber || 
+        (clerkUser.phoneNumbers?.[0] as any)?.phone_number || 
+        (unsafeMeta.phone as string) || (publicMeta.phone as string) || '';
+
       const name = clerkUser.fullName || 
-        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || 
-        clerkUser.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+        (clerkUser as any).name ||
+        [clerkUser.firstName || (clerkUser as any).first_name, clerkUser.lastName || (clerkUser as any).last_name].filter(Boolean).join(' ') || 
+        primaryEmail?.emailAddress?.split('@')[0] || 
         'User';
 
       const mappedUser: UserProfile = {
         id: clerkUser.id,
         name,
-        email: clerkUser.primaryEmailAddress?.emailAddress || '',
-        avatar: clerkUser.imageUrl,
+        email: primaryEmail?.emailAddress || '',
+        avatar: clerkUser.imageUrl || (clerkUser as any).image_url,
         role,
         isVerified,
         phone,
@@ -145,14 +157,14 @@ export default function App() {
       try {
         localStorage.setItem('r8_user', JSON.stringify(mappedUser));
       } catch (e) {}
-    } else {
+    } else if (isAuthLoaded && !isClerkSignedIn) {
       // Session inactive, logged out, or account deleted: clear auth state immediately
       setCurrentUser(null);
       try {
         localStorage.removeItem('r8_user');
       } catch (e) {}
     }
-  }, [clerkUser, isClerkLoaded, isClerkSignedIn]);
+  }, [clerkUser, isClerkLoaded, isClerkSignedIn, isAuthLoaded]);
 
   // Search State: single source of truth synced with URL query
   const [searchState, setSearchState] = useState<SearchState>(() => {
@@ -205,13 +217,32 @@ export default function App() {
   const [isCesjaOpen, setIsCesjaOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(() => currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up');
+  const [isLoginOpen, setIsLoginOpen] = useState(() => !isClerkSignedIn && (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up'));
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>(() => currentRoute.type === 'sign-up' ? 'signup' : 'signin');
   const [loginReason, setLoginReason] = useState('');
   const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
 
-  // Automatically open auth modal when navigating to /sign-in, /sign-up, /login, /register
+  // Prevent re-renders of LoginModal when the authentication state is already handled by ClerkProvider
   useEffect(() => {
+    if (isAuthLoaded && isClerkSignedIn) {
+      if (isLoginOpen) {
+        setIsLoginOpen(false);
+      }
+      // Ensure that after a successful sign-in, the application gracefully routes back
+      // to the intended page or closes the modal without triggering a loop.
+      if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
+        const redirectUrl = currentRoute.searchParams.get('redirect_url') || 
+                            currentRoute.searchParams.get('return_to') || 
+                            (locale === 'pl' ? '/pl' : '/');
+        window.history.replaceState({}, '', redirectUrl);
+        setCurrentRoute(parseRoute(redirectUrl, '', ''));
+      }
+    }
+  }, [isAuthLoaded, isClerkSignedIn, isLoginOpen, currentRoute.type, currentRoute.searchParams, locale]);
+
+  // Automatically open auth modal when navigating to /sign-in, /sign-up only if NOT already authenticated
+  useEffect(() => {
+    if (isAuthLoaded && isClerkSignedIn) return;
     if (currentRoute.type === 'sign-up') {
       setLoginMode('signup');
       setIsLoginOpen(true);
@@ -219,9 +250,15 @@ export default function App() {
       setLoginMode('signin');
       setIsLoginOpen(true);
     }
-  }, [currentRoute.type]);
+  }, [currentRoute.type, isAuthLoaded, isClerkSignedIn]);
 
   const handleOpenLogin = (mode: 'signin' | 'signup' = 'signin', reason: string = '') => {
+    if (isClerkSignedIn) {
+      const accountPath = locale === 'pl' ? '/pl/account' : '/account';
+      window.history.pushState({}, '', accountPath);
+      setCurrentRoute(parseRoute(accountPath, '', ''));
+      return;
+    }
     setLoginMode(mode);
     setLoginReason(reason);
     setIsLoginOpen(true);
@@ -1196,26 +1233,35 @@ export default function App() {
         locale={locale}
       />
 
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => {
-          setIsLoginOpen(false);
-          if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
-            const homePath = locale === 'pl' ? '/pl' : '/';
-            window.history.replaceState({}, '', homePath);
-            setCurrentRoute(parseRoute(homePath, '', ''));
-          }
-        }}
-        initialMode={loginMode}
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-          localStorage.setItem('r8_user', JSON.stringify(user));
-          setIsLoginOpen(false);
-          showToast(locale === 'pl' ? `Witaj, ${user.name}!` : `Welcome back, ${user.name}!`);
-        }}
-        locale={locale}
-        contextMessage={loginReason}
-      />
+      {!isClerkSignedIn && (
+        <LoginModal
+          isOpen={isLoginOpen}
+          onClose={() => {
+            setIsLoginOpen(false);
+            if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
+              const returnPath = currentRoute.searchParams.get('redirect_url') || (locale === 'pl' ? '/pl' : '/');
+              window.history.replaceState({}, '', returnPath);
+              setCurrentRoute(parseRoute(returnPath, '', ''));
+            }
+          }}
+          initialMode={loginMode}
+          onLoginSuccess={(user) => {
+            setCurrentUser(user);
+            localStorage.setItem('r8_user', JSON.stringify(user));
+            setIsLoginOpen(false);
+            if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
+              const redirectUrl = currentRoute.searchParams.get('redirect_url') || 
+                                  currentRoute.searchParams.get('return_to') || 
+                                  (locale === 'pl' ? '/pl' : '/');
+              window.history.replaceState({}, '', redirectUrl);
+              setCurrentRoute(parseRoute(redirectUrl, '', ''));
+            }
+            showToast(locale === 'pl' ? `Witaj, ${user.name}!` : `Welcome back, ${user.name}!`);
+          }}
+          locale={locale}
+          contextMessage={loginReason}
+        />
+      )}
 
       <CookieBanner locale={locale} />
 

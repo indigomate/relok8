@@ -57,7 +57,13 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
                         rawHash.startsWith('verify') || 
                         rawHash.startsWith('sign-in') || 
                         rawHash.startsWith('sign-up') ||
-                        rawHash.startsWith('reset-password');
+                        rawHash.startsWith('sign_in') || 
+                        rawHash.startsWith('sign_up') || 
+                        rawHash.startsWith('create') ||
+                        rawHash.startsWith('step') ||
+                        rawHash.startsWith('reset-password') ||
+                        rawHash.includes('strategy') ||
+                        rawHash.includes('clerk');
     if (rawHash && !isClerkAuth) {
       const targetPath = '/' + rawHash;
       try {
