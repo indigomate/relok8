@@ -31,8 +31,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   initialMode = 'signin'
 }) => {
   const [mode, setMode] = useState<'signin' | 'signup'>(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('sign-up')) {
-      return 'signup';
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      if (p.includes('sign-up') || p.includes('register') || h.includes('sign-up')) {
+        return 'signup';
+      }
+      if (p.includes('sign-in') || p.includes('login') || h.includes('sign-in')) {
+        return 'signin';
+      }
     }
     return initialMode;
   });
@@ -42,9 +49,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Listen to hash changes triggered by Clerk's internal switch links (Already have an account? Sign in / Sign up)
   useEffect(() => {
     const handleHashChange = () => {
-      if (window.location.hash.includes('sign-up')) {
+      const h = window.location.hash.toLowerCase();
+      if (h.includes('sign-up')) {
         setMode('signup');
-      } else if (window.location.hash.includes('sign-in')) {
+      } else if (h.includes('sign-in')) {
         setMode('signin');
       }
     };
@@ -55,9 +63,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Sync initialMode when modal opens
   useEffect(() => {
     if (isOpen) {
-      if (window.location.hash.includes('sign-up')) {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      if (p.includes('sign-up') || p.includes('register') || h.includes('sign-up')) {
         setMode('signup');
-      } else if (window.location.hash.includes('sign-in')) {
+      } else if (p.includes('sign-in') || p.includes('login') || h.includes('sign-in')) {
         setMode('signin');
       } else {
         setMode(initialMode);
@@ -79,8 +89,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   }, [isOpen]);
 
   const handleDismiss = () => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('sign-')) {
-      history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (typeof window !== 'undefined') {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      if (h.includes('sign-')) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else if (p.includes('sign-up') || p.includes('sign-in') || p.includes('login') || p.includes('register')) {
+        const homePath = window.location.pathname.startsWith('/pl') ? '/pl' : '/';
+        history.replaceState(null, '', homePath + window.location.search);
+      }
     }
     onClose();
   };

@@ -10,6 +10,8 @@ export type RouteType =
   | 'messages'
   | 'dashboard'
   | 'account'
+  | 'sign-in'
+  | 'sign-up'
   | 'help'
   | 'how-it-works'
   | 'savings-calculator'
@@ -75,6 +77,14 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
   // Root / or /pl
   if (!first) {
     return { type: 'home', locale, path: pathname, searchParams };
+  }
+
+  // Authentication deep links (/sign-up, /sign-in, /login, /register)
+  if (first === 'sign-up' || first === 'signup' || first === 'register') {
+    return { type: 'sign-up', locale, path: pathname, searchParams };
+  }
+  if (first === 'sign-in' || first === 'signin' || first === 'login' || first === 'log-in') {
+    return { type: 'sign-in', locale, path: pathname, searchParams };
   }
 
   // Saved

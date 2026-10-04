@@ -185,10 +185,21 @@ export default function App() {
   const [isCesjaOpen, setIsCesjaOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [loginMode, setLoginMode] = useState<'signin' | 'signup'>('signin');
+  const [isLoginOpen, setIsLoginOpen] = useState(() => currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up');
+  const [loginMode, setLoginMode] = useState<'signin' | 'signup'>(() => currentRoute.type === 'sign-up' ? 'signup' : 'signin');
   const [loginReason, setLoginReason] = useState('');
   const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
+
+  // Automatically open auth modal when navigating to /sign-in, /sign-up, /login, /register
+  useEffect(() => {
+    if (currentRoute.type === 'sign-up') {
+      setLoginMode('signup');
+      setIsLoginOpen(true);
+    } else if (currentRoute.type === 'sign-in') {
+      setLoginMode('signin');
+      setIsLoginOpen(true);
+    }
+  }, [currentRoute.type]);
 
   const handleOpenLogin = (mode: 'signin' | 'signup' = 'signin', reason: string = '') => {
     setLoginMode(mode);
@@ -275,6 +286,12 @@ export default function App() {
     } else if (currentRoute.type === 'account') {
       pageTitle = locale === 'pl' ? 'Konto Użytkownika | Relok8' : 'User Account & Profile | Relok8';
       metaDesc = 'Manage your saved rooms, lease transfer listings, and account settings on Relok8.';
+    } else if (currentRoute.type === 'sign-up') {
+      pageTitle = locale === 'pl' ? 'Zarejestruj się | Relok8' : 'Create Account | Relok8';
+      metaDesc = 'Create your Relok8 account to browse student rooms or transfer your active lease across Poland.';
+    } else if (currentRoute.type === 'sign-in') {
+      pageTitle = locale === 'pl' ? 'Zaloguj się | Relok8' : 'Sign In | Relok8';
+      metaDesc = 'Sign in to your Relok8 account to manage saved apartments, inquiries, and lease transfers.';
     }
 
     document.title = pageTitle;
@@ -1161,7 +1178,14 @@ export default function App() {
 
       <LoginModal
         isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
+        onClose={() => {
+          setIsLoginOpen(false);
+          if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
+            const homePath = locale === 'pl' ? '/pl' : '/';
+            window.history.replaceState({}, '', homePath);
+            setCurrentRoute(parseRoute(homePath, '', ''));
+          }
+        }}
         initialMode={loginMode}
         onLoginSuccess={(user) => {
           setCurrentUser(user);
