@@ -4,11 +4,12 @@ import {
   ArrowLeft, User, Heart, Home, MessageSquare, Shield, 
   Settings, LogOut, CheckCircle2, AlertCircle, Mail, Phone, 
   Building2, GraduationCap, Calendar, MapPin, ExternalLink, 
-  Trash2, Plus, Send, RefreshCw, Key
+  Trash2, Plus, Send, RefreshCw, Key, Cpu
 } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale, formatPLN, formatDate } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';
+import { AdminConsole } from '../components/AdminConsole';
 import { 
   updateUserProfile, 
   getUserListings, 
@@ -45,7 +46,15 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 }) => {
   const { user: clerkUser } = useUser();
   const clerk = useClerk();
-  const [activeTab, setActiveTab] = useState<'profile' | 'saved' | 'listings' | 'inquiries' | 'security' | 'support'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'saved' | 'listings' | 'inquiries' | 'security' | 'support' | 'admin'>(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('tab') === 'admin' || window.location.hash.includes('admin')) {
+        return 'admin';
+      }
+    }
+    return 'profile';
+  });
 
   // Edit profile state
   const [fullName, setFullName] = useState(currentUser?.name || '');
@@ -516,6 +525,19 @@ export const AccountPage: React.FC<AccountPageProps> = ({
           >
             <Mail className="w-3.5 h-3.5" />
             <span>{locale === 'pl' ? 'Kontakt i pomoc' : 'Support & Contact'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('admin')}
+            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'admin'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200/50'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>AI Ops & Review</span>
           </button>
         </div>
 
@@ -1024,6 +1046,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               </form>
             )}
           </div>
+        )}
+
+        {/* TAB 7: AI Operations & Review Queue */}
+        {activeTab === 'admin' && (
+          <AdminConsole locale={locale} />
         )}
 
       </div>
