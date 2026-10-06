@@ -4,6 +4,25 @@
 -- across Poland's student hubs (Warsaw, Kraków, Wrocław, Gdańsk, Poznań, Lublin).
 -- ==============================================================================
 
+-- 0. PREPARATION: Remove foreign key to auth.users so seed data & external auth (Clerk) run smoothly
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+
+-- (Optional) Ensure seed users exist in auth.users as well
+DO $$
+BEGIN
+    INSERT INTO auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+    VALUES 
+        ('a0000001-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'piotr.kaminski@relok8.online', '$2a$10$dummyhashedpasswordforrelok8seeduser0001', NOW(), '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Piotr Kamiński"}'::jsonb, NOW(), NOW()),
+        ('a0000002-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'matteo.rossi@relok8.online', '$2a$10$dummyhashedpasswordforrelok8seeduser0002', NOW(), '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Matteo Rossi"}'::jsonb, NOW(), NOW()),
+        ('a0000003-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'sofia.lindqvist@relok8.online', '$2a$10$dummyhashedpasswordforrelok8seeduser0003', NOW(), '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Sofia Lindqvist"}'::jsonb, NOW(), NOW()),
+        ('a0000004-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lucas.dupont@relok8.online', '$2a$10$dummyhashedpasswordforrelok8seeduser0004', NOW(), '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Lucas Dupont"}'::jsonb, NOW(), NOW()),
+        ('a0000005-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'amina.almansoor@relok8.online', '$2a$10$dummyhashedpasswordforrelok8seeduser0005', NOW(), '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Amina Al-Mansoor"}'::jsonb, NOW(), NOW()),
+        ('a0000006-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'marta.wisniewska@relok8.online', '$2a$10$dummyhashedpasswordforrelok8seeduser0006', NOW(), '{"provider":"email","providers":["email"]}'::jsonb, '{"full_name":"Marta Wiśniewska"}'::jsonb, NOW(), NOW())
+    ON CONFLICT (id) DO NOTHING;
+EXCEPTION
+    WHEN OTHERS THEN NULL;
+END $$;
+
 -- 1. SEED PROFILES (Host / Landlord / Departing Tenants)
 INSERT INTO public.profiles (id, full_name, avatar_url, phone_number, whatsapp_number, is_verified)
 VALUES

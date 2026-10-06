@@ -3,6 +3,19 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { INITIAL_LISTINGS } from './src/data/mockListings';
+import {
+  sendResendEmail,
+  isResendConfigured,
+  buildInquiryEmailHtml,
+  buildInquiryReplyHtml,
+  buildContactSupportHtml
+} from './src/lib/resend';
+import {
+  executeAIGateway,
+  getAIRuns,
+  getReviewQueue,
+  resolveReviewQueueItem
+} from './src/lib/aiGateway';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -127,9 +140,6 @@ interface Listing {
   lng?: number;
 }
 
-let listings: any[] = [...(INITIAL_LISTINGS as any[])];
-
-/*
 let listings_legacy: Listing[] = [
   {
     id: 'rel-waw-01',
@@ -411,7 +421,8 @@ let listings_legacy: Listing[] = [
     lng: 22.5620
   }
 ];
-*/
+
+let listings: any[] = [...listings_legacy];
 
 // In-memory collections for Inquiries, Users, Agreements
 interface Inquiry {
@@ -750,7 +761,7 @@ app.get('/api/inquiries', (req: Request, res: Response) => {
 });
 
 // POST /api/inquiries
-app.post('/api/inquiries', (req: Request, res: Response) => {
+app.post('/api/inquiries', async (req: Request, res: Response) => {
   const { listingId, tenantName, tenantEmail, message } = req.body;
   if (!listingId || !message) {
     return res.status(400).json({ error: 'listingId and message are required' });
@@ -776,14 +787,34 @@ app.post('/api/inquiries', (req: Request, res: Response) => {
   };
 
   inquiries.push(newInquiry);
+
+  // Dispatch email notification to landlord/departing tenant via Resend
+  const recipientEmail = targetListing?.landlordContactEmail || 'info@relok8.online';
+  const listingTitle = targetListing?.title || 'Relok8 Housing Listing';
+  const listingUrl = `https://relok8.online/listing/${listingId}`;
+
+  const emailResult = await sendResendEmail({
+    to: recipientEmail,
+    reply_to: newInquiry.tenantEmail,
+    subject: `New Tenant Inquiry: ${listingTitle}`,
+    html: buildInquiryEmailHtml({
+      listingTitle,
+      studentName: newInquiry.tenantName,
+      studentEmail: newInquiry.tenantEmail,
+      message,
+      listingUrl
+    })
+  });
+
   res.status(201).json({
     message: 'Inquiry successfully transmitted to outgoing tenant',
-    inquiry: newInquiry
+    inquiry: newInquiry,
+    emailDelivery: emailResult
   });
 });
 
 // POST /api/contact - Tied directly to info@relok8.online
-app.post('/api/contact', (req: Request, res: Response) => {
+app.post('/api/contact', async (req: Request, res: Response) => {
   const { name, email, subject, message, topic } = req.body;
   if (!email || !message) {
     return res.status(400).json({ error: 'Email and message are required' });
@@ -821,15 +852,30 @@ app.post('/api/contact', (req: Request, res: Response) => {
     ]
   });
 
+  // Dispatch email via Resend to info@relok8.online
+  const emailResult = await sendResendEmail({
+    to: 'info@relok8.online',
+    reply_to: contactRecord.senderEmail,
+    subject: `[Relok8 Help Center] ${contactRecord.subject}`,
+    html: buildContactSupportHtml({
+      name: contactRecord.senderName,
+      email: contactRecord.senderEmail,
+      subject: contactRecord.subject,
+      topic: contactRecord.topic,
+      message: contactRecord.message
+    })
+  });
+
   res.status(200).json({
     success: true,
     message: 'Your message has been delivered to info@relok8.online. We typically reply within 1-2 business hours.',
-    record: contactRecord
+    record: contactRecord,
+    emailDelivery: emailResult
   });
 });
 
 // POST /api/inquiries/:id/reply
-app.post('/api/inquiries/:id/reply', (req: Request, res: Response) => {
+app.post('/api/inquiries/:id/reply', async (req: Request, res: Response) => {
   const inquiry = inquiries.find((i) => i.id === req.params.id);
   if (!inquiry) {
     return res.status(404).json({ error: 'Inquiry not found' });
@@ -848,11 +894,59 @@ app.post('/api/inquiries/:id/reply', (req: Request, res: Response) => {
   };
   inquiry.replies.push(replyObj);
 
+  // Dispatch notification email to prospective tenant via Resend
+  let emailDelivery = null;
+  if (inquiry.tenantEmail) {
+    const targetListing = listings.find((l) => l.id === inquiry.listingId);
+    emailDelivery = await sendResendEmail({
+      to: inquiry.tenantEmail,
+      subject: `Reply to your inquiry on Relok8 (${targetListing?.title || 'Listing'})`,
+      html: buildInquiryReplyHtml({
+        listingTitle: targetListing?.title || 'Your inquiry on Relok8',
+        senderName: replyObj.sender,
+        replyText: text
+      })
+    });
+  }
+
   res.status(201).json({
     message: 'Reply posted',
     reply: replyObj,
-    inquiry
+    inquiry,
+    emailDelivery
   });
+});
+
+// GET /api/email/status - Check Resend configuration & readiness
+app.get('/api/email/status', (_req: Request, res: Response) => {
+  res.json({
+    provider: 'Resend',
+    configured: isResendConfigured(),
+    defaultFrom: process.env.RESEND_FROM_EMAIL || 'Relok8 <notifications@relok8.online>',
+    mode: isResendConfigured() ? 'live' : 'simulation',
+    hint: isResendConfigured()
+      ? 'Resend API key is active and ready for live email dispatch'
+      : 'Set RESEND_API_KEY in .env to enable live delivery. In simulation mode, emails are logged and receipts generated.'
+  });
+});
+
+// POST /api/email/send - Direct transactional email dispatch
+app.post('/api/email/send', async (req: Request, res: Response) => {
+  const { to, subject, html, text, from, reply_to } = req.body;
+  if (!to || !subject || (!html && !text)) {
+    return res.status(400).json({ error: 'Missing required parameters: to, subject, and either html or text' });
+  }
+
+  const result = await sendResendEmail({
+    to,
+    subject,
+    html,
+    text,
+    from,
+    reply_to
+  });
+
+  res.status(result.status === 'error' ? 500 : 200).json(result);
 });
 
 // Cesja Legal Protocol & Templates
@@ -925,6 +1019,89 @@ app.post('/api/calculator/break-fee', (req: Request, res: Response) => {
     feeThroughRelok8,
     netSavedPLN,
     recommendation: 'Transfer your active lease directly to incoming verified student or expat to recover 100% of your deposit and avoid landlord litigation.'
+  });
+});
+
+// ==============================================================================
+// RELOK8 AI GATEWAY (Slice A)
+// ==============================================================================
+
+// POST /api/ai-gateway - Central model execution route
+app.post('/api/ai-gateway', async (req: Request, res: Response) => {
+  const { task, input, input_ref, entity_type, entity_id } = req.body;
+  if (!task || !input) {
+    return res.status(400).json({ error: 'Missing required parameters: task and input' });
+  }
+
+  const validTasks = [
+    'extract_listing',
+    'moderate_listing',
+    'parse_search',
+    'translate',
+    'draft_reply',
+    'parse_consent_reply'
+  ];
+
+  if (!validTasks.includes(task)) {
+    return res.status(400).json({
+      error: `Invalid task "${task}". Supported tasks: ${validTasks.join(', ')}`
+    });
+  }
+
+  try {
+    const result = await executeAIGateway({
+      task,
+      input,
+      input_ref,
+      entity_type,
+      entity_id
+    });
+    res.json(result);
+  } catch (err: any) {
+    console.error('[AI Gateway Server Error]', err);
+    res.status(500).json({ error: err.message || 'Internal AI Gateway error' });
+  }
+});
+
+// GET /api/ai-gateway/runs - Audit log of all AI runs
+app.get('/api/ai-gateway/runs', (req: Request, res: Response) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+  res.json({
+    count: getAIRuns().length,
+    runs: getAIRuns(limit)
+  });
+});
+
+// GET /api/ai-gateway/review-queue - Triage items requiring human review
+app.get('/api/ai-gateway/review-queue', (req: Request, res: Response) => {
+  const status = req.query.status as any;
+  const items = getReviewQueue(status);
+  res.json({
+    count: items.length,
+    items
+  });
+});
+
+// POST /api/ai-gateway/review-queue/:id/resolve - Human approval/rejection/edit
+app.post('/api/ai-gateway/review-queue/:id/resolve', (req: Request, res: Response) => {
+  const { status, reviewer, final_decision } = req.body;
+  if (!status || !reviewer) {
+    return res.status(400).json({ error: 'status and reviewer are required' });
+  }
+
+  const updated = resolveReviewQueueItem(req.params.id, {
+    status,
+    reviewer,
+    final_decision
+  });
+
+  if (!updated) {
+    return res.status(404).json({ error: 'Review queue item not found' });
+  }
+
+  res.json({
+    message: 'Review item resolved',
+    item: updated
   });
 });
 

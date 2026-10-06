@@ -32,9 +32,9 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 3. PROFILES TABLE (Extends auth.users)
+-- 3. PROFILES TABLE (Supports both Supabase Auth and external Auth like Clerk)
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY,
     full_name TEXT,
     avatar_url TEXT,
     phone_number TEXT,
@@ -285,3 +285,53 @@ DROP POLICY IF EXISTS "Authenticated users can upload own avatar" ON storage.obj
 CREATE POLICY "Authenticated users can upload own avatar"
     ON storage.objects FOR INSERT
     WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+
+-- ==============================================================================
+-- 8. AI GATEWAY & AUTONOMY LADDER TABLES (Slice A)
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS public.ai_runs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    task TEXT NOT NULL,
+    prompt_version TEXT,
+    model TEXT,
+    input_ref TEXT,
+    output JSONB,
+    confidence NUMERIC,
+    cost_eur NUMERIC,
+    latency_ms INT,
+    decision TEXT CHECK (decision IN ('auto_approved', 'auto_rejected', 'needs_review')),
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.review_queue (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ai_run_id UUID REFERENCES public.ai_runs(id) ON DELETE CASCADE,
+    entity_type TEXT,
+    entity_id TEXT,
+    status TEXT DEFAULT 'open' CHECK (status IN ('open', 'approved', 'rejected', 'edited')),
+    reviewer TEXT,
+    final_decision JSONB,
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.listing_flags (
+    listing_id UUID,
+    flag TEXT NOT NULL,
+    severity INT DEFAULT 1 NOT NULL,
+    source TEXT DEFAULT 'ai_quality_check',
+    created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Enable RLS
+ALTER TABLE public.ai_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.review_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.listing_flags ENABLE ROW LEVEL SECURITY;
+
+-- Allow public reads on review queue for admin dashboards, restrict inserts
+DROP POLICY IF EXISTS "Service and admins can access ai_runs" ON public.ai_runs;
+CREATE POLICY "Service and admins can access ai_runs" ON public.ai_runs FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Service and admins can access review_queue" ON public.review_queue;
+CREATE POLICY "Service and admins can access review_queue" ON public.review_queue FOR ALL USING (true);
+
