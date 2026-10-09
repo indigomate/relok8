@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, Heart, Check, Calendar, MapPin, Building,
-  ArrowRight, FileText, CheckCircle2, Lock, Share2
+  ArrowRight, FileText, CheckCircle2, Lock, Share2,
+  Bot, Clock, Sparkles
 } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
 import { TransferTracker } from './TransferTracker';
+import { useConvex } from '../lib/convex/client';
 
 interface ListingDetailModalProps {
   listing: Listing | null;
@@ -16,6 +18,8 @@ interface ListingDetailModalProps {
   onToggleSave: (id: string) => void;
   onInitiateCesja: (listing: Listing) => void;
   onInitiateDeposit: (listing: Listing) => void;
+  onOpenEarlyLock?: (listing: Listing) => void;
+  onOpenAIChat?: (listing: Listing) => void;
   locale?: SupportedLocale;
 }
 
@@ -27,11 +31,35 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
   onToggleSave,
   onInitiateCesja,
   onInitiateDeposit,
+  onOpenEarlyLock,
+  onOpenAIChat,
   locale = 'en'
 }) => {
   const [selectedImgIndex, setSelectedImgIndex] = useState(0);
   const [messageSent, setMessageSent] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const strings = (t[locale === 'pl' ? 'pl' : 'en'] as any);
+  const convex = useConvex();
+
+  // Find live Convex record for this listing
+  const convexDoc = listing ? convex.db.listings.find((l) => l._id === listing.id) : null;
+  const isLocked = Boolean(convexDoc?.isLocked && convexDoc.lockedUntil && convexDoc.lockedUntil > Date.now());
+
+  useEffect(() => {
+    if (!isLocked || !convexDoc?.lockedUntil) {
+      setSecondsLeft(null);
+      return;
+    }
+
+    const updateTimer = () => {
+      const diff = Math.max(0, Math.floor((convexDoc.lockedUntil! - Date.now()) / 1000));
+      setSecondsLeft(diff);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [isLocked, convexDoc?.lockedUntil]);
 
   if (!isOpen || !listing) return null;
 
@@ -256,38 +284,88 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
           </div>
 
           {/* Action Footer */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onInitiateCesja(listing);
-              }}
-              className="w-full sm:flex-1 py-3 px-4 bg-[var(--r8-indigo-600)] hover:bg-[var(--r8-indigo-500)] active:translate-y-[1px] text-white text-[13px] font-semibold rounded-[12px] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-none"
-            >
-              <FileText className="w-4 h-4" strokeWidth={1.75} />
-              <span>{locale === 'pl' ? 'Generuj umowę cesji' : 'Generate Bilingual Cesja'}</span>
-            </button>
+          <div className="pt-2 space-y-3">
+            {/* Primary EarlyLock & AI Actions */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              {onOpenEarlyLock && (
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => {
+                    onClose();
+                    onOpenEarlyLock(listing);
+                  }}
+                  className={`w-full sm:flex-1 py-3 px-4 rounded-[12px] text-[13px] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    isLocked
+                      ? 'bg-amber-100 text-amber-800 border border-amber-300 cursor-not-allowed opacity-90'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                  }`}
+                >
+                  {isLocked ? (
+                    <>
+                      <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+                      <span>
+                        Temporarily Reserved ({secondsLeft !== null ? `${Math.floor(secondsLeft / 60)}:${(secondsLeft % 60).toString().padStart(2, '0')}` : '15 min'})
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Reserve with EarlyLock™ (15-Min Hold)</span>
+                    </>
+                  )}
+                </button>
+              )}
 
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onInitiateDeposit(listing);
-              }}
-              className="w-full sm:flex-1 py-3 px-4 bg-[var(--r8-surface-2)] hover:bg-[var(--r8-surface-3)] border border-[var(--r8-border-strong)] text-[var(--r8-text)] text-[13px] font-semibold rounded-[12px] transition-colors cursor-pointer flex items-center justify-center gap-2"
-            >
-              <Check className="w-4 h-4 text-[var(--r8-success)]" strokeWidth={2} />
-              <span>{locale === 'pl' ? 'Rozliczenie kaucji P2P' : 'P2P Deposit Escrow'}</span>
-            </button>
+              {onOpenAIChat && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenAIChat(listing);
+                  }}
+                  className="w-full sm:w-auto py-3 px-4 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-[12px] text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <Bot className="w-4 h-4 text-indigo-600" />
+                  <span>AI Proxy Chat</span>
+                </button>
+              )}
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setMessageSent(true)}
-              className="w-full sm:w-auto py-3 px-4 text-[13px] font-medium text-[var(--r8-text-2)] hover:text-[var(--r8-text)] hover:bg-[var(--r8-surface-2)] rounded-[12px] transition-colors cursor-pointer"
-            >
-              {messageSent ? (locale === 'pl' ? '✓ Wysłano wiadomość' : '✓ Message sent') : (locale === 'pl' ? 'Napisz do lokatora' : 'Message tenant')}
-            </button>
+            {/* Secondary Legal Cesja & Deposit Actions */}
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onInitiateCesja(listing);
+                }}
+                className="w-full sm:flex-1 py-2.5 px-3 bg-[var(--r8-surface-2)] hover:bg-[var(--r8-surface-3)] border border-[var(--r8-border)] text-[var(--r8-text)] text-[12px] font-semibold rounded-[10px] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>{locale === 'pl' ? 'Generuj umowę cesji' : 'Generate Cesja'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onInitiateDeposit(listing);
+                }}
+                className="w-full sm:flex-1 py-2.5 px-3 bg-[var(--r8-surface-2)] hover:bg-[var(--r8-surface-3)] border border-[var(--r8-border)] text-[var(--r8-text)] text-[12px] font-semibold rounded-[10px] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5 text-[var(--r8-success)]" />
+                <span>{locale === 'pl' ? 'Kaucja P2P' : 'Deposit Escrow'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMessageSent(true)}
+                className="w-full sm:w-auto py-2.5 px-3 text-[12px] font-medium text-[var(--r8-text-2)] hover:text-[var(--r8-text)] hover:bg-[var(--r8-surface-2)] rounded-[10px] transition-colors cursor-pointer"
+              >
+                {messageSent ? (locale === 'pl' ? '✓ Wysłano wiadomość' : '✓ Message sent') : (locale === 'pl' ? 'Napisz do lokatora' : 'Message tenant')}
+              </button>
+            </div>
           </div>
 
         </div>

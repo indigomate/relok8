@@ -4,6 +4,7 @@ import {
   Database, Mail, ShieldAlert, Cpu, Check, Activity, Search
 } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
+import { ConvexConnectionGuide } from './ConvexConnectionGuide';
 
 interface AdminConsoleProps {
   locale: SupportedLocale;
@@ -15,6 +16,7 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({ locale }) => {
   const [emailStatus, setEmailStatus] = useState<any>(null);
   const [healthStatus, setHealthStatus] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showConvexGuide, setShowConvexGuide] = useState(false);
 
   // Live AI Tester state
   const [selectedTask, setSelectedTask] = useState<string>('parse_search');
@@ -277,11 +279,28 @@ export const AdminConsole: React.FC<AdminConsoleProps> = ({ locale }) => {
               <span className="text-[10px] text-slate-500">Polish Cities</span>
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 text-center">
-            Warsaw · Kraków · Wrocław · Gdańsk · Poznań · Lublin
-          </p>
+          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+            <p className="text-[11px] text-slate-500">
+              Warsaw · Kraków · Wrocław · Gdańsk · Poznań · Lublin
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowConvexGuide(!showConvexGuide)}
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{showConvexGuide ? 'Hide Convex Config' : 'Convex Setup & Variables'}</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Convex Connection & Variables Guide Accordion */}
+      {showConvexGuide && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+          <ConvexConnectionGuide onClose={() => setShowConvexGuide(false)} />
+        </div>
+      )}
 
       {/* Review Queue (Slice D) */}
       <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4 shadow-xs">

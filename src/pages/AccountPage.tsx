@@ -4,12 +4,14 @@ import {
   ArrowLeft, User, Heart, Home, MessageSquare, Shield, 
   Settings, LogOut, CheckCircle2, AlertCircle, Mail, Phone, 
   Building2, GraduationCap, Calendar, MapPin, ExternalLink, 
-  Trash2, Plus, Send, RefreshCw, Key, Cpu
+  Trash2, Plus, Send, RefreshCw, Key, Cpu, Database
 } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale, formatPLN, formatDate } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';
 import { AdminConsole } from '../components/AdminConsole';
+import { ConvexConnectionGuide } from '../components/ConvexConnectionGuide';
+import { isConvexConfigured } from '../lib/convex/client';
 import { 
   updateUserProfile, 
   getUserListings, 
@@ -46,9 +48,12 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 }) => {
   const { user: clerkUser } = useUser();
   const clerk = useClerk();
-  const [activeTab, setActiveTab] = useState<'profile' | 'saved' | 'listings' | 'inquiries' | 'security' | 'support' | 'admin'>(() => {
+  const [activeTab, setActiveTab] = useState<'profile' | 'saved' | 'listings' | 'inquiries' | 'security' | 'support' | 'admin' | 'convex'>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('tab') === 'convex' || window.location.hash.includes('convex')) {
+        return 'convex';
+      }
       if (urlParams.get('tab') === 'admin' || window.location.hash.includes('admin')) {
         return 'admin';
       }
@@ -573,7 +578,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
+                    placeholder="e.g. Maria Kowalska"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
 
@@ -597,8 +603,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                   </label>
                   <input
                     type="tel"
+                    inputMode="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                     placeholder="+48 123 456 789"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
                   />
@@ -865,16 +872,16 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               <div className="space-y-1 pt-2">
                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <Key className="w-5 h-5 text-indigo-600" />
-                  <span>{locale === 'pl' ? 'Bezpieczeństwo i konto Clerk' : 'Clerk Account & Security'}</span>
+                  <span>{locale === 'pl' ? 'Bezpieczeństwo konta Relok8' : 'Relok8 Account & Security'}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {locale === 'pl'
-                    ? 'Zarządzaj zabezpieczeniami konta, hasłem, urządzeniami i logowaniem dwuetapowym.'
+                    ? 'Zarządzaj zabezpieczeniami konta Relok8, hasłem, urządzeniami i logowaniem dwuetapowym.'
                     : 'Manage your credentials, password reset, two-factor authentication, active sessions, and connected login methods.'}
                 </p>
               </div>
 
-              {/* Official Clerk User Profile UI */}
+              {/* Official Relok8 User Profile UI */}
               <div className="pt-2 flex justify-center w-full">
                 <ClerkUserProfile 
                   routing="hash"
@@ -884,7 +891,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                       card: 'w-full shadow-none border border-slate-200 rounded-2xl p-2 sm:p-4',
                       navbar: 'border-r border-slate-200',
                       headerTitle: 'text-lg font-bold text-slate-900',
-                      formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold'
+                      formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold',
+                      footer: 'hidden',
+                      footerAction: 'hidden',
+                      footerPages: 'hidden'
                     }
                   }}
                 />
@@ -899,8 +909,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                   </div>
                   <p className="text-xs text-rose-700 leading-relaxed">
                     {locale === 'pl'
-                      ? 'Trwałe usunięcie konta z platformy Relok8 oraz serwerów Clerk. Wszystkie Twoje dane sesji, wiadomości i zapisane pokoje zostaną bezpowrotnie usunięte.'
-                      : 'Permanently removes your account from Relok8 and authentication servers. Your profile, active lease inquiries, and saved shortlists will be erased.'}
+                      ? 'Trwałe usunięcie konta z platformy Relok8. Wszystkie Twoje dane sesji, wiadomości i zapisane pokoje zostaną bezpowrotnie usunięte.'
+                      : 'Permanently removes your account from Relok8. Your profile, active lease inquiries, and saved shortlists will be erased.'}
                   </p>
 
                   {showDeleteConfirm ? (

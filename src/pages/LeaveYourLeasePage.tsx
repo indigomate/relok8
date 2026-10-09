@@ -19,11 +19,12 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
   onOpenIntake,
   onOpenCesja
 }) => {
-  const [rent, setRent] = useState<number>(2500);
+  const [rent, setRent] = useState<string>('2500');
   const [monthsRemaining, setMonthsRemaining] = useState<number>(5);
 
-  const penaltySaved = rent * 2; // typically 2 months break fee saved
-  const depositSaved = rent * 1; // 1 month deposit returned
+  const numRent = Number(rent) || 0;
+  const penaltySaved = numRent * 2; // typically 2 months break fee saved
+  const depositSaved = numRent * 1; // 1 month deposit returned
   const totalSaved = penaltySaved + depositSaved;
 
   return (
@@ -120,12 +121,12 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
                   {locale === 'pl' ? 'Twój miesięczny czynsz (PLN)' : 'Your monthly rent (PLN)'}
                 </label>
                 <input
-                  type="number"
-                  min={500}
-                  max={15000}
-                  step={50}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={rent}
-                  onChange={(e) => setRent(Number(e.target.value) || 0)}
+                  onChange={(e) => setRent(e.target.value.replace(/\D/g, ''))}
+                  placeholder="2500"
                   className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
               </div>

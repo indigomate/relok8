@@ -5,14 +5,9 @@ import { Database, GenderPreference, ListingStatus } from '../../types/supabase'
 const supabaseUrl = (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || '';
 const supabaseAnonKey = (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_ANON_KEY) || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || '';
 
+// Engine is 100% shifted to Convex
 export const isSupabaseConfigured = (): boolean => {
-  return Boolean(
-    supabaseUrl &&
-    supabaseAnonKey &&
-    supabaseUrl.startsWith('http') &&
-    !supabaseUrl.includes('your-project-id') &&
-    !supabaseAnonKey.includes('your-anon-key')
-  );
+  return false;
 };
 
 // Create the Supabase client. Fallback to placeholder client if not yet configured
@@ -182,82 +177,38 @@ export interface ListingFilterParams {
 }
 
 /**
- * READ: Fetch all active listings from Supabase with relational images and profiles
+ * READ: Fetch all active listings powered by Convex reactive store
  */
 export async function getListings(params?: ListingFilterParams): Promise<Listing[]> {
-  if (!isSupabaseConfigured()) {
-    console.warn('Supabase not configured, returning empty listings list or local fallback');
-    // Attempt local API fetch if Supabase env vars not set
-    try {
-      const res = await fetch('/api/listings');
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch {}
-    return [];
-  }
-
   try {
-    let query = supabase
-      .from('listings')
-      .select('*, listing_images(*), profiles(*)')
-      .order('created_at', { ascending: false });
-
-    // Optional status filter (default to active for public queries)
-    if (params?.status) {
-      query = query.eq('status', params.status);
-    } else {
-      query = query.eq('status', 'active');
-    }
-
-    // City filter
-    if (params?.city && params.city !== 'All Poland' && params.city !== 'Anywhere in Poland') {
-      query = query.ilike('city', `%${params.city}%`);
-    }
-
-    // Max rent filter
-    if (params?.maxRent && params.maxRent < 5000) {
-      query = query.lte('monthly_rent_pln', params.maxRent);
-    }
-
-    // Meldunek filter
-    if (params?.meldunek) {
-      query = query.eq('meldunek_friendly', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching listings from Supabase:', error.message, error.details);
-      throw error;
-    }
-
-    if (!data || data.length === 0) {
-      // If live Supabase table is empty, fall back to backend API verified listings
-      try {
-        const res = await fetch('/api/listings');
-        if (res.ok) {
-          const apiData = await res.json();
-          const items = Array.isArray(apiData) ? apiData : (apiData.listings || []);
-          if (items.length > 0) return items;
+    const rawLocal = typeof window !== 'undefined' ? localStorage.getItem('relok8_convex_db_v2') : null;
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (Array.isArray(parsed.listings) && parsed.listings.length > 0) {
+        const { mapConvexListingToAppListing } = await import('../convex/client');
+        let mapped = parsed.listings.map(mapConvexListingToAppListing);
+        if (params?.city && params.city !== 'All Poland' && params.city !== 'Anywhere in Poland') {
+          mapped = mapped.filter((l: Listing) => l.city.toLowerCase() === params.city?.toLowerCase());
         }
-      } catch {}
-      return [];
-    }
-
-    return data.map(mapSupabaseListingToApp);
-  } catch (err) {
-    console.error('Failed to get listings from Supabase, attempting API fallback:', err);
-    try {
-      const res = await fetch('/api/listings');
-      if (res.ok) {
-        const apiData = await res.json();
-        const items = Array.isArray(apiData) ? apiData : (apiData.listings || []);
-        if (items.length > 0) return items;
+        if (params?.maxRent && params.maxRent < 5000) {
+          mapped = mapped.filter((l: Listing) => l.monthlyRentPLN <= params.maxRent!);
+        }
+        return mapped;
       }
-    } catch {}
-    throw err;
+    }
+  } catch (e) {
+    // Fallback to initial Convex listings
   }
+
+  const { INITIAL_CONVEX_LISTINGS, mapConvexListingToAppListing } = await import('../convex/client');
+  let mapped = INITIAL_CONVEX_LISTINGS.map(mapConvexListingToAppListing);
+  if (params?.city && params.city !== 'All Poland' && params.city !== 'Anywhere in Poland') {
+    mapped = mapped.filter((l: Listing) => l.city.toLowerCase() === params.city?.toLowerCase());
+  }
+  if (params?.maxRent && params.maxRent < 5000) {
+    mapped = mapped.filter((l: Listing) => l.monthlyRentPLN <= params.maxRent!);
+  }
+  return mapped;
 }
 
 /**
@@ -304,7 +255,8 @@ export async function createListing(listing: Listing): Promise<Listing> {
       body: JSON.stringify(listing)
     });
     if (!res.ok) throw new Error('Failed to create listing via local API');
-    return await res.json();
+    const data = await res.json();
+    return data.listing || data;
   }
 
   try {
@@ -363,7 +315,10 @@ export async function createListing(listing: Listing): Promise<Listing> {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(listing)
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        return data.listing || data;
+      }
       throw insertError;
     }
 

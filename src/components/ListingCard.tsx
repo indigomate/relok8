@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Heart, Lock, Clock } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
+import { useConvex } from '../lib/convex/client';
 
 interface ListingCardProps {
   listing: Listing;
@@ -22,6 +23,26 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [isImgLoaded, setIsImgLoaded] = useState(false);
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
+  const convex = useConvex();
+
+  // Real-time Convex lock tracking
+  const convexDoc = convex.db.listings.find((l) => l._id === listing.id);
+  const isLocked = Boolean(convexDoc?.isLocked && convexDoc.lockedUntil && convexDoc.lockedUntil > Date.now());
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isLocked || !convexDoc?.lockedUntil) {
+      setSecondsLeft(null);
+      return;
+    }
+    const update = () => {
+      const left = Math.max(0, Math.floor((convexDoc.lockedUntil! - Date.now()) / 1000));
+      setSecondsLeft(left);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [isLocked, convexDoc?.lockedUntil]);
 
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -110,11 +131,20 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           }}
         />
 
-        {/* Exactly ONE status badge */}
+        {/* Exactly ONE status badge with real-time countdown when locked */}
         <div className="absolute top-3 left-3 z-10 pointer-events-none select-none">
-          <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 backdrop-blur-xs">
-            {listing.statusBadge || strings.landlordApprovedChip}
-          </span>
+          {isLocked ? (
+            <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-amber-500 text-white shadow-sm border border-amber-600 flex items-center gap-1.5 animate-pulse">
+              <Clock className="w-3.5 h-3.5 text-white" />
+              <span>
+                Held: {secondsLeft !== null ? `${Math.floor(secondsLeft / 60)}:${(secondsLeft % 60).toString().padStart(2, '0')}` : '15m'}
+              </span>
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 text-xs font-medium rounded-md bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 backdrop-blur-xs">
+              {listing.statusBadge || strings.landlordApprovedChip}
+            </span>
+          )}
         </div>
 
         {/* Save (heart) button on every card */}

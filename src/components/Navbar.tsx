@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Globe, Menu, User, Heart, HelpCircle, 
-  MessageSquare, Home, Settings, LogOut, Check, LogIn
+  MessageSquare, Home, Settings, LogOut, Check, LogIn, Database
 } from 'lucide-react';
 import { Show, useClerk } from '@clerk/react';
 import { Relok8Logo } from './BrandLogo';
@@ -350,7 +350,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
                     >
                       <Settings className="w-4 h-4 text-indigo-600" />
-                      <span>{locale === 'pl' ? 'Bezpieczeństwo i profil Clerk' : 'Manage Clerk Account'}</span>
+                      <span>{locale === 'pl' ? 'Bezpieczeństwo konta Relok8' : 'Relok8 Account Security'}</span>
                     </button>
                     <button
                       type="button"

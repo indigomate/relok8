@@ -19,27 +19,27 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
-  // Contract form state
+  // Contract form state - clean start with placeholders (no text to delete)
   const [data, setData] = useState<CesjaAgreementData>({
     contractNumber: `CESJA-${presetListing?.city.toUpperCase().slice(0, 3) || 'WAW'}-${Date.now().toString().slice(-4)}`,
     city: presetListing?.city || 'Warsaw',
     date: new Date().toISOString().split('T')[0],
     effectiveDate: presetListing?.availableDate || '2026-10-15',
-    landlordName: presetListing?.landlordName || 'Marek Wiśniewski',
-    landlordId: 'PESEL: 78041209871 / ID: ABE 129841',
-    landlordAddress: presetListing?.address || 'ul. Marszałkowska 10, Warszawa',
-    departingName: presetListing?.currentTenant?.name || (presetListing as any)?.departingTenant?.name || 'Piotr Kamiński',
-    departingPassport: 'Passport: YA8921041 (Italy)',
-    departingAddress: presetListing?.address || 'ul. Rakowiecka 32, Warszawa',
-    departingIban: 'PL 42 1050 1445 1000 0098 7654 3210 (Santander Bank Polska)',
-    incomingName: 'Alexander Novak',
-    incomingPassport: 'Passport: C90481249 (Germany)',
-    incomingAddress: 'ul. Koszykowa 12, Warszawa',
-    incomingAffiliation: 'University of Warsaw / Erasmus Exchange 2026',
-    propertyAddress: presetListing?.address || 'ul. Rakowiecka 32, Warszawa',
-    originalLeaseDate: '2025-09-01',
+    landlordName: presetListing?.landlordName || '',
+    landlordId: '',
+    landlordAddress: presetListing?.address || '',
+    departingName: presetListing?.currentTenant?.name || (presetListing as any)?.departingTenant?.name || '',
+    departingPassport: '',
+    departingAddress: presetListing?.address || '',
+    departingIban: '',
+    incomingName: '',
+    incomingPassport: '',
+    incomingAddress: '',
+    incomingAffiliation: '',
+    propertyAddress: presetListing?.address || '',
+    originalLeaseDate: '',
     monthlyRentPLN: presetListing?.monthlyRentPLN || 2400,
-    depositPLN: presetListing?.depositPLN || 2850,
+    depositPLN: presetListing?.depositPLN || 2500,
     inspectionProtocolDate: presetListing?.availableDate || '2026-10-15'
   });
 
@@ -180,7 +180,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.landlordName}
                       onChange={(e) => setData({ ...data, landlordName: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] outline-none"
+                      placeholder="e.g. Marek Wiśniewski"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -189,7 +190,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.landlordId}
                       onChange={(e) => setData({ ...data, landlordId: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] outline-none"
+                      placeholder="e.g. PESEL: 78041209871 / ID: ABE 129841"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -206,7 +208,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.departingName}
                       onChange={(e) => setData({ ...data, departingName: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] outline-none"
+                      placeholder="e.g. Piotr Kamiński"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -215,7 +218,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.departingPassport}
                       onChange={(e) => setData({ ...data, departingPassport: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] outline-none"
+                      placeholder="e.g. Passport: YA8921041 (Italy)"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -224,7 +228,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.departingIban}
                       onChange={(e) => setData({ ...data, departingIban: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] font-mono outline-none"
+                      placeholder="e.g. PL 42 1050 1445 1000 0098 7654 3210"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] font-mono outline-none focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -241,7 +246,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.incomingName}
                       onChange={(e) => setData({ ...data, incomingName: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] outline-none"
+                      placeholder="e.g. Alexander Novak"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -250,7 +256,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       type="text"
                       value={data.incomingPassport}
                       onChange={(e) => setData({ ...data, incomingPassport: e.target.value })}
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] outline-none"
+                      placeholder="e.g. Passport: C90481249 (Germany)"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -285,13 +292,13 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
               {/* Parties */}
               <div className="space-y-2 text-xs">
                 <div className="p-3 bg-[var(--r8-surface-1)] rounded-[10px] border border-[var(--r8-border)]">
-                  <strong>1. WYNAJMUJĄCY / LANDLORD:</strong> {data.landlordName}, {data.landlordId}, adres: {data.landlordAddress}
+                  <strong>1. WYNAJMUJĄCY / LANDLORD:</strong> {data.landlordName || '[Imię i nazwisko właściciela / Landlord Name]'}, {data.landlordId || '[PESEL / ID]'}, adres: {data.landlordAddress || '[Adres lokalu / Address]'}
                 </div>
                 <div className="p-3 bg-[var(--r8-surface-1)] rounded-[10px] border border-[var(--r8-border)]">
-                  <strong>2. CEDENT / OUTGOING TENANT:</strong> {data.departingName}, {data.departingPassport}. Rachunek bankowy / IBAN: <code className="font-mono text-[var(--r8-success)]">{data.departingIban}</code>
+                  <strong>2. CEDENT / OUTGOING TENANT:</strong> {data.departingName || '[Dotychczasowy najemca / Outgoing Tenant]'}, {data.departingPassport || '[Dokument tożsamości / Passport/ID]'}. Rachunek bankowy / IBAN: <code className="font-mono text-[var(--r8-success)]">{data.departingIban || '[Numer konta do zwrotu kaucji / Bank IBAN]'}</code>
                 </div>
                 <div className="p-3 bg-[var(--r8-surface-1)] rounded-[10px] border border-[var(--r8-border)]">
-                  <strong>3. CESJONARIUSZ / INCOMING TENANT:</strong> {data.incomingName}, {data.incomingPassport}, {data.incomingAffiliation}
+                  <strong>3. CESJONARIUSZ / INCOMING TENANT:</strong> {data.incomingName || '[Nowy najemca / Incoming Tenant]'}, {data.incomingPassport || '[Paszport/ID / Student ID]'}, {data.incomingAffiliation || '[Uczelnia / Status]'}
                 </div>
               </div>
 

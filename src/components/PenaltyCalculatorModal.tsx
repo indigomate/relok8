@@ -15,16 +15,18 @@ export const PenaltyCalculatorModal: React.FC<PenaltyCalculatorModalProps> = ({
   onOpenIntake,
   locale = 'en'
 }) => {
-  const [rentPLN, setRentPLN] = useState(2500);
+  const [rentPLN, setRentPLN] = useState('2500');
   const [penaltyMonths, setPenaltyMonths] = useState(2);
-  const [depositPLN, setDepositPLN] = useState(2800);
+  const [depositPLN, setDepositPLN] = useState('2800');
 
   if (!isOpen) return null;
 
-  const traditionalPenaltyCost = rentPLN * penaltyMonths;
-  const totalTraditionalLoss = traditionalPenaltyCost + depositPLN;
+  const numRent = Number(rentPLN) || 0;
+  const numDeposit = Number(depositPLN) || 0;
+  const traditionalPenaltyCost = numRent * penaltyMonths;
+  const totalTraditionalLoss = traditionalPenaltyCost + numDeposit;
   const relok8Cost = 39;
-  const netSavings = totalTraditionalLoss - relok8Cost;
+  const netSavings = Math.max(0, totalTraditionalLoss - relok8Cost);
 
   return (
     <div
@@ -61,10 +63,13 @@ export const PenaltyCalculatorModal: React.FC<PenaltyCalculatorModalProps> = ({
                 {locale === 'pl' ? 'Twój miesięczny czynsz (PLN)' : 'Monthly rent in Poland (PLN)'}
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={rentPLN}
-                onChange={(e) => setRentPLN(Math.max(500, Number(e.target.value)))}
-                className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] font-mono tnum outline-none"
+                onChange={(e) => setRentPLN(e.target.value.replace(/\D/g, ''))}
+                placeholder="2500"
+                className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] font-mono tnum outline-none focus:border-indigo-600"
               />
             </div>
 
@@ -89,10 +94,13 @@ export const PenaltyCalculatorModal: React.FC<PenaltyCalculatorModalProps> = ({
                   {locale === 'pl' ? 'Kaucja gwarancyjna' : 'Deposit (Kaucja)'}
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={depositPLN}
-                  onChange={(e) => setDepositPLN(Math.max(0, Number(e.target.value)))}
-                  className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] font-mono tnum outline-none"
+                  onChange={(e) => setDepositPLN(e.target.value.replace(/\D/g, ''))}
+                  placeholder="2800"
+                  className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] font-mono tnum outline-none focus:border-indigo-600"
                 />
               </div>
             </div>

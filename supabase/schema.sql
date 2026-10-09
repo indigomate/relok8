@@ -335,3 +335,79 @@ CREATE POLICY "Service and admins can access ai_runs" ON public.ai_runs FOR ALL 
 DROP POLICY IF EXISTS "Service and admins can access review_queue" ON public.review_queue;
 CREATE POLICY "Service and admins can access review_queue" ON public.review_queue FOR ALL USING (true);
 
+-- ==============================================================================
+-- 9. MASTER PRD v3.0: ATOMIC EARLYLOCK & ESCROW ENGINE
+-- ==============================================================================
+
+-- Enable extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "vector";
+
+-- Add atomic lock tracking columns to listings if not present
+ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS reserved_by_user_id TEXT;
+ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS lock_expires_at TIMESTAMPTZ;
+
+-- TENANT PROFILES WITH PGVECTOR EMBEDDINGS (FEAT-003)
+CREATE TABLE IF NOT EXISTS public.tenant_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    phone_number VARCHAR(50),
+    university_name VARCHAR(255),
+    lifestyle_embedding VECTOR(1536),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- CONDITIONAL ESCROW TRANSACTIONS (FEAT-005)
+CREATE TABLE IF NOT EXISTS public.escrow_transactions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    listing_id TEXT NOT NULL,
+    student_id TEXT NOT NULL,
+    landlord_id TEXT,
+    stripe_payment_intent_id VARCHAR(255) UNIQUE NOT NULL,
+    amount_held_pln NUMERIC(10, 2) NOT NULL,
+    platform_fee_pln NUMERIC(10, 2) NOT NULL,
+    legal_pack_opted BOOLEAN DEFAULT FALSE,
+    status VARCHAR(50) DEFAULT 'HELD_IN_ESCROW' CHECK (status IN ('HELD_IN_ESCROW', 'CAPTURED', 'REFUNDED', 'EXPIRED')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE public.tenant_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.escrow_transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can access escrow_transactions" ON public.escrow_transactions;
+CREATE POLICY "Anyone can access escrow_transactions" ON public.escrow_transactions FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Anyone can access tenant_profiles" ON public.tenant_profiles;
+CREATE POLICY "Anyone can access tenant_profiles" ON public.tenant_profiles FOR ALL USING (true);
+
+-- ATOMIC RESERVATION LOCK FUNCTION (FEAT-004)
+CREATE OR REPLACE FUNCTION reserve_listing_atomic(
+    p_listing_id UUID,
+    p_user_id TEXT
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_status VARCHAR(50);
+    v_lock_expires TIMESTAMPTZ;
+BEGIN
+    SELECT status, lock_expires_at INTO v_status, v_lock_expires
+    FROM public.listings
+    WHERE id = p_listing_id
+    FOR UPDATE;
+
+    IF v_status = 'active' OR v_status = 'AVAILABLE' OR (v_status = 'RESERVED_PENDING' AND (v_lock_expires IS NULL OR v_lock_expires < NOW())) THEN
+        UPDATE public.listings
+        SET 
+            status = 'RESERVED_PENDING',
+            reserved_by_user_id = p_user_id,
+            lock_expires_at = NOW() + INTERVAL '15 minutes'
+        WHERE id = p_listing_id;
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+

@@ -17,21 +17,16 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
   locale = 'en',
   onOpenIntake
 }) => {
-  const [rentPLN, setRentPLN] = useState(2500);
+  const [rentPLN, setRentPLN] = useState<string>('2500');
   const [penaltyMonths, setPenaltyMonths] = useState(2);
-  const [depositPLN, setDepositPLN] = useState(2800);
-  const [brokerCommissionSaved, setBrokerCommissionSaved] = useState(2500);
+  const [depositPLN, setDepositPLN] = useState<string>('2800');
 
-  useEffect(() => {
-    document.title = locale === 'pl'
-      ? 'Kalkulator Oszczędności i Kar Umownych · Cesja Umowy Najmu | Relok8'
-      : 'Lease Break Penalty & Savings Calculator · Relok8 Poland';
-  }, [locale]);
-
-  const traditionalPenaltyCost = rentPLN * penaltyMonths;
-  const totalTraditionalLoss = traditionalPenaltyCost + depositPLN;
+  const numRent = Number(rentPLN) || 0;
+  const numDeposit = Number(depositPLN) || 0;
+  const traditionalPenaltyCost = numRent * penaltyMonths;
+  const totalTraditionalLoss = traditionalPenaltyCost + numDeposit;
   const relok8Fee = 0; // 0 PLN agency fee
-  const netSavings = totalTraditionalLoss - relok8Fee + brokerCommissionSaved;
+  const netSavings = totalTraditionalLoss - relok8Fee + numRent;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
@@ -86,16 +81,12 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
                   {locale === 'pl' ? 'Miesięczny czynsz najmu (PLN)' : 'Monthly rent in Poland (PLN)'}
                 </label>
                 <input
-                  type="number"
-                  min={500}
-                  max={20000}
-                  step={100}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={rentPLN}
-                  onChange={(e) => {
-                    const val = Number(e.target.value) || 0;
-                    setRentPLN(val);
-                    setBrokerCommissionSaved(val);
-                  }}
+                  onChange={(e) => setRentPLN(e.target.value.replace(/\D/g, ''))}
+                  placeholder="2500"
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
               </div>
@@ -121,11 +112,12 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
                     {locale === 'pl' ? 'Wpłacona kaucja (PLN)' : 'Security deposit paid (PLN)'}
                   </label>
                   <input
-                    type="number"
-                    min={0}
-                    step={100}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={depositPLN}
-                    onChange={(e) => setDepositPLN(Number(e.target.value) || 0)}
+                    onChange={(e) => setDepositPLN(e.target.value.replace(/\D/g, ''))}
+                    placeholder="2800"
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>

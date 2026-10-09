@@ -7,7 +7,6 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { supabase, isSupabaseConfigured } from './supabase/client';
 
 export type AITask =
   | 'extract_listing'
@@ -324,35 +323,19 @@ export function resolveReviewQueueItem(
 }
 
 /**
- * Async persistence to Supabase
+ * Async persistence to Convex/In-memory queue
  */
 async function syncToSupabase(run: AIRunRecord, queued: boolean): Promise<void> {
-  if (!isSupabaseConfigured()) return;
+  // In Convex engine, AI runs are indexed in memory and Convex aiMessages
   try {
-    await supabase.from('ai_runs').insert({
-      id: run.id,
-      task: run.task,
-      prompt_version: run.prompt_version,
-      model: run.model,
-      input_ref: run.input_ref,
-      output: run.output,
-      confidence: run.confidence,
-      cost_eur: run.cost_eur,
-      latency_ms: run.latency_ms,
-      decision: run.decision
-    });
-
-    if (queued) {
-      await supabase.from('review_queue').insert({
-        ai_run_id: run.id,
-        entity_type: 'listing',
-        entity_id: run.input_ref || run.id,
-        status: 'open'
-      });
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('relok8_ai_runs_v2') || '[]';
+      const runs = JSON.parse(raw);
+      runs.unshift(run);
+      localStorage.setItem('relok8_ai_runs_v2', JSON.stringify(runs.slice(0, 50)));
     }
   } catch (err) {
-    // Non-blocking logger
-    console.warn('[AI Gateway Sync] Note: Database sync optional during dev run:', err);
+    console.warn('[AI Gateway Sync] Note: Optional local sync:', err);
   }
 }
 

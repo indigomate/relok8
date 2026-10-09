@@ -459,8 +459,8 @@ export const HelpPage: React.FC<HelpPageProps> = ({
                   </label>
                   <input
                     type="text"
-                    defaultValue="Warsaw, Kraków, Wrocław, Gdańsk, Lublin"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-600"
+                    placeholder="e.g. Warsaw, Kraków, Wrocław, Gdańsk"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
               </div>

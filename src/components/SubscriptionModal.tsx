@@ -22,9 +22,9 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 }) => {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier>(activeTier || 'student');
   const [step, setStep] = useState<'plans' | 'checkout' | 'success'>('plans');
-  const [cardNumber, setCardNumber] = useState('•••• •••• •••• 4242');
-  const [cardExpiry, setCardExpiry] = useState('12/28');
-  const [cardCvc, setCardCvc] = useState('941');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const strings = (t[locale === 'pl' ? 'pl' : 'en'] as any);
 
@@ -247,7 +247,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       type="text"
                       value={cardNumber}
                       onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-[13px] text-[var(--r8-text)] font-mono outline-none"
+                      placeholder="•••• •••• •••• 4242"
+                      className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-[13px] text-[var(--r8-text)] placeholder:text-[var(--text-3)] font-mono outline-none focus:border-indigo-600"
                       required
                     />
                     <CreditCard className="w-4 h-4 text-[var(--r8-text-3)] absolute right-3.5 top-3.5" strokeWidth={1.75} />
@@ -263,7 +264,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       type="text"
                       value={cardExpiry}
                       onChange={(e) => setCardExpiry(e.target.value)}
-                      className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-[13px] text-[var(--r8-text)] font-mono outline-none"
+                      placeholder="MM/YY"
+                      className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-[13px] text-[var(--r8-text)] placeholder:text-[var(--text-3)] font-mono outline-none focus:border-indigo-600"
                       required
                     />
                   </div>
@@ -275,7 +277,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
                       type="text"
                       value={cardCvc}
                       onChange={(e) => setCardCvc(e.target.value)}
-                      className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-[13px] text-[var(--r8-text)] font-mono outline-none"
+                      placeholder="CVC"
+                      className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-[13px] text-[var(--r8-text)] placeholder:text-[var(--text-3)] font-mono outline-none focus:border-indigo-600"
                       required
                     />
                   </div>

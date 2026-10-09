@@ -25,28 +25,34 @@ export const ListPage: React.FC<ListPageProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Form State
-  const [title, setTitle] = useState('Bright room near university');
+  // Form State - start empty with placeholders (first number is never fixed)
+  const [title, setTitle] = useState('');
   const [city, setCity] = useState<'Kraków' | 'Warsaw' | 'Wrocław' | 'Gdańsk' | 'Lublin' | 'Poznań'>('Warsaw');
-  const [district, setDistrict] = useState('Mokotów');
-  const [address, setAddress] = useState('ul. Puławska 42');
+  const [district, setDistrict] = useState('');
+  const [address, setAddress] = useState('');
   const [roomType, setRoomType] = useState<'Private room' | 'Studio' | '1-bedroom' | '2-bedroom'>('Studio');
-  const [squareMeters, setSquareMeters] = useState(28);
-  const [monthlyRentPLN, setMonthlyRentPLN] = useState(2400);
-  const [czynszAdminPLN, setCzynszAdminPLN] = useState(400);
-  const [depositPLN, setDepositPLN] = useState(2500);
+  const [squareMeters, setSquareMeters] = useState('');
+  const [monthlyRentPLN, setMonthlyRentPLN] = useState('');
+  const [czynszAdminPLN, setCzynszAdminPLN] = useState('');
+  const [depositPLN, setDepositPLN] = useState('');
   const [availableDate, setAvailableDate] = useState('2026-10-15');
   const [leaseEndDate, setLeaseEndDate] = useState('2027-06-30');
-  const [landlordName, setLandlordName] = useState('Marek Wiśniewski');
-  const [tenantName, setTenantName] = useState('Alexandre Martin');
-  const [tenantEmail, setTenantEmail] = useState('alex.tenant@relok8.online');
-  const [reasonForLeaving, setReasonForLeaving] = useState('Exchange semester ending');
-  const [distanceToCampus, setDistanceToCampus] = useState('6 min walk to SGH / WUT');
-  const [flatmatesCount, setFlatmatesCount] = useState(0);
+  const [landlordName, setLandlordName] = useState('');
+  const [tenantName, setTenantName] = useState('');
+  const [tenantEmail, setTenantEmail] = useState('');
+  const [reasonForLeaving, setReasonForLeaving] = useState('');
+  const [distanceToCampus, setDistanceToCampus] = useState('');
+  const [flatmatesCount, setFlatmatesCount] = useState('');
   const [isFurnished, setIsFurnished] = useState(true);
-  const [meldunekAllowed, setMeldunekAllowed] = useState(true);
-  const [landlordApproved, setLandlordApproved] = useState(true);
+  const [meldunekAllowed, setMeldunekAllowed] = useState(false);
+  const [landlordApproved, setLandlordApproved] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Helper: ensures only digits (0-9) are accepted in numeric parts of the form
+  const handleNumericInput = (setter: (val: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '');
+    setter(digitsOnly);
+  };
 
   // Real photos uploaded from device or captured from site camera
   const [photos, setPhotos] = useState<string[]>([]);
@@ -70,7 +76,7 @@ export const ListPage: React.FC<ListPageProps> = ({
     const created: Listing = {
       id: `rel-${city.substring(0, 3).toLowerCase()}-${Date.now().toString().slice(-4)}`,
       type: 'lease_takeover',
-      title: title.slice(0, 50),
+      title: title ? title.slice(0, 50) : `${roomType} in ${district || city}`,
       city,
       district,
       address,
@@ -350,11 +356,13 @@ export const ListPage: React.FC<ListPageProps> = ({
                       {locale === 'pl' ? 'Powierzchnia (m²)' : 'Area in m²'} *
                     </label>
                     <input
-                      type="number"
-                      min={10}
-                      max={200}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      required
                       value={squareMeters}
-                      onChange={(e) => setSquareMeters(Number(e.target.value))}
+                      onChange={handleNumericInput(setSquareMeters)}
+                      placeholder={locale === 'pl' ? 'np. 28' : 'e.g. 28'}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
@@ -365,11 +373,12 @@ export const ListPage: React.FC<ListPageProps> = ({
                         {locale === 'pl' ? 'Liczba współlokatorów' : 'Number of flatmates in apartment'}
                       </label>
                       <input
-                        type="number"
-                        min={0}
-                        max={10}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={flatmatesCount}
-                        onChange={(e) => setFlatmatesCount(Number(e.target.value))}
+                        onChange={handleNumericInput(setFlatmatesCount)}
+                        placeholder={locale === 'pl' ? 'np. 2' : 'e.g. 2'}
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                     </div>
@@ -427,12 +436,13 @@ export const ListPage: React.FC<ListPageProps> = ({
                       {locale === 'pl' ? 'Czynsz najmu (PLN / miesiąc)' : 'Monthly rent (PLN / month)'} *
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       required
-                      min={500}
-                      max={15000}
                       value={monthlyRentPLN}
-                      onChange={(e) => setMonthlyRentPLN(Number(e.target.value))}
+                      onChange={handleNumericInput(setMonthlyRentPLN)}
+                      placeholder={locale === 'pl' ? 'np. 2400' : 'e.g. 2400'}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
@@ -442,10 +452,12 @@ export const ListPage: React.FC<ListPageProps> = ({
                       {locale === 'pl' ? 'Opłaty administracyjne / czynsz adm. (PLN)' : 'Administrative fees (czynsz adm. in PLN)'}
                     </label>
                     <input
-                      type="number"
-                      min={0}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={czynszAdminPLN}
-                      onChange={(e) => setCzynszAdminPLN(Number(e.target.value))}
+                      onChange={handleNumericInput(setCzynszAdminPLN)}
+                      placeholder={locale === 'pl' ? 'np. 400' : 'e.g. 400'}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
@@ -455,11 +467,13 @@ export const ListPage: React.FC<ListPageProps> = ({
                       {locale === 'pl' ? 'Wysokość kaucji (PLN)' : 'Security deposit (PLN)'} *
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       required
-                      min={500}
                       value={depositPLN}
-                      onChange={(e) => setDepositPLN(Number(e.target.value))}
+                      onChange={handleNumericInput(setDepositPLN)}
+                      placeholder={locale === 'pl' ? 'np. 2500' : 'e.g. 2500'}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>

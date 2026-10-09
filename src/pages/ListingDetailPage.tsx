@@ -1,14 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Heart, Bookmark, Share2, MapPin, Check, Shield, 
   Calendar, School, Train, AlertCircle, ChevronLeft, ChevronRight,
   UserCheck, Building2, Key, Info, CheckCircle2, MessageSquare, Phone,
-  Maximize2
+  Maximize2, Lock, Bot, Clock, Sparkles
 } from 'lucide-react';
 import { Listing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
 import { ImageLightbox } from '../components/ImageLightbox';
+import { EarlyLockModal } from '../components/EarlyLockModal';
+import { AIProxyChatModal } from '../components/AIProxyChatModal';
+import { useConvex } from '../lib/convex/client';
 
 interface ListingDetailPageProps {
   listing: Listing;
@@ -43,6 +46,27 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const [copied, setCopied] = useState(false);
   const [inquirySent, setInquirySent] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isEarlyLockOpen, setIsEarlyLockOpen] = useState(false);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+
+  const convex = useConvex();
+  const convexDoc = convex.db.listings.find((l) => l._id === listing.id);
+  const isLocked = Boolean(convexDoc?.isLocked && convexDoc.lockedUntil && convexDoc.lockedUntil > Date.now());
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!isLocked || !convexDoc?.lockedUntil) {
+      setSecondsLeft(null);
+      return;
+    }
+    const update = () => {
+      const left = Math.max(0, Math.floor((convexDoc.lockedUntil! - Date.now()) / 1000));
+      setSecondsLeft(left);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [isLocked, convexDoc?.lockedUntil]);
 
   const tenant = listing.currentTenant || (listing as any).departingTenant || {
     name: 'Current Tenant',
@@ -53,9 +77,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
     reasonForLeaving: 'Relocating for study/work commitments.'
   };
 
-  const [inquiryText, setInquiryText] = useState(
-    `Hi ${tenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`
-  );
+  const [inquiryText, setInquiryText] = useState('');
 
   const handleToggleLike = () => {
     if (isLiked) {
@@ -83,6 +105,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       return;
     }
 
+    const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`;
     try {
       await fetch('/api/inquiries', {
         method: 'POST',
@@ -91,7 +114,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           listingId: listing.id,
           tenantName: currentUser.name,
           tenantEmail: currentUser.email,
-          message: inquiryText
+          message: finalMessage
         })
       });
     } catch (err) {}
@@ -536,7 +559,12 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                     rows={3}
                     value={inquiryText}
                     onChange={(e) => setInquiryText(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 resize-none"
+                    placeholder={
+                      locale === 'pl'
+                        ? `Cześć ${tenant.name}, jestem zainteresowany/a przejęciem Twojej umowy najmu. Kiedy możemy umówić się na oglądanie?`
+                        : `Hi ${tenant.name}, I am interested in taking over your lease. Could we schedule a viewing?`
+                    }
+                    className="w-full p-3 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 resize-none"
                   />
                   <button
                     type="submit"
@@ -546,6 +574,42 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                   </button>
                 </form>
               )}
+
+              {/* Live EarlyLock 15-Minute Hold Button with Convex countdown */}
+              <button
+                type="button"
+                disabled={isLocked}
+                onClick={() => setIsEarlyLockOpen(true)}
+                className={`w-full py-3 rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer ${
+                  isLocked 
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300 cursor-not-allowed opacity-90'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                }`}
+              >
+                {isLocked ? (
+                  <>
+                    <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                    <span>
+                      Temporarily Reserved ({secondsLeft !== null ? `${Math.floor(secondsLeft / 60)}:${(secondsLeft % 60).toString().padStart(2, '0')}` : '15 min'})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Reserve with EarlyLock™ (15-min Hold)</span>
+                  </>
+                )}
+              </button>
+
+              {/* AI Proxy Chat Button */}
+              <button
+                type="button"
+                onClick={() => setIsAIChatOpen(true)}
+                className="w-full py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Bot className="w-4 h-4 text-indigo-600" />
+                <span>Ask Relok8 AI Proxy</span>
+              </button>
 
               <button
                 type="button"
@@ -575,16 +639,29 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               : `+ bills ${listing.czynszAdminPLN} PLN`}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById('contact-section');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className="min-h-[44px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
-        >
-          Contact {tenant.name.split(' ')[0]}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled={isLocked}
+            onClick={() => setIsEarlyLockOpen(true)}
+            className={`min-h-[44px] px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              isLocked ? 'bg-amber-100 text-amber-800 cursor-not-allowed' : 'bg-emerald-600 text-white'
+            }`}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>{isLocked ? 'Reserved' : 'EarlyLock'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('contact-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="min-h-[44px] px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+          >
+            Contact
+          </button>
+        </div>
       </div>
 
       {/* Full-size Image Lightbox Modal */}
@@ -594,6 +671,25 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
         title={listing.title}
+      />
+
+      {/* EarlyLock Atomic Reservation & Escrow Modal */}
+      <EarlyLockModal
+        isOpen={isEarlyLockOpen}
+        onClose={() => setIsEarlyLockOpen(false)}
+        listing={listing}
+        locale={locale}
+        currentUser={currentUser}
+        onRequireLogin={onRequireLogin}
+      />
+
+      {/* AI Proxy Chat Modal */}
+      <AIProxyChatModal
+        isOpen={isAIChatOpen}
+        onClose={() => setIsAIChatOpen(false)}
+        listing={listing}
+        locale={locale}
+        onOpenEarlyLock={() => setIsEarlyLockOpen(true)}
       />
 
     </div>

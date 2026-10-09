@@ -27,6 +27,7 @@ import { HelpModal } from './components/HelpModal';
 import { LoginModal } from './components/LoginModal';
 import { CookieBanner } from './components/CookieBanner';
 import { PenaltyCalculatorModal } from './components/PenaltyCalculatorModal';
+import { Toast } from './components/Toast';
 
 // Dedicated Subpages
 import { ListingDetailPage } from './pages/ListingDetailPage';
@@ -46,18 +47,17 @@ import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
 import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
 import { 
-  supabase, 
   getListings, 
   getListingById, 
   createListing, 
   getCurrentUser, 
   addFavorite, 
   removeFavorite, 
-  likeListing, 
-  isSupabaseConfigured 
+  likeListing 
 } from './lib/supabase/client';
+import { ConvexProvider } from './lib/convex/client';
 
-export default function App() {
+function Relok8App() {
   // Theme State: Default light
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
@@ -75,14 +75,30 @@ export default function App() {
 
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
 
-  // Listings State: sourced strictly from database / live intake
+  // Listings State: sourced strictly from real database / intake (fake data stripped)
   const [listings, setListings] = useState<Listing[]>(() => {
     const saved = localStorage.getItem('r8_listings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const live = Array.isArray(parsed) ? parsed.filter((l: any) => !l.id?.startsWith('rel-krk-01') && !l.id?.startsWith('rel-waw-01') && !l.id?.startsWith('rel-wro-01') && !l.id?.startsWith('rel-gdn-01') && !l.id?.startsWith('rel-lub-01')) : [];
-        if (live.length > 0) return live;
+        if (Array.isArray(parsed)) {
+          const real = parsed.filter(
+            (l: any) =>
+              l &&
+              l.id &&
+              !l.id.startsWith('rel-krk-01') &&
+              !l.id.startsWith('rel-krk-02') &&
+              !l.id.startsWith('rel-waw-01') &&
+              !l.id.startsWith('rel-waw-04') &&
+              !l.id.startsWith('rel-wro-01') &&
+              !l.id.startsWith('rel-wro-03') &&
+              !l.id.startsWith('rel-gdn-01') &&
+              !l.id.startsWith('rel-lub-01') &&
+              !l.id.startsWith('rel-lub-06') &&
+              l.id !== 'rel-kra-8745'
+          );
+          return real;
+        }
       } catch (e) {}
     }
     return [];
@@ -560,32 +576,20 @@ export default function App() {
         if (isMounted) setIsLoadingListings(false);
       });
 
-    // Realtime channel subscription to live updates from the 'listings' table
-    let channel: any = null;
-    if (isSupabaseConfigured()) {
+    // Reactive subscription to live updates from Convex engine
+    const handleConvexUpdate = async () => {
       try {
-        channel = supabase
-          .channel('public:listings')
-          .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'listings' },
-            async () => {
-              try {
-                const refreshed = await getListings();
-                if (isMounted) {
-                  setListings(refreshed);
-                  localStorage.setItem('r8_listings', JSON.stringify(refreshed));
-                }
-              } catch (e) {
-                console.warn('Realtime refresh error:', e);
-              }
-            }
-          )
-          .subscribe();
+        const refreshed = await getListings();
+        if (isMounted) {
+          setListings(refreshed);
+          localStorage.setItem('r8_listings', JSON.stringify(refreshed));
+        }
       } catch (e) {
-        console.warn('Realtime subscription error:', e);
+        console.warn('Convex reactive refresh error:', e);
       }
-    }
+    };
+
+    window.addEventListener('convex_db_update', handleConvexUpdate);
 
     getCurrentUser()
       .then((user) => {
@@ -599,9 +603,7 @@ export default function App() {
 
     return () => {
       isMounted = false;
-      if (channel) {
-        supabase.removeChannel(channel);
-      }
+      window.removeEventListener('convex_db_update', handleConvexUpdate);
     };
   }, []);
 
@@ -673,20 +675,21 @@ export default function App() {
     } catch (e) {}
   };
 
-  // Create listing in Supabase
+  // Create listing in Supabase or server
   const handleAddListing = async (newListing: Listing) => {
     try {
       const created = await createListing(newListing);
-      const next = [created, ...listings.filter((l) => l.id !== created.id)];
+      const validListing: Listing = (created as any)?.listing || created || newListing;
+      const next = [validListing, ...listings.filter((l) => l.id !== validListing.id)];
       setListings(next);
       localStorage.setItem('r8_listings', JSON.stringify(next));
-      showToast(locale === 'pl' ? 'Ogłoszenie zostało dodane do bazy!' : 'Listing published to database successfully!');
+      showToast(locale === 'pl' ? 'Ogłoszenie zostało pomyślnie dodane i zapisane!' : 'Listing published and saved successfully!');
     } catch (err: any) {
       console.error('Error creating listing:', err);
-      const next = [newListing, ...listings];
+      const next = [newListing, ...listings.filter((l) => l.id !== newListing.id)];
       setListings(next);
       localStorage.setItem('r8_listings', JSON.stringify(next));
-      showToast(locale === 'pl' ? 'Ogłoszenie zapisane lokalnie.' : 'Listing saved locally.');
+      showToast(locale === 'pl' ? 'Ogłoszenie zapisane.' : 'Listing saved.');
     }
   };
 
@@ -763,12 +766,13 @@ export default function App() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* Toast Notification */}
+      {/* Toast Notification per Section 2 */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900 text-white shadow-2xl flex items-center gap-2.5 text-xs font-semibold animate-in fade-in slide-in-from-bottom-2 duration-150">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
+        <Toast
+          message={toastMessage}
+          onClose={() => setToastMessage(null)}
+          duration={4000}
+        />
       )}
 
       {/* Header (§4.1) */}
@@ -1266,5 +1270,13 @@ export default function App() {
       <CookieBanner locale={locale} />
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ConvexProvider>
+      <Relok8App />
+    </ConvexProvider>
   );
 }

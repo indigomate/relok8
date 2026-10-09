@@ -17,10 +17,12 @@ export const LeaveYourLeaseModal: React.FC<LeaveYourLeaseModalProps> = ({
   onOpenCesja,
   locale
 }) => {
-  const [rent, setRent] = useState<number>(2500);
-  const [months, setMonths] = useState<number>(4);
-  const penaltySaved = rent * 2; // Typically 2 months break fee saved
-  const depositSaved = rent * 1; // 1 month deposit returned
+  const [rent, setRent] = useState<string>('2500');
+  const [months, setMonths] = useState<string>('4');
+  const numRent = Number(rent) || 0;
+  const numMonths = Number(months) || 1;
+  const penaltySaved = numRent * 2; // Typically 2 months break fee saved
+  const depositSaved = numRent * 1; // 1 month deposit returned
   const totalSaved = penaltySaved + depositSaved;
 
   if (!isOpen) return null;
@@ -82,12 +84,12 @@ export const LeaveYourLeaseModal: React.FC<LeaveYourLeaseModalProps> = ({
                   {locale === 'pl' ? 'Miesięczny czynsz (PLN)' : 'Monthly rent (PLN)'}
                 </label>
                 <input
-                  type="number"
-                  min={1000}
-                  max={10000}
-                  step={100}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={rent}
-                  onChange={(e) => setRent(Number(e.target.value) || 0)}
+                  onChange={(e) => setRent(e.target.value.replace(/\D/g, ''))}
+                  placeholder="2500"
                   className="w-full h-11 px-3 bg-white border border-slate-300 rounded-xl text-[14px] font-bold text-slate-900 focus:outline-indigo-600"
                 />
               </div>
@@ -97,11 +99,12 @@ export const LeaveYourLeaseModal: React.FC<LeaveYourLeaseModalProps> = ({
                   {locale === 'pl' ? 'Miesięcy do końca umowy' : 'Months remaining on lease'}
                 </label>
                 <input
-                  type="number"
-                  min={1}
-                  max={24}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={months}
-                  onChange={(e) => setMonths(Number(e.target.value) || 1)}
+                  onChange={(e) => setMonths(e.target.value.replace(/\D/g, ''))}
+                  placeholder="4"
                   className="w-full h-11 px-3 bg-white border border-slate-300 rounded-xl text-[14px] font-bold text-slate-900 focus:outline-indigo-600"
                 />
               </div>

@@ -21,23 +21,29 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [step, setStep] = useState(1);
 
-  // Form State
-  const [title, setTitle] = useState('Bright room near university');
+  // Form State - start empty with grey placeholders (first number is never fixed)
+  const [title, setTitle] = useState('');
   const [city, setCity] = useState<'Kraków' | 'Warsaw' | 'Wrocław' | 'Gdańsk' | 'Lublin'>('Kraków');
-  const [district, setDistrict] = useState('Krowodrza');
-  const [address, setAddress] = useState('ul. Czarnowiejska 45');
+  const [district, setDistrict] = useState('');
+  const [address, setAddress] = useState('');
   const [roomType, setRoomType] = useState<'Private room' | 'Studio' | '1-bedroom' | '2-bedroom'>('Private room');
-  const [squareMeters, setSquareMeters] = useState(20);
-  const [monthlyRentPLN, setMonthlyRentPLN] = useState(1700);
-  const [depositPLN, setDepositPLN] = useState(1800);
+  const [squareMeters, setSquareMeters] = useState('');
+  const [monthlyRentPLN, setMonthlyRentPLN] = useState('');
+  const [depositPLN, setDepositPLN] = useState('');
   const [availableDate, setAvailableDate] = useState('2026-10-15');
   const [leaseEndDate, setLeaseEndDate] = useState('2027-06-30');
-  const [landlordName, setLandlordName] = useState('Tomasz Wiśniewski');
-  const [tenantName, setTenantName] = useState('Piotr Kamiński');
-  const [reasonForLeaving, setReasonForLeaving] = useState('Completing university semester');
-  const [distanceToCampus, setDistanceToCampus] = useState('5 min walk to campus');
-  const [flatmatesCount, setFlatmatesCount] = useState(2);
+  const [landlordName, setLandlordName] = useState('');
+  const [tenantName, setTenantName] = useState('');
+  const [reasonForLeaving, setReasonForLeaving] = useState('');
+  const [distanceToCampus, setDistanceToCampus] = useState('');
+  const [flatmatesCount, setFlatmatesCount] = useState('');
   const [photoError, setPhotoError] = useState<string | null>(null);
+
+  // Helper: ensures only digits (0-9) are accepted in numeric parts of the form
+  const handleNumericInput = (setter: (val: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '');
+    setter(digitsOnly);
+  };
 
   const [photos, setPhotos] = useState<string[]>([]);
 
@@ -215,9 +221,12 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     Size (m²)
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={squareMeters}
-                    onChange={(e) => setSquareMeters(Number(e.target.value))}
+                    onChange={handleNumericInput(setSquareMeters)}
+                    placeholder="e.g. 20"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>
@@ -282,10 +291,13 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     Monthly rent (PLN)
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     value={monthlyRentPLN}
-                    onChange={(e) => setMonthlyRentPLN(Number(e.target.value))}
+                    onChange={handleNumericInput(setMonthlyRentPLN)}
+                    placeholder="e.g. 1700"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>
@@ -294,10 +306,13 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     {strings.deposit} (PLN)
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     value={depositPLN}
-                    onChange={(e) => setDepositPLN(Number(e.target.value))}
+                    onChange={handleNumericInput(setDepositPLN)}
+                    placeholder="e.g. 1800"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
                   />
                 </div>

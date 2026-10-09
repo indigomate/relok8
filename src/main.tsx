@@ -29,6 +29,11 @@ createRoot(document.getElementById('root')!).render(
         variables: {
           colorPrimary: '#4F46E5',
           borderRadius: '0.75rem',
+        },
+        elements: {
+          footer: 'hidden',
+          footerAction: 'hidden',
+          footerPages: 'hidden'
         }
       }}
     >
