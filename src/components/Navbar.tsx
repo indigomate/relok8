@@ -345,17 +345,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        clerk.openUserProfile();
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
-                    >
-                      <Settings className="w-4 h-4 text-indigo-600" />
-                      <span>{locale === 'pl' ? 'Bezpieczeństwo konta Relok8' : 'Relok8 Account Security'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
                         onOpenHelp();
                       }}
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"

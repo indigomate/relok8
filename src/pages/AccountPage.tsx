@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile as ClerkUserProfile, useUser, useClerk } from '@clerk/react';
+import { useUser, useClerk } from '@clerk/react';
 import { 
   ArrowLeft, User, Heart, Home, MessageSquare, Shield, 
   Settings, LogOut, CheckCircle2, AlertCircle, Mail, Phone, 
   Building2, GraduationCap, Calendar, MapPin, ExternalLink, 
-  Trash2, Plus, Send, RefreshCw, Key, Cpu, Database
+  Trash2, Plus, Send, RefreshCw, Key, Lock
 } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale, formatPLN, formatDate } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';
-import { AdminConsole } from '../components/AdminConsole';
-import { ConvexConnectionGuide } from '../components/ConvexConnectionGuide';
-import { isConvexConfigured } from '../lib/convex/client';
 import { 
   updateUserProfile, 
   getUserListings, 
@@ -48,14 +45,12 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 }) => {
   const { user: clerkUser } = useUser();
   const clerk = useClerk();
-  const [activeTab, setActiveTab] = useState<'profile' | 'saved' | 'listings' | 'inquiries' | 'security' | 'support' | 'admin' | 'convex'>(() => {
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'saved' | 'listings' | 'support'>(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('tab') === 'convex' || window.location.hash.includes('convex')) {
-        return 'convex';
-      }
-      if (urlParams.get('tab') === 'admin' || window.location.hash.includes('admin')) {
-        return 'admin';
+      const tabParam = urlParams.get('tab');
+      if (tabParam === 'security' || tabParam === 'saved' || tabParam === 'listings' || tabParam === 'support') {
+        return tabParam;
       }
     }
     return 'profile';
@@ -246,7 +241,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     setSecurityMsg(null);
 
     try {
-      if (isSupabaseConfigured()) {
+      if (clerkUser && typeof (clerkUser as any).updatePassword === 'function') {
+        await (clerkUser as any).updatePassword({ newPassword });
+      } else if (isSupabaseConfigured()) {
         const { error } = await supabase.auth.updateUser({
           password: newPassword
         });
@@ -454,7 +451,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-1 border-b border-slate-200 overflow-x-auto pb-1 text-xs font-semibold scrollbar-none">
+        <div className="flex items-center gap-1.5 border-b border-slate-200 overflow-x-auto pb-1 text-xs font-semibold scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
@@ -466,6 +463,19 @@ export const AccountPage: React.FC<AccountPageProps> = ({
           >
             <User className="w-3.5 h-3.5" />
             <span>{locale === 'pl' ? 'Profil i dane' : 'Profile & Details'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('security')}
+            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+              activeTab === 'security'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5" />
+            <span>{locale === 'pl' ? 'Bezpieczeństwo konta' : 'Account Security'}</span>
           </button>
 
           <button
@@ -508,19 +518,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('security')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'security'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Bezpieczeństwo' : 'Security & Login'}</span>
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('support')}
             className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'support'
@@ -529,20 +526,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Kontakt i pomoc' : 'Support & Contact'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('admin')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'admin'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200/50'
-            }`}
-          >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>AI Ops & Review</span>
+            <span>{locale === 'pl' ? 'Pomoc i kontakt' : 'Help & Support'}</span>
           </button>
         </div>
 
@@ -607,7 +591,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                     placeholder="+48 123 456 789"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
 
@@ -620,7 +604,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                     value={university}
                     onChange={(e) => setUniversity(e.target.value)}
                     placeholder="e.g. University of Warsaw (UW)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -869,35 +853,109 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-1 pt-2">
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Key className="w-5 h-5 text-indigo-600" />
-                  <span>{locale === 'pl' ? 'Bezpieczeństwo konta Relok8' : 'Relok8 Account & Security'}</span>
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {locale === 'pl'
-                    ? 'Zarządzaj zabezpieczeniami konta Relok8, hasłem, urządzeniami i logowaniem dwuetapowym.'
-                    : 'Manage your credentials, password reset, two-factor authentication, active sessions, and connected login methods.'}
-                </p>
-              </div>
+              <div className="space-y-6 pt-2">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <Key className="w-5 h-5 text-indigo-600" />
+                    <span>{locale === 'pl' ? 'Hasło i metody logowania' : 'Password & Authentication'}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {locale === 'pl'
+                      ? 'Zarządzaj hasłem dostępu oraz metodami logowania do konta Relok8.'
+                      : 'Update your login password and manage credentials for your Relok8 account.'}
+                  </p>
+                </div>
 
-              {/* Official Relok8 User Profile UI */}
-              <div className="pt-2 flex justify-center w-full">
-                <ClerkUserProfile 
-                  routing="hash"
-                  appearance={{
-                    elements: {
-                      rootBox: 'w-full',
-                      card: 'w-full shadow-none border border-slate-200 rounded-2xl p-2 sm:p-4',
-                      navbar: 'border-r border-slate-200',
-                      headerTitle: 'text-lg font-bold text-slate-900',
-                      formButtonPrimary: 'bg-indigo-600 hover:bg-indigo-700 text-white font-semibold',
-                      footer: 'hidden',
-                      footerAction: 'hidden',
-                      footerPages: 'hidden'
-                    }
-                  }}
-                />
+                {/* Password Update Form */}
+                <form onSubmit={handlePasswordUpdate} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                    <Lock className="w-4 h-4 text-slate-600" />
+                    <span>{locale === 'pl' ? 'Zmień hasło' : 'Change Password'}</span>
+                  </div>
+
+                  {securityMsg && (
+                    <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                      securityMsg.type === 'success'
+                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                        : 'bg-rose-50 border border-rose-200 text-rose-800'
+                    }`}>
+                      {securityMsg.type === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      )}
+                      <span>{securityMsg.text}</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        {locale === 'pl' ? 'Nowe hasło' : 'New Password'}
+                      </label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        {locale === 'pl' ? 'Powtórz nowe hasło' : 'Confirm New Password'}
+                      </label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-slate-500">
+                      {locale === 'pl' ? 'Minimum 6 znaków' : 'Minimum 6 characters'}
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={isUpdatingPassword || !newPassword}
+                      className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-40"
+                    >
+                      {isUpdatingPassword
+                        ? (locale === 'pl' ? 'Aktualizowanie...' : 'Updating...')
+                        : (locale === 'pl' ? 'Zaktualizuj hasło' : 'Update Password')}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Advanced Security & 2FA if Clerk is active */}
+                {clerkUser && (
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                        <Shield className="w-4 h-4 text-indigo-600" />
+                        <span>{locale === 'pl' ? 'Weryfikacja dwuetapowa i urządzenia' : 'Two-Step Verification & Devices'}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 max-w-md">
+                        {locale === 'pl'
+                          ? 'Skonfiguruj klucze dostępu Passkey, uwierzytelnianie SMS/aplikacją oraz przejrzyj aktywne sesje.'
+                          : 'Set up passkeys, authenticator apps, and review your active signed-in devices.'}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => clerk.openUserProfile()}
+                      className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-800 font-semibold text-xs rounded-xl border border-slate-200 transition-colors shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                    >
+                      {locale === 'pl' ? 'Zarządzaj 2FA i urządzeniami' : 'Manage 2FA & Devices'}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Danger Zone: Account Deletion */}
@@ -1017,7 +1075,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                     value={contactSubject}
                     onChange={(e) => setContactSubject(e.target.value)}
                     placeholder="e.g. Question about Art. 509 KC lease transfer in Warsaw"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
 
@@ -1035,7 +1093,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
                         ? 'Opisz swoją sytuację, numer ogłoszenia lub pytanie dotyczące kaucji...'
                         : 'Explain your lease situation, listing ID, or landlord question...'
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
                 </div>
 
@@ -1056,11 +1114,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               </form>
             )}
           </div>
-        )}
-
-        {/* TAB 7: AI Operations & Review Queue */}
-        {activeTab === 'admin' && (
-          <AdminConsole locale={locale} />
         )}
 
       </div>

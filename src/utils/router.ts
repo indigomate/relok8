@@ -143,11 +143,8 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
     return { type: 'leave-your-lease', locale, path: pathname, searchParams };
   }
 
-  // User Account, Dashboard & Admin Ops
-  if (first === 'account' || first === 'my-account' || first === 'profile' || first === 'dashboard' || first === 'my-listings' || first === 'admin' || first === 'ops') {
-    if (first === 'admin' || first === 'ops') {
-      searchParams.set('tab', 'admin');
-    }
+  // User Account & Dashboard
+  if (first === 'account' || first === 'my-account' || first === 'profile' || first === 'dashboard' || first === 'my-listings') {
     return { type: 'account', locale, path: pathname, searchParams };
   }
 
