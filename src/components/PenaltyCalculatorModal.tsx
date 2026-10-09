@@ -69,7 +69,7 @@ export const PenaltyCalculatorModal: React.FC<PenaltyCalculatorModalProps> = ({
                 value={rentPLN}
                 onChange={(e) => setRentPLN(e.target.value.replace(/\D/g, ''))}
                 placeholder="2500"
-                className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] font-mono tnum outline-none focus:border-indigo-600"
+                className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] placeholder:text-slate-400 font-mono tnum outline-none focus:border-indigo-600"
               />
             </div>
 
@@ -100,7 +100,7 @@ export const PenaltyCalculatorModal: React.FC<PenaltyCalculatorModalProps> = ({
                   value={depositPLN}
                   onChange={(e) => setDepositPLN(e.target.value.replace(/\D/g, ''))}
                   placeholder="2800"
-                  className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] font-mono tnum outline-none focus:border-indigo-600"
+                  className="w-full h-11 bg-[var(--r8-surface-2)] border border-[var(--r8-border-strong)] rounded-[12px] px-3.5 text-sm text-[var(--r8-text)] placeholder:text-slate-400 font-mono tnum outline-none focus:border-indigo-600"
                 />
               </div>
             </div>
@@ -122,7 +122,7 @@ export const PenaltyCalculatorModal: React.FC<PenaltyCalculatorModalProps> = ({
               <div className="flex justify-between text-[var(--r8-text-2)]">
                 <span>{locale === 'pl' ? 'Kaucja zamrożona na 30 dni:' : 'Deposit locked for 30 days:'}</span>
                 <span className="font-mono tnum line-through text-[var(--r8-danger)]">
-                  -{formatPLN(depositPLN, locale)}
+                  -{formatPLN(numDeposit, locale)}
                 </span>
               </div>
               <div className="flex justify-between text-[var(--r8-text)] pt-2 border-t border-[var(--r8-border)]">

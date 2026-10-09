@@ -59,8 +59,8 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
         locale === 'pl' ? 'Wszystko co w pakiecie Student' : 'Everything in Student Pass',
         locale === 'pl' ? 'Priorytetowe wyświetlanie na liście' : 'Priority top-of-feed placement',
         locale === 'pl' ? 'Asysta prawna w mediacji po polsku' : 'Mediation assistance with landlord in Polish',
-        locale === 'pl' ? 'Gwarancja dopasowania w 48h' : '48-hour matching priority guarantee',
-        locale === 'pl' ? 'Gwarancja zwrotu kosztów w razie braku cesji' : '100% money-back transfer guarantee'
+        locale === 'pl' ? 'Szybkie powiadomienia o nowych cesjach' : 'Instant takeover alert notifications',
+        locale === 'pl' ? 'Wsparcie w procedurze cesji Art. 509 KC' : 'Step-by-step Art. 509 KC transfer guidance'
       ]
     },
     {
@@ -214,10 +214,10 @@ export const SubscriptionModal: React.FC<SubscriptionModalProps> = ({
 
               {/* Plain footer guarantee */}
               <div className="p-3.5 rounded-[12px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] text-[12px] text-[var(--r8-text-2)] leading-normal">
-                <strong>{locale === 'pl' ? 'Gwarancja braku kary:' : 'Penalty-free guarantee:'}</strong>{' '}
+                <strong>{locale === 'pl' ? 'Podstawa prawna:' : 'Legal basis:'}</strong>{' '}
                 {locale === 'pl'
-                  ? 'Zapewniamy kompletne wzory zgodne z Kodeksem Cywilnym. W przypadku braku zgody właściciela otrzymasz pełny zwrot.'
-                  : 'We supply legally verified contract assignment riders under the Polish Civil Code. 100% money back if landlord disputes assignment.'}
+                  ? 'Zapewniamy kompletne wzory zgodne z Kodeksem Cywilnym (Art. 509 i 519 KC) oraz wsparcie w komunikacji z właścicielem.'
+                  : 'We supply standardized bilingual contract assignment agreements under the Polish Civil Code (Art. 509 & 519 KC).'}
               </div>
             </div>
           )}

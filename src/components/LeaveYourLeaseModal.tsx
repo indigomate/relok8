@@ -90,7 +90,7 @@ export const LeaveYourLeaseModal: React.FC<LeaveYourLeaseModalProps> = ({
                   value={rent}
                   onChange={(e) => setRent(e.target.value.replace(/\D/g, ''))}
                   placeholder="2500"
-                  className="w-full h-11 px-3 bg-white border border-slate-300 rounded-xl text-[14px] font-bold text-slate-900 focus:outline-indigo-600"
+                  className="w-full h-11 px-3 bg-white border border-slate-300 rounded-xl text-[14px] font-bold text-slate-900 placeholder:text-slate-400 focus:outline-indigo-600"
                 />
               </div>
 
@@ -105,7 +105,7 @@ export const LeaveYourLeaseModal: React.FC<LeaveYourLeaseModalProps> = ({
                   value={months}
                   onChange={(e) => setMonths(e.target.value.replace(/\D/g, ''))}
                   placeholder="4"
-                  className="w-full h-11 px-3 bg-white border border-slate-300 rounded-xl text-[14px] font-bold text-slate-900 focus:outline-indigo-600"
+                  className="w-full h-11 px-3 bg-white border border-slate-300 rounded-xl text-[14px] font-bold text-slate-900 placeholder:text-slate-400 focus:outline-indigo-600"
                 />
               </div>
             </div>

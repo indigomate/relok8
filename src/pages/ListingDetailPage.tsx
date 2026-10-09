@@ -70,10 +70,10 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
 
   const tenant = listing.currentTenant || (listing as any).departingTenant || {
     name: 'Current Tenant',
-    nationality: 'Verified',
-    role: 'Student',
+    nationality: 'Tenant',
+    role: 'Student / Expat',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-    verifiedDocs: ['Identity Verified', 'Active Lease'],
+    verifiedDocs: [],
     reasonForLeaving: 'Relocating for study/work commitments.'
   };
 

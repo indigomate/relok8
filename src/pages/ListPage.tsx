@@ -101,10 +101,10 @@ export const ListPage: React.FC<ListPageProps> = ({
       likesCount: 1,
       currentTenant: {
         name: tenantName,
-        nationality: 'Verified',
+        nationality: 'Tenant',
         role: 'Departing Tenant',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-        verifiedDocs: ['Identity Verified', 'Active Lease'],
+        verifiedDocs: [],
         reasonForLeaving,
         joinedYear: '2026'
       },
@@ -277,7 +277,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
                       placeholder="e.g. Mokotów, Śródmieście, Krowodrza"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 
@@ -291,7 +291,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       placeholder="e.g. ul. Puławska 42 / 12"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 
@@ -304,7 +304,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={distanceToCampus}
                       onChange={(e) => setDistanceToCampus(e.target.value)}
                       placeholder="e.g. 5 min walk to SGH / WUT, 10 min metro to UW"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
                 </div>
@@ -363,7 +363,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={squareMeters}
                       onChange={handleNumericInput(setSquareMeters)}
                       placeholder={locale === 'pl' ? 'np. 28' : 'e.g. 28'}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 
@@ -379,7 +379,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                         value={flatmatesCount}
                         onChange={handleNumericInput(setFlatmatesCount)}
                         placeholder={locale === 'pl' ? 'np. 2' : 'e.g. 2'}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                       />
                     </div>
                   )}
@@ -443,7 +443,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={monthlyRentPLN}
                       onChange={handleNumericInput(setMonthlyRentPLN)}
                       placeholder={locale === 'pl' ? 'np. 2400' : 'e.g. 2400'}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 
@@ -458,7 +458,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={czynszAdminPLN}
                       onChange={handleNumericInput(setCzynszAdminPLN)}
                       placeholder={locale === 'pl' ? 'np. 400' : 'e.g. 400'}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 
@@ -474,7 +474,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                       value={depositPLN}
                       onChange={handleNumericInput(setDepositPLN)}
                       placeholder={locale === 'pl' ? 'np. 2500' : 'e.g. 2500'}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
 

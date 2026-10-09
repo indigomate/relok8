@@ -79,7 +79,7 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
             {
               step: '2',
               title: locale === 'pl' ? 'Dodaj pokój' : 'List on Relok8',
-              desc: locale === 'pl' ? 'Wstaw darmowe ogłoszenie w 2 minuty i odbieraj zapytania od zweryfikowanych studentów.' : 'Post your room for free in 2 minutes to reach verified students and expats looking to move in.'
+              desc: locale === 'pl' ? 'Wstaw darmowe ogłoszenie w 2 minuty i odbieraj zapytania od studentów i ekspatów.' : 'Post your room for free in 2 minutes to reach students and expats looking to move in.'
             },
             {
               step: '3',
@@ -127,7 +127,7 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
                   value={rent}
                   onChange={(e) => setRent(e.target.value.replace(/\D/g, ''))}
                   placeholder="2500"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
               </div>
 

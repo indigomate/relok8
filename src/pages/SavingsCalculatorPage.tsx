@@ -25,8 +25,9 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
   const numDeposit = Number(depositPLN) || 0;
   const traditionalPenaltyCost = numRent * penaltyMonths;
   const totalTraditionalLoss = traditionalPenaltyCost + numDeposit;
+  const brokerCommissionSaved = numRent; // 1 month rent typically charged by agencies in Poland
   const relok8Fee = 0; // 0 PLN agency fee
-  const netSavings = totalTraditionalLoss - relok8Fee + numRent;
+  const netSavings = totalTraditionalLoss - relok8Fee + brokerCommissionSaved;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
@@ -87,7 +88,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
                   value={rentPLN}
                   onChange={(e) => setRentPLN(e.target.value.replace(/\D/g, ''))}
                   placeholder="2500"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                 />
               </div>
 
@@ -118,7 +119,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
                     value={depositPLN}
                     onChange={(e) => setDepositPLN(e.target.value.replace(/\D/g, ''))}
                     placeholder="2800"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
                 </div>
               </div>
@@ -126,7 +127,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
                 <div className="font-bold text-slate-800 flex items-center gap-1.5">
                   <Shield className="w-4 h-4 text-emerald-600" />
-                  <span>{locale === 'pl' ? 'Zasada zero prowizji' : 'Zero Agency Commission Guarantee'}</span>
+                  <span>{locale === 'pl' ? 'Zasada zero prowizji' : 'Zero Agency Commission Policy'}</span>
                 </div>
                 <p className="leading-relaxed">
                   {locale === 'pl'
@@ -160,7 +161,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
               </div>
               <div className="flex justify-between items-center text-slate-300">
                 <span>{locale === 'pl' ? 'Odzyskana kaucja gwarancyjna:' : 'Preserved deposit return:'}</span>
-                <span className="font-bold text-emerald-400 font-mono">+{formatPLN(depositPLN, locale)}</span>
+                <span className="font-bold text-emerald-400 font-mono">+{formatPLN(numDeposit, locale)}</span>
               </div>
               <div className="flex justify-between items-center text-slate-300">
                 <span>{locale === 'pl' ? 'Prowizja pośrednika (uniknięta):' : 'Avoided agency commission:'}</span>

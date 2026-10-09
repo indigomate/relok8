@@ -312,7 +312,7 @@ function Relok8App() {
   // Dynamic SEO Synchronization (Titles, Meta Descriptions, Canonical URLs & OpenGraph)
   useEffect(() => {
     let pageTitle = 'Relok8 — Student & Expat Housing in Poland | No Broker Fees';
-    let metaDesc = 'Direct lease takeovers under Polish Civil Code Art. 509 KC. Find verified rooms in Warsaw, Kraków, Wrocław, Gdańsk & Lublin with 0 PLN broker fees and guaranteed meldunek.';
+    let metaDesc = 'Direct lease takeovers under Polish Civil Code Art. 509 KC. Find rooms in Warsaw, Kraków, Wrocław, Gdańsk & Lublin with 0 PLN broker fees and address registration (meldunek) support.';
     const canonicalPath = currentRoute.path || (locale === 'pl' ? '/pl' : '/');
     const canonicalUrl = `https://relok8.online${canonicalPath === '/' ? '' : canonicalPath}`;
 
@@ -321,7 +321,7 @@ function Relok8App() {
         ? `Pokoje w ${currentRoute.cityName} · Bez Prowizji Agencyjnej | Relok8`
         : `Rooms in ${currentRoute.cityName} · No Broker Fees · Lease Takeovers | Relok8`;
       metaDesc = locale === 'pl'
-        ? `Wynajmij pokój lub mieszkanie w ${currentRoute.cityName}. Przejęcie aktywnej umowy najmu (Art. 509 KC), 0 zł prowizji i gwarantowany meldunek.`
+        ? `Wynajmij pokój lub mieszkanie w ${currentRoute.cityName}. Przejęcie aktywnej umowy najmu (Art. 509 KC), 0 zł prowizji i meldunek.`
         : `Find student and expat rooms for rent in ${currentRoute.cityName}, Poland. Landlord-approved lease transfers with 0 PLN agency commissions.`;
     } else if (currentRoute.type === 'listing-detail' && currentRoute.listingId) {
       const found = listings.find((l) => l.id === currentRoute.listingId);

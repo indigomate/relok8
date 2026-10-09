@@ -87,8 +87,8 @@ const FAQS: FAQItem[] = [
       pl: 'Jak Relok8 chroni najemców przed oszustwami mieszkaniowymi?'
     },
     answer: {
-      en: '1) We never charge agency commissions or upfront reservation deposits. 2) Every outgoing tenant is verified with identity documents and active lease proof. 3) You never transfer money to private unverified foreign bank accounts before an in-person or live video walk-through and signed handover protocol. 4) All Cesja contracts require formal landlord counter-signature.',
-      pl: '1) Nie pobieramy żadnych prowizji agencyjnych. 2) Weryfikujemy tożsamość najemców i dokument umowy najmu. 3) Przestrzegamy przed przelewaniem środków na niezweryfikowane konta przed weryfikacją lokalu. 4) Wszystkie umowy cesji wymagają podpisu właściciela nieruchomości.'
+      en: '1) We never charge agency commissions or upfront reservation deposits. 2) Outgoing tenants supply active lease and landlord contact details for formal transfer. 3) You never transfer money to private unverified foreign accounts before an in-person or live video walk-through and signed handover protocol. 4) All Cesja contracts require formal landlord counter-signature.',
+      pl: '1) Nie pobieramy żadnych prowizji agencyjnych. 2) Najemcy przekazują dane aktualnej umowy oraz kontakt do właściciela. 3) Przestrzegamy przed przelewaniem środków na niezweryfikowane konta przed obejrzeniem lokalu i podpisaniem protokołu. 4) Wszystkie umowy cesji wymagają formalnego podpisu właściciela nieruchomości.'
     },
     relatedLink: {
       text: { en: 'Read Relok8 tenant safety rules & checklist', pl: 'Zasady bezpieczeństwa i weryfikacji lokalu' },

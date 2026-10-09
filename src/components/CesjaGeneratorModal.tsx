@@ -181,7 +181,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.landlordName}
                       onChange={(e) => setData({ ...data, landlordName: e.target.value })}
                       placeholder="e.g. Marek Wiśniewski"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -191,7 +191,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.landlordId}
                       onChange={(e) => setData({ ...data, landlordId: e.target.value })}
                       placeholder="e.g. PESEL: 78041209871 / ID: ABE 129841"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 outline-none focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -209,7 +209,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.departingName}
                       onChange={(e) => setData({ ...data, departingName: e.target.value })}
                       placeholder="e.g. Piotr Kamiński"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -219,7 +219,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.departingPassport}
                       onChange={(e) => setData({ ...data, departingPassport: e.target.value })}
                       placeholder="e.g. Passport: YA8921041 (Italy)"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div className="sm:col-span-2">
@@ -229,7 +229,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.departingIban}
                       onChange={(e) => setData({ ...data, departingIban: e.target.value })}
                       placeholder="e.g. PL 42 1050 1445 1000 0098 7654 3210"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] font-mono outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 font-mono outline-none focus:border-indigo-600"
                     />
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.incomingName}
                       onChange={(e) => setData({ ...data, incomingName: e.target.value })}
                       placeholder="e.g. Alexander Novak"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 outline-none focus:border-indigo-600"
                     />
                   </div>
                   <div>
@@ -257,7 +257,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                       value={data.incomingPassport}
                       onChange={(e) => setData({ ...data, incomingPassport: e.target.value })}
                       placeholder="e.g. Passport: C90481249 (Germany)"
-                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-[var(--text-3)] outline-none focus:border-indigo-600"
+                      className="w-full bg-[var(--r8-surface-1)] border border-[var(--r8-border-strong)] rounded-[10px] p-2 text-[var(--r8-text)] placeholder:text-slate-400 outline-none focus:border-indigo-600"
                     />
                   </div>
                 </div>

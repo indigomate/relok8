@@ -462,7 +462,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Profil i dane' : 'Profile & Details'}</span>
+            <span>{locale === 'pl' ? 'Profil i dane' : 'Profile & details'}</span>
           </button>
 
           <button
@@ -475,7 +475,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Bezpieczeństwo konta' : 'Account Security'}</span>
+            <span>{locale === 'pl' ? 'Bezpieczeństwo konta' : 'Account security'}</span>
           </button>
 
           <button
@@ -488,7 +488,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             }`}
           >
             <Heart className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved Rooms'}</span>
+            <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved rooms'}</span>
             <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
               activeTab === 'saved' ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
             }`}>
@@ -506,7 +506,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             }`}
           >
             <Home className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Moje ogłoszenia' : 'My Listings'}</span>
+            <span>{locale === 'pl' ? 'Moje ogłoszenia' : 'My listings'}</span>
             {userListings.length > 0 && (
               <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
                 activeTab === 'listings' ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
@@ -526,7 +526,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             }`}
           >
             <Mail className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Pomoc i kontakt' : 'Help & Support'}</span>
+            <span>{locale === 'pl' ? 'Pomoc i kontakt' : 'Help & support'}</span>
           </button>
         </div>
 

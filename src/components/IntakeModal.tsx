@@ -90,10 +90,10 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
       likesCount: 1,
       currentTenant: {
         name: tenantName,
-        nationality: 'Verified',
+        nationality: 'Tenant',
         role: 'Student / Expat',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-        verifiedDocs: ['Identity Verified', 'Active Lease'],
+        verifiedDocs: [],
         reasonForLeaving,
         joinedYear: '2026'
       },
@@ -195,7 +195,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
                     placeholder="e.g. Krowodrza"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -227,7 +227,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     value={squareMeters}
                     onChange={handleNumericInput(setSquareMeters)}
                     placeholder="e.g. 20"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -241,7 +241,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                   value={distanceToCampus}
                   onChange={(e) => setDistanceToCampus(e.target.value)}
                   placeholder="e.g. 5 min walk to AGH"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs placeholder:text-slate-400"
                 />
               </div>
 
@@ -298,7 +298,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     value={monthlyRentPLN}
                     onChange={handleNumericInput(setMonthlyRentPLN)}
                     placeholder="e.g. 1700"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs placeholder:text-slate-400"
                   />
                 </div>
                 <div>
@@ -313,7 +313,7 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                     value={depositPLN}
                     onChange={handleNumericInput(setDepositPLN)}
                     placeholder="e.g. 1800"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs placeholder:text-slate-400"
                   />
                 </div>
               </div>
@@ -327,7 +327,8 @@ export const IntakeModal: React.FC<IntakeModalProps> = ({
                   required
                   value={landlordName}
                   onChange={(e) => setLandlordName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs"
+                  placeholder="e.g. Jan Kowalski"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs placeholder:text-slate-400"
                 />
               </div>
 

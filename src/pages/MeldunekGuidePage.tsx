@@ -45,10 +45,10 @@ export const MeldunekGuidePage: React.FC<MeldunekGuidePageProps> = ({
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-emerald-950 space-y-2">
           <h2 className="text-sm font-bold flex items-center gap-2 text-emerald-900">
             <Shield className="w-4 h-4 text-emerald-700" />
-            <span>The Relok8 Guarantee</span>
+            <span>Address registration rights in Poland</span>
           </h2>
           <p className="text-xs sm:text-sm text-emerald-800 leading-relaxed">
-            Many landlords in Poland refuse to let foreign tenants register their address due to misconceptions. On <strong className="text-emerald-900">Relok8</strong>, every listing is pre-cleared with landlord consent so you are legally guaranteed address registration (Meldunek) from Day 1 of your contract handover.
+            Many landlords in Poland are hesitant to let foreign tenants register their address due to misconceptions. On <strong className="text-emerald-900">Relok8</strong>, every listing explicitly specifies whether landlord consent for temporary address registration (Meldunek czasowy) is approved from day 1 of your contract handover.
           </p>
         </div>
 

@@ -39,7 +39,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
             How Lease Takeover Poland Works on Relok8
           </h1>
           <p className="text-base text-slate-600 leading-relaxed">
-            Take over an active rental contract directly from outgoing international students and expats with 100% legal landlord approval, zero broker commissions, and guaranteed address registration (Meldunek).
+            Take over an active rental contract directly from outgoing international students and expats with formal landlord approval, zero broker commissions, and clear address registration status (Meldunek).
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Real verified outgoing tenants</span>
+                <span>Direct peer-to-peer contact</span>
               </li>
             </ul>
           </div>
@@ -81,7 +81,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
             <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Guaranteed tenant legal rights</span>
+                <span>Civil Code tenant rights (Art. 509 KC)</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -121,7 +121,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
             <span>Why is Lease Takeover (Cesja) 100% Legal in Poland?</span>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Under Article 509 of the Polish Civil Code (Kodeks Cywilny), a tenant may transfer their contractual rights and claims to a third party with the landlord's consent. This is known legally as <strong className="text-slate-900">cesja praw i obowiązków z umowy najmu</strong>. It guarantees that the incoming tenant enters into the existing valid agreement under the exact same financial terms, while releasing the departing tenant from future rent liabilities without penalty.
+            Under Article 509 of the Polish Civil Code (Kodeks Cywilny), a tenant may transfer their contractual rights and claims to a third party with the landlord's consent. This is known legally as <strong className="text-slate-900">cesja praw i obowiązków z umowy najmu</strong>. It ensures that the incoming tenant enters into the existing valid agreement under the exact same financial terms, while releasing the departing tenant from future rent liabilities without penalty.
           </p>
         </div>
 
