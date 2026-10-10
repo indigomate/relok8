@@ -281,9 +281,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </button>
                   </div>
                 ) : (
-                  /* LOGGED IN MENU (§4.5): Messages · Saved · My listings · Account settings · Help · Log out */
+                  /* LOGGED IN MENU: Saved · Account settings · Help · Log out */
                   <div className="p-2 space-y-1">
-                    <div className="px-3 py-2 mb-1">
+                    <div className="px-3 py-2 mb-1 border-b border-slate-100">
                       <div className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</div>
                       <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
                     </div>
@@ -291,21 +291,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        window.history.pushState({}, '', locale === 'pl' ? '/pl/messages' : '/messages');
-                        window.dispatchEvent(new PopStateEvent('popstate'));
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    >
-                      <MessageSquare className="w-4 h-4 text-slate-400" />
-                      <span>{strings.messages}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
                         onNavigateSaved();
                       }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
+                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <Heart className="w-4 h-4 text-slate-400" />
@@ -321,22 +309,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       type="button"
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        window.history.pushState({}, '', locale === 'pl' ? '/pl/dashboard' : '/dashboard');
+                        const target = locale === 'pl' ? '/pl/account' : '/account';
+                        window.history.pushState({}, '', target);
                         window.dispatchEvent(new PopStateEvent('popstate'));
                       }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                    >
-                      <Home className="w-4 h-4 text-slate-400" />
-                      <span>{strings.myListings}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        window.history.pushState({}, '', locale === 'pl' ? '/pl/account' : '/account');
-                        window.dispatchEvent(new PopStateEvent('popstate'));
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                     >
                       <Settings className="w-4 h-4 text-slate-400" />
                       <span>{strings.accountSettings}</span>
@@ -347,7 +324,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsDropdownOpen(false);
                         onOpenHelp();
                       }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                     >
                       <HelpCircle className="w-4 h-4 text-slate-400" />
                       <span>{strings.help}</span>

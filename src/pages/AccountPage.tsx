@@ -1,19 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/react';
 import { 
-  ArrowLeft, User, Heart, Home, MessageSquare, Shield, 
-  Settings, LogOut, CheckCircle2, AlertCircle, Mail, Phone, 
-  Building2, GraduationCap, Calendar, MapPin, ExternalLink, 
-  Trash2, Plus, Send, RefreshCw, Key, Lock
+  ArrowLeft, User, Shield, LogOut, CheckCircle2, 
+  AlertCircle, Mail, Phone, GraduationCap, Lock, 
+  Trash2, Heart, Globe, ExternalLink
 } from 'lucide-react';
 import { Listing } from '../types';
-import { SupportedLocale, formatPLN, formatDate } from '../utils/formatters';
+import { SupportedLocale } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';
 import { 
   updateUserProfile, 
-  getUserListings, 
-  getUserInquiries, 
-  signOut, 
   supabase, 
   isSupabaseConfigured 
 } from '../lib/supabase/client';
@@ -22,12 +18,12 @@ interface AccountPageProps {
   currentUser: UserProfile | null;
   onBack: () => void;
   locale: SupportedLocale;
-  savedListings: Listing[];
-  onSelectListing: (listing: Listing) => void;
-  onRemoveSaved: (id: string) => void;
+  savedListings?: Listing[];
+  onSelectListing?: (listing: Listing) => void;
+  onRemoveSaved?: (id: string) => void;
   onRequireLogin: () => void;
   onUpdateUser: (user: UserProfile) => void;
-  onOpenListPlace: () => void;
+  onOpenListPlace?: () => void;
   onLogout: () => void;
 }
 
@@ -35,108 +31,58 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   currentUser,
   onBack,
   locale = 'en',
-  savedListings,
-  onSelectListing,
-  onRemoveSaved,
+  savedListings = [],
   onRequireLogin,
   onUpdateUser,
-  onOpenListPlace,
   onLogout
 }) => {
   const { user: clerkUser } = useUser();
   const clerk = useClerk();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'saved' | 'listings' | 'support'>(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const tabParam = urlParams.get('tab');
-      if (tabParam === 'security' || tabParam === 'saved' || tabParam === 'listings' || tabParam === 'support') {
-        return tabParam;
-      }
-    }
-    return 'profile';
-  });
 
-  // Edit profile state
+  // Profile editing state
   const [fullName, setFullName] = useState(currentUser?.name || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [university, setUniversity] = useState(currentUser?.university || '');
-  const [userRole, setUserRole] = useState(currentUser?.role || 'student');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
+  const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
+
+  // Security / Password update state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [securityMsg, setSecurityMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Account deletion state
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // My listings state
-  const [userListings, setUserListings] = useState<Listing[]>([]);
-  const [isLoadingListings, setIsLoadingListings] = useState(false);
-
-  // Inquiries state
-  const [inquiries, setInquiries] = useState<any[]>([]);
-
-  // Password / Security state
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityMsg, setSecurityMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-
-  // Support / Contact state
-  const [contactSubject, setContactSubject] = useState('');
-  const [contactMessage, setContactMessage] = useState('');
-  const [contactSent, setContactSent] = useState(false);
-  const [isSendingContact, setIsSendingContact] = useState(false);
-
-  // Sync title
+  // Set page title
   useEffect(() => {
-    document.title = locale === 'pl' ? 'Konto Użytkownika | Relok8' : 'User Account & Profile | Relok8';
+    document.title = locale === 'pl' ? 'Ustawienia konta | Relok8' : 'Account settings | Relok8';
   }, [locale]);
 
-  // Load user-specific data from Supabase / localStorage
+  // Sync state if currentUser changes
   useEffect(() => {
-    if (!currentUser) return;
-    setFullName(currentUser.name || '');
-    setPhone(currentUser.phone || '');
-    setUniversity(currentUser.university || '');
-    setUserRole(currentUser.role || 'student');
-
-    // Fetch user's own listings
-    setIsLoadingListings(true);
-    getUserListings(currentUser.id)
-      .then((data) => {
-        setUserListings(data || []);
-      })
-      .catch(() => {
-        // Fallback to local
-        const localListings = localStorage.getItem('r8_listings');
-        if (localListings) {
-          try {
-            const parsed: Listing[] = JSON.parse(localListings);
-            setUserListings(parsed.filter((l) => l.currentTenant?.name === currentUser.name));
-          } catch (e) {}
-        }
-      })
-      .finally(() => setIsLoadingListings(false));
-
-    // Fetch inquiries
-    getUserInquiries(currentUser.id)
-      .then((data) => {
-        setInquiries(data || []);
-      })
-      .catch(() => {});
+    if (currentUser) {
+      setFullName(currentUser.name || '');
+      setPhone(currentUser.phone || '');
+      setUniversity(currentUser.university || '');
+    }
   }, [currentUser]);
 
-  // Handle saving profile changes
+  // Handle saving personal details
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) return;
 
     setIsSavingProfile(true);
     setProfileSuccessMsg(null);
+    setProfileErrorMsg(null);
 
     try {
-      // 1. Sync profile attributes and metadata to Clerk if session active
+      // 1. Sync to Clerk if authenticated session
       if (clerkUser) {
         const parts = fullName.trim().split(/\s+/);
         const firstName = parts[0] || '';
@@ -146,13 +92,12 @@ export const AccountPage: React.FC<AccountPageProps> = ({
           firstName,
           lastName
         }).catch(() => {
-          // If first/last name editing is disabled in Clerk dashboard, continue
+          // Ignore if name updates restricted in Clerk dashboard
         });
 
         await clerkUser.updateMetadata({
           unsafeMetadata: {
             ...(clerkUser.unsafeMetadata || {}),
-            role: userRole,
             university,
             phone
           }
@@ -172,50 +117,29 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         });
       }
 
+      // 3. Update current user state in application
       const updatedUser: UserProfile = {
         ...currentUser,
         name: fullName,
         phone,
-        university,
-        role: userRole
+        university
       };
 
       try {
         localStorage.setItem('r8_user', JSON.stringify(updatedUser));
-      } catch (e) {}
+      } catch (err) {}
 
       onUpdateUser(updatedUser);
-      setProfileSuccessMsg(locale === 'pl' ? 'Profil zaktualizowany pomyślnie!' : 'Profile details saved successfully!');
-      setTimeout(() => setProfileSuccessMsg(null), 3500);
+      setProfileSuccessMsg(
+        locale === 'pl' ? 'Ustawienia konta zostały zapisane pomyślnie.' : 'Account details saved successfully.'
+      );
+      setTimeout(() => setProfileSuccessMsg(null), 4000);
     } catch (err: any) {
-      setProfileSuccessMsg(err?.message || 'Error updating profile');
+      setProfileErrorMsg(
+        err?.message || (locale === 'pl' ? 'Wystąpił błąd podczas zapisywania.' : 'Error updating profile details.')
+      );
     } finally {
       setIsSavingProfile(false);
-    }
-  };
-
-  // Handle direct account deletion with Clerk
-  const handleDeleteAccount = async () => {
-    setIsDeletingAccount(true);
-    setDeleteError(null);
-    try {
-      if (clerkUser) {
-        await clerkUser.delete();
-      }
-      try {
-        await clerk.signOut();
-      } catch (e) {}
-      localStorage.removeItem('r8_user');
-      onLogout();
-      onBack();
-    } catch (err: any) {
-      setDeleteError(
-        err?.errors?.[0]?.longMessage ||
-        err?.errors?.[0]?.message ||
-        err?.message ||
-        (locale === 'pl' ? 'Nie udało się usunąć konta.' : 'Failed to delete account.')
-      );
-      setIsDeletingAccount(false);
     }
   };
 
@@ -225,14 +149,14 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     if (newPassword.length < 6) {
       setSecurityMsg({
         type: 'error',
-        text: locale === 'pl' ? 'Hasło musi mieć co najmniej 6 znaków.' : 'Password must be at least 6 characters long.'
+        text: locale === 'pl' ? 'Hasło musi zawierać co najmniej 6 znaków.' : 'Password must be at least 6 characters long.'
       });
       return;
     }
     if (newPassword !== confirmPassword) {
       setSecurityMsg({
         type: 'error',
-        text: locale === 'pl' ? 'Hasła nie są identyczne.' : 'Passwords do not match.'
+        text: locale === 'pl' ? 'Podane hasła nie są identyczne.' : 'Passwords do not match.'
       });
       return;
     }
@@ -252,7 +176,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 
       setSecurityMsg({
         type: 'success',
-        text: locale === 'pl' ? 'Hasło zostało pomyślnie zaktualizowane!' : 'Password updated successfully!'
+        text: locale === 'pl' ? 'Twoje hasło zostało zaktualizowane.' : 'Your password has been updated successfully.'
       });
       setNewPassword('');
       setConfirmPassword('');
@@ -266,56 +190,55 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     }
   };
 
-  // Handle contact support form tied to info@relok8.online
-  const handleSendSupportMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contactMessage) return;
-
-    setIsSendingContact(true);
+  // Handle direct account deletion
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    setDeleteError(null);
     try {
-      await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: currentUser?.name || 'Relok8 User',
-          email: currentUser?.email || 'user@relok8.online',
-          subject: contactSubject || 'Account & Lease Inquiry',
-          message: contactMessage,
-          topic: 'User Account Support'
-        })
-      });
-
-      setContactSent(true);
-      setContactSubject('');
-      setContactMessage('');
-    } catch (err) {
-      // Fallback: mailto
-      window.location.href = `mailto:info@relok8.online?subject=${encodeURIComponent(
-        contactSubject || 'Relok8 Support Request'
-      )}&body=${encodeURIComponent(contactMessage)}`;
-      setContactSent(true);
-    } finally {
-      setIsSendingContact(false);
+      if (clerkUser) {
+        await clerkUser.delete();
+      }
+      try {
+        await clerk.signOut();
+      } catch (e) {}
+      localStorage.removeItem('r8_user');
+      onLogout();
+    } catch (err: any) {
+      setDeleteError(
+        err?.errors?.[0]?.longMessage ||
+        err?.errors?.[0]?.message ||
+        err?.message ||
+        (locale === 'pl' ? 'Nie udało się usunąć konta.' : 'Failed to delete account.')
+      );
+      setIsDeletingAccount(false);
     }
   };
 
-  // If user is not logged in, show prompt to sign in or register
+  // Switch interface language
+  const handleLanguageSwitch = (targetLocale: SupportedLocale) => {
+    if (targetLocale === locale) return;
+    const target = targetLocale === 'pl' ? '/pl/account' : '/account';
+    window.history.pushState({}, '', target);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  // Non-authenticated view
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 text-left">
-        <div className="max-w-2xl mx-auto px-4 pt-12 sm:pt-16 text-center space-y-6">
+        <div className="max-w-xl mx-auto px-4 pt-16 sm:pt-20 text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mx-auto text-indigo-600">
             <User className="w-8 h-8" />
           </div>
 
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              {locale === 'pl' ? 'Zaloguj się do swojego konta' : 'Sign in to your Relok8 account'}
+              {locale === 'pl' ? 'Ustawienia konta' : 'Account settings'}
             </h1>
             <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
               {locale === 'pl'
-                ? 'Utwórz konto lub zaloguj się, aby zarządzać zapisanymi pokojami, przeglądać dodane ogłoszenia oraz kontaktować najemców.'
-                : 'Sign in to access your saved shortlist, manage lease listings, view inquiries, and verify your student or expat status.'}
+                ? 'Zaloguj się do swojego konta, aby zarządzać danymi osobowymi, preferencjami i ustawieniami bezpieczeństwa.'
+                : 'Sign in to your account to manage your profile details, contact preferences, and security settings.'}
             </p>
           </div>
 
@@ -323,9 +246,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             <button
               type="button"
               onClick={onRequireLogin}
-              className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm cursor-pointer"
+              className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition-colors shadow-xs cursor-pointer"
             >
-              {locale === 'pl' ? 'Zaloguj lub zarejestruj się' : 'Sign In / Register'}
+              {locale === 'pl' ? 'Zaloguj się' : 'Sign in to account'}
             </button>
             <button
               type="button"
@@ -334,21 +257,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             >
               {locale === 'pl' ? 'Wróć do przeglądania' : 'Back to explore'}
             </button>
-          </div>
-
-          <div className="pt-8 border-t border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-slate-600">
-            <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-              <span className="font-bold text-slate-900 block mb-1">0 PLN Agency Fees</span>
-              <span>Direct lease transfer under Art. 509 KC without broker commissions.</span>
-            </div>
-            <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-              <span className="font-bold text-slate-900 block mb-1">Meldunek Ready</span>
-              <span>All listings support mandatory student address registration in Poland.</span>
-            </div>
-            <div className="p-4 bg-white rounded-xl border border-slate-200/80">
-              <span className="font-bold text-slate-900 block mb-1">Direct Contact</span>
-              <span>Fast inquiries sent straight to outgoing tenants and verified hosts.</span>
-            </div>
           </div>
         </div>
       </div>
@@ -366,9 +274,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
-      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-6">
         
-        {/* Top Breadcrumb & Navigation */}
+        {/* Navigation & Back link */}
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -376,20 +284,32 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>{locale === 'pl' ? 'Wróć do ofert' : 'Back to listings'}</span>
+            <span>{locale === 'pl' ? 'Wróć do przeglądania' : 'Back to explore'}</span>
           </button>
 
-          <span className="text-xs text-slate-500">
-            Relok8 ID: <span className="font-mono text-slate-700">{currentUser.id.slice(0, 8)}</span>
-          </span>
+          {/* Quick link to Saved Rooms if any */}
+          <button
+            type="button"
+            onClick={() => {
+              const target = locale === 'pl' ? '/pl/saved' : '/saved';
+              window.history.pushState({}, '', target);
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+          >
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+            <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved rooms'}</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-bold">
+              {savedListings.length}
+            </span>
+          </button>
         </div>
 
-        {/* Profile Header Card */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-            
+        {/* User Overview Banner */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-indigo-600 text-white font-bold text-2xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+              <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white font-bold text-xl flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
                 {currentUser.avatar ? (
                   <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
                 ) : (
@@ -398,723 +318,353 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-                    {currentUser.name}
-                  </h1>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    <span>Verified</span>
-                  </span>
-                </div>
-
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                  {currentUser.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500">
                   {currentUser.email}
                 </p>
-
-                <div className="flex flex-wrap items-center gap-3 pt-1 text-xs text-slate-600">
-                  {currentUser.university && (
-                    <span className="flex items-center gap-1">
-                      <GraduationCap className="w-3.5 h-3.5 text-indigo-600" />
-                      <span>{currentUser.university}</span>
-                    </span>
-                  )}
-                  <span className="capitalize px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold">
-                    {currentUser.role || 'Student / Expat'}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>{locale === 'pl' ? 'Konto aktywne' : 'Account active'}</span>
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={onOpenListPlace}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{locale === 'pl' ? 'Dodaj pokój' : 'List a place'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onLogout}
-                className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-rose-600 font-medium text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
-                title="Log out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{locale === 'pl' ? 'Wyloguj' : 'Log out'}</span>
-              </button>
-            </div>
-
+            <button
+              type="button"
+              onClick={onLogout}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{locale === 'pl' ? 'Wyloguj się' : 'Sign out'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-1.5 border-b border-slate-200 overflow-x-auto pb-1 text-xs font-semibold scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'profile'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Profil i dane' : 'Profile & details'}</span>
-          </button>
+        {/* 1. Personal Information */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 space-y-5 shadow-xs">
+          <div className="space-y-1 pb-2 border-b border-slate-100">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <User className="w-4 h-4 text-indigo-600" />
+              <span>{locale === 'pl' ? 'Dane osobowe' : 'Personal information'}</span>
+            </h2>
+            <p className="text-xs text-slate-500">
+              {locale === 'pl'
+                ? 'Twoje podstawowe dane kontaktowe widoczne przy zgłoszeniach do cesji umowy najmu.'
+                : 'Your contact details used when submitting lease takeover requests or contacting tenants.'}
+            </p>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('security')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'security'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Bezpieczeństwo konta' : 'Account security'}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('saved')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'saved'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Heart className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved rooms'}</span>
-            <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-              activeTab === 'saved' ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
-            }`}>
-              {savedListings.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('listings')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'listings'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Home className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Moje ogłoszenia' : 'My listings'}</span>
-            {userListings.length > 0 && (
-              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                activeTab === 'listings' ? 'bg-slate-800 text-white' : 'bg-slate-200 text-slate-700'
-              }`}>
-                {userListings.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('support')}
-            className={`px-4 py-2.5 rounded-xl transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
-              activeTab === 'support'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>{locale === 'pl' ? 'Pomoc i kontakt' : 'Help & support'}</span>
-          </button>
-        </div>
-
-        {/* TAB 1: Profile & Details */}
-        {activeTab === 'profile' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs max-w-2xl">
-            <div className="space-y-1">
-              <h2 className="text-lg font-bold text-slate-900">
-                {locale === 'pl' ? 'Dane osobowe i kontaktowe' : 'Personal & Contact Information'}
-              </h2>
-              <p className="text-xs text-slate-500">
-                {locale === 'pl'
-                  ? 'Te dane są wykorzystywane do wstępnej weryfikacji tożsamości w porozumieniach cesji.'
-                  : 'Used for identity verification on lease handover protocols and landlord communications.'}
-              </p>
+          {profileSuccessMsg && (
+            <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{profileSuccessMsg}</span>
             </div>
+          )}
 
-            {profileSuccessMsg && (
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{profileSuccessMsg}</span>
+          {profileErrorMsg && (
+            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{profileErrorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {locale === 'pl' ? 'Imię i nazwisko' : 'Full name'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Maria Kowalska"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                />
               </div>
-            )}
 
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Imię i nazwisko' : 'Full Name'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Maria Kowalska"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Adres e-mail' : 'Email Address'}
-                  </label>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>{locale === 'pl' ? 'Adres e-mail' : 'Email address'}</span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {locale === 'pl' ? 'Główny login' : 'Primary login'}
+                  </span>
+                </label>
+                <div className="relative">
                   <input
                     type="email"
                     disabled
                     value={currentUser.email}
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-500 cursor-not-allowed"
                   />
+                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3" />
                 </div>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Numer telefonu / WhatsApp' : 'Phone / WhatsApp'}
-                  </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {locale === 'pl' ? 'Numer telefonu / WhatsApp' : 'Phone / WhatsApp'}
+                </label>
+                <div className="relative">
                   <input
                     type="tel"
                     inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/[^0-9+ ]/g, ''))}
                     placeholder="+48 123 456 789"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
+                  <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Uczelnia lub firma w Polsce' : 'Polish University / Workplace'}
-                  </label>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {locale === 'pl' ? 'Uczelnia lub miejsce pracy' : 'University or workplace'}
+                </label>
+                <div className="relative">
                   <input
                     type="text"
                     value={university}
                     onChange={(e) => setUniversity(e.target.value)}
-                    placeholder="e.g. University of Warsaw (UW)"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                    placeholder="e.g. University of Warsaw"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
                   />
+                  <GraduationCap className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3" />
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {locale === 'pl' ? 'Rola na platformie' : 'Primary Role'}
-                </label>
-                <select
-                  value={userRole}
-                  onChange={(e) => setUserRole(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 bg-white"
-                >
-                  <option value="student">International / Polish Student</option>
-                  <option value="expat">Working Professional / Expat</option>
-                  <option value="tenant">Current Tenant looking to transfer lease</option>
-                  <option value="landlord">Direct Property Owner / Landlord</option>
-                </select>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSavingProfile}
-                  className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
-                >
-                  {isSavingProfile ? (locale === 'pl' ? 'Zapisywanie...' : 'Saving changes...') : (locale === 'pl' ? 'Zapisz zmiany' : 'Save profile')}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* TAB 2: Saved Rooms */}
-        {activeTab === 'saved' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-slate-900">
-                {locale === 'pl' ? 'Zapisane pokoje i mieszkania' : 'Your Saved Shortlist'} ({savedListings.length})
-              </h2>
             </div>
 
-            {savedListings.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-4">
-                <Heart className="w-10 h-10 text-slate-300 mx-auto" />
-                <div className="space-y-1">
-                  <p className="text-sm font-bold text-slate-800">
-                    {locale === 'pl' ? 'Brak zapisanych ogłoszeń' : 'No saved apartments yet'}
-                  </p>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    {locale === 'pl'
-                      ? 'Kliknij ikonę serca na dowolnej ofercie, aby zachować ją na później.'
-                      : 'Tap the heart icon on any room card to save it here for fast comparison.'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-                >
-                  {locale === 'pl' ? 'Przeglądaj pokoje' : 'Browse rooms in Poland'}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {savedListings.map((listing) => (
-                  <div
-                    key={listing.id}
-                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
-                        <img
-                          src={listing.images[0]}
-                          alt={listing.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => onRemoveSaved(listing.id)}
-                          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-rose-600 flex items-center justify-center shadow-xs cursor-pointer"
-                          title="Remove from saved"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded-md bg-white/95 text-slate-900 text-[11px] font-bold shadow-xs">
-                          {formatPLN(listing.monthlyRentPLN, locale)} / mo
-                        </div>
-                      </div>
-
-                      <div className="p-4 space-y-2">
-                        <h3 className="font-bold text-sm text-slate-900 line-clamp-1">
-                          {listing.title}
-                        </h3>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span>{listing.district}, {listing.city}</span>
-                        </p>
-                        <div className="text-[11px] text-slate-600 pt-1">
-                          <span>Available: {formatDate(listing.availableDate, locale)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-4 pt-0">
-                      <button
-                        type="button"
-                        onClick={() => onSelectListing(listing)}
-                        className="w-full py-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <span>{locale === 'pl' ? 'Zobacz szczegóły' : 'View full listing'}</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: My Listings */}
-        {activeTab === 'listings' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
-                  {locale === 'pl' ? 'Ogłoszenia dodane przez Ciebie' : 'Rooms Posted by You'}
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {locale === 'pl'
-                    ? 'Pokoje i mieszkania dodane na potrzeby cesji umowy najmu.'
-                    : 'Manage active lease transfer listings and incoming tenant inquiries.'}
-                </p>
-              </div>
-
+            <div className="pt-2 flex justify-end">
               <button
-                type="button"
-                onClick={onOpenListPlace}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                type="submit"
+                disabled={isSavingProfile}
+                className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer shadow-xs disabled:opacity-50"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{locale === 'pl' ? 'Dodaj nowe' : 'Post new room'}</span>
+                {isSavingProfile
+                  ? (locale === 'pl' ? 'Zapisywanie...' : 'Saving changes...')
+                  : (locale === 'pl' ? 'Zapisz zmiany' : 'Save changes')}
               </button>
             </div>
+          </form>
+        </div>
 
-            {isLoadingListings ? (
-              <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center text-xs text-slate-500">
-                <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-600" />
-                <span>Loading your listings...</span>
-              </div>
-            ) : userListings.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-4">
-                <Home className="w-10 h-10 text-slate-300 mx-auto" />
-                <div className="space-y-1">
-                  <p className="text-sm font-bold text-slate-800">
-                    {locale === 'pl' ? 'Nie masz jeszcze aktywnych ogłoszeń' : 'No active listings posted yet'}
-                  </p>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    {locale === 'pl'
-                      ? 'Wyprowadzasz się wcześniej? Dodaj ogłoszenie w 2 minuty i przekaż umowę bez utraty kaucji.'
-                      : 'Leaving Poland or moving to a new flat early? List your lease takeover for free in under 2 minutes.'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onOpenListPlace}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-                >
-                  {locale === 'pl' ? 'Wystaw pokój na cesję' : 'Post a room for takeover'}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {userListings.map((listing) => (
-                  <div
-                    key={listing.id}
-                    className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3 shadow-xs"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-                          Active · Pre-Approved
-                        </span>
-                        <h3 className="font-bold text-sm text-slate-900 mt-1 line-clamp-1">
-                          {listing.title}
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          {listing.city} · {formatPLN(listing.monthlyRentPLN, locale)} / mo
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => onSelectListing(listing)}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
-                      >
-                        Preview
-                      </button>
-                    </div>
-
-                    <div className="text-[11px] text-slate-600 bg-slate-50 rounded-xl p-2.5 flex items-center justify-between">
-                      <span>Article 509 KC Compliant</span>
-                      <span>Meldunek: {listing.meldunekAllowed ? 'Yes' : 'No'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* 2. Language & Preferences */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 space-y-4 shadow-xs">
+          <div className="space-y-1 pb-2 border-b border-slate-100">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-indigo-600" />
+              <span>{locale === 'pl' ? 'Język platformy' : 'Language preference'}</span>
+            </h2>
+            <p className="text-xs text-slate-500">
+              {locale === 'pl'
+                ? 'Wybierz język, w którym przeglądasz oferty i umowy.'
+                : 'Choose the interface language for browsing listings and legal guides.'}
+            </p>
           </div>
-        )}
 
-        {/* TAB 4: Security & Clerk Account Management */}
-        {activeTab === 'security' && (
-          <div className="space-y-6">
-            {/* Identity & Verification Status Card */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-                <div className="space-y-1">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    {locale === 'pl' ? 'Stan weryfikacji konta' : 'Account Verification Status'}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-extrabold text-slate-900">{currentUser.email}</span>
-                    {currentUser.isVerified ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {locale === 'pl' ? 'Zweryfikowany' : 'Verified'}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <AlertCircle className="w-3.5 h-3.5" />
-                        {locale === 'pl' ? 'Weryfikacja w toku' : 'Verification Pending'}
-                      </span>
-                    )}
-                  </div>
-                </div>
+          <div className="grid grid-cols-2 gap-3 max-w-sm">
+            <button
+              type="button"
+              onClick={() => handleLanguageSwitch('en')}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                locale === 'en'
+                  ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className="font-bold text-xs text-slate-900">English</div>
+              <div className="text-[11px] text-slate-500">Default interface</div>
+            </button>
 
-                <div className="text-left sm:text-right">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                    {locale === 'pl' ? 'Rola profilu' : 'Active Role'}
-                  </span>
-                  <span className="inline-block mt-0.5 px-3 py-1 rounded-xl text-xs font-bold bg-slate-100 text-slate-800 capitalize border border-slate-200">
-                    {currentUser.role || 'student'}
-                  </span>
-                </div>
-              </div>
+            <button
+              type="button"
+              onClick={() => handleLanguageSwitch('pl')}
+              className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                locale === 'pl'
+                  ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
+              }`}
+            >
+              <div className="font-bold text-xs text-slate-900">Polski</div>
+              <div className="text-[11px] text-slate-500">Polska wersja</div>
+            </button>
+          </div>
+        </div>
 
-              <div className="space-y-6 pt-2">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <Key className="w-5 h-5 text-indigo-600" />
-                    <span>{locale === 'pl' ? 'Hasło i metody logowania' : 'Password & Authentication'}</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {locale === 'pl'
-                      ? 'Zarządzaj hasłem dostępu oraz metodami logowania do konta Relok8.'
-                      : 'Update your login password and manage credentials for your Relok8 account.'}
-                  </p>
-                </div>
+        {/* 3. Account Security */}
+        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 space-y-5 shadow-xs">
+          <div className="space-y-1 pb-2 border-b border-slate-100">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-indigo-600" />
+              <span>{locale === 'pl' ? 'Bezpieczeństwo i hasło' : 'Account security'}</span>
+            </h2>
+            <p className="text-xs text-slate-500">
+              {locale === 'pl'
+                ? 'Zarządzaj swoim hasłem logowania i zabezpieczeniami konta.'
+                : 'Update your password and manage security credentials.'}
+            </p>
+          </div>
 
-                {/* Password Update Form */}
-                <form onSubmit={handlePasswordUpdate} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                    <Lock className="w-4 h-4 text-slate-600" />
-                    <span>{locale === 'pl' ? 'Zmień hasło' : 'Change Password'}</span>
-                  </div>
-
-                  {securityMsg && (
-                    <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                      securityMsg.type === 'success'
-                        ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                        : 'bg-rose-50 border border-rose-200 text-rose-800'
-                    }`}>
-                      {securityMsg.type === 'success' ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                      )}
-                      <span>{securityMsg.text}</span>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {locale === 'pl' ? 'Nowe hasło' : 'New Password'}
-                      </label>
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        {locale === 'pl' ? 'Powtórz nowe hasło' : 'Confirm New Password'}
-                      </label>
-                      <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-[11px] text-slate-500">
-                      {locale === 'pl' ? 'Minimum 6 znaków' : 'Minimum 6 characters'}
-                    </span>
-                    <button
-                      type="submit"
-                      disabled={isUpdatingPassword || !newPassword}
-                      className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-40"
-                    >
-                      {isUpdatingPassword
-                        ? (locale === 'pl' ? 'Aktualizowanie...' : 'Updating...')
-                        : (locale === 'pl' ? 'Zaktualizuj hasło' : 'Update Password')}
-                    </button>
-                  </div>
-                </form>
-
-                {/* Advanced Security & 2FA if Clerk is active */}
-                {clerkUser && (
-                  <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                        <Shield className="w-4 h-4 text-indigo-600" />
-                        <span>{locale === 'pl' ? 'Weryfikacja dwuetapowa i urządzenia' : 'Two-Step Verification & Devices'}</span>
-                      </div>
-                      <p className="text-xs text-slate-500 max-w-md">
-                        {locale === 'pl'
-                          ? 'Skonfiguruj klucze dostępu Passkey, uwierzytelnianie SMS/aplikacją oraz przejrzyj aktywne sesje.'
-                          : 'Set up passkeys, authenticator apps, and review your active signed-in devices.'}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => clerk.openUserProfile()}
-                      className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-800 font-semibold text-xs rounded-xl border border-slate-200 transition-colors shadow-xs cursor-pointer whitespace-nowrap shrink-0"
-                    >
-                      {locale === 'pl' ? 'Zarządzaj 2FA i urządzeniami' : 'Manage 2FA & Devices'}
-                    </button>
-                  </div>
+          {/* Password Update Form */}
+          <form onSubmit={handlePasswordUpdate} className="space-y-4">
+            {securityMsg && (
+              <div className={`p-3.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                securityMsg.type === 'success'
+                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border border-rose-200 text-rose-800'
+              }`}>
+                {securityMsg.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 )}
+                <span>{securityMsg.text}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {locale === 'pl' ? 'Nowe hasło' : 'New password'}
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                />
               </div>
 
-              {/* Danger Zone: Account Deletion */}
-              <div className="pt-6 border-t border-slate-200">
-                <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-5 space-y-3">
-                  <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
-                    <Trash2 className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>{locale === 'pl' ? 'Strefa niebezpieczna: Usuń konto' : 'Danger Zone: Delete Account'}</span>
-                  </div>
-                  <p className="text-xs text-rose-700 leading-relaxed">
-                    {locale === 'pl'
-                      ? 'Trwałe usunięcie konta z platformy Relok8. Wszystkie Twoje dane sesji, wiadomości i zapisane pokoje zostaną bezpowrotnie usunięte.'
-                      : 'Permanently removes your account from Relok8. Your profile, active lease inquiries, and saved shortlists will be erased.'}
-                  </p>
-
-                  {showDeleteConfirm ? (
-                    <div className="p-4 rounded-xl bg-white border border-rose-300 space-y-3 shadow-xs">
-                      <p className="text-xs font-bold text-rose-900">
-                        {locale === 'pl'
-                          ? 'Czy jesteś pewien? Tej operacji nie można cofnąć.'
-                          : 'Are you sure? This action is permanent and cannot be undone.'}
-                      </p>
-                      {deleteError && (
-                        <p className="text-xs text-rose-600 font-semibold">{deleteError}</p>
-                      )}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          disabled={isDeletingAccount}
-                          onClick={handleDeleteAccount}
-                          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer disabled:opacity-50"
-                        >
-                          {isDeletingAccount
-                            ? (locale === 'pl' ? 'Usuwanie...' : 'Deleting account...')
-                            : (locale === 'pl' ? 'Tak, usuń bezpowrotnie' : 'Yes, permanently delete')}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isDeletingAccount}
-                          onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setDeleteError(null);
-                          }}
-                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
-                        >
-                          {locale === 'pl' ? 'Anuluj' : 'Cancel'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm(true)}
-                      className="px-4 py-2 bg-white hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-300 transition-colors cursor-pointer"
-                    >
-                      {locale === 'pl' ? 'Usuń konto Relok8' : 'Delete Relok8 Account'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">
-                <span className="font-bold text-slate-700 block">GDPR & Data Protection</span>
-                <p>
-                  Under EU General Data Protection Regulation (RODO), you have the right to inspect or export your stored data. Email <a href="mailto:info@relok8.online" className="text-indigo-600 font-semibold underline">info@relok8.online</a> for data requests.
-                </p>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  {locale === 'pl' ? 'Potwierdź nowe hasło' : 'Confirm new password'}
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                />
               </div>
             </div>
-          </div>
-        )}
 
-        {/* TAB 5: Support & Contact (Tied directly to info@relok8.online) */}
-        {activeTab === 'support' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-xs max-w-xl">
-            <div className="space-y-1">
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Mail className="w-5 h-5 text-indigo-600" />
-                <span>{locale === 'pl' ? 'Formularz kontaktowy z Relok8' : 'Contact Relok8 Support'}</span>
-              </h2>
-              <p className="text-xs text-slate-500">
-                {locale === 'pl'
-                  ? 'Wiadomość trafia bezpośrednio na adres info@relok8.online do zespołu weryfikacji umów.'
-                  : 'Delivered directly to info@relok8.online for lease agreement and support verification.'}
-              </p>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-slate-500">
+                {locale === 'pl' ? 'Minimum 6 znaków' : 'Minimum 6 characters'}
+              </span>
+              <button
+                type="submit"
+                disabled={isUpdatingPassword || !newPassword}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-40"
+              >
+                {isUpdatingPassword
+                  ? (locale === 'pl' ? 'Zmienianie...' : 'Updating...')
+                  : (locale === 'pl' ? 'Zmień hasło' : 'Update password')}
+              </button>
             </div>
+          </form>
 
-            {contactSent ? (
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2 text-emerald-900">
-                <div className="flex items-center gap-2 font-bold text-sm">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  <span>
-                    {locale === 'pl' ? 'Wiadomość została wysłana!' : 'Message delivered to info@relok8.online'}
-                  </span>
+          {/* Manage Passkeys / Devices via Clerk if available */}
+          {clerkUser && (
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 p-4 rounded-2xl">
+              <div>
+                <div className="text-xs font-bold text-slate-800">
+                  {locale === 'pl' ? 'Klucze dostępu i urządzenia' : 'Passkeys & devices'}
                 </div>
-                <p className="text-xs leading-relaxed text-emerald-800">
+                <div className="text-[11px] text-slate-500">
                   {locale === 'pl'
-                    ? 'Otrzymaliśmy Twoją wiadomość i odpowiemy na adres e-mail Twojego konta w ciągu 1-2 godzin w dni robocze.'
-                    : 'Our lease coordinator will review your request and reply to your account email within 1-2 business hours.'}
-                </p>
+                    ? 'Zarządzaj uwierzytelnianiem biometrycznym i aktywnymi sesjami logowania.'
+                    : 'Manage biometric passkeys and review active sessions via identity provider.'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => clerk.openUserProfile()}
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-800 font-semibold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer whitespace-nowrap self-start sm:self-auto shrink-0"
+              >
+                {locale === 'pl' ? 'Zarządzaj urządzeniami' : 'Manage devices'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 4. Danger Zone / Delete Account */}
+        <div className="bg-white rounded-3xl border border-rose-200/80 p-6 sm:p-7 space-y-4 shadow-xs">
+          <div className="space-y-1 pb-2 border-b border-rose-100">
+            <h2 className="text-base font-bold text-rose-900 flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-rose-600" />
+              <span>{locale === 'pl' ? 'Usuwanie konta' : 'Delete account'}</span>
+            </h2>
+            <p className="text-xs text-slate-500">
+              {locale === 'pl'
+                ? 'Trwałe usunięcie konta z platformy. Wszystkie Twoje dane sesji zostaną bezpowrotnie skasowane.'
+                : 'Permanently remove your account and stored profile information from Relok8.'}
+            </p>
+          </div>
+
+          {showDeleteConfirm ? (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-3">
+              <div className="text-xs font-bold text-rose-900">
+                {locale === 'pl'
+                  ? 'Czy na pewno chcesz usunąć swoje konto? Tej operacji nie można cofnąć.'
+                  : 'Are you sure you want to delete your account? This action cannot be undone.'}
+              </div>
+
+              {deleteError && (
+                <div className="text-xs text-rose-700 font-semibold">{deleteError}</div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
                 <button
                   type="button"
-                  onClick={() => setContactSent(false)}
-                  className="mt-2 text-xs font-semibold text-emerald-700 underline cursor-pointer"
+                  disabled={isDeletingAccount}
+                  onClick={handleDeleteAccount}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  {locale === 'pl' ? 'Wyślij kolejną wiadomość' : 'Send another inquiry'}
+                  {isDeletingAccount
+                    ? (locale === 'pl' ? 'Usuwanie konta...' : 'Deleting account...')
+                    : (locale === 'pl' ? 'Tak, usuń bezpowrotnie' : 'Yes, delete permanently')}
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeletingAccount}
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeleteError(null);
+                  }}
+                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                >
+                  {locale === 'pl' ? 'Anuluj' : 'Cancel'}
                 </button>
               </div>
-            ) : (
-              <form onSubmit={handleSendSupportMessage} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Temat zapytania' : 'Subject'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={contactSubject}
-                    onChange={(e) => setContactSubject(e.target.value)}
-                    placeholder="e.g. Question about Art. 509 KC lease transfer in Warsaw"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Wiadomość' : 'Your Message'}
-                  </label>
-                  <textarea
-                    required
-                    rows={4}
-                    value={contactMessage}
-                    onChange={(e) => setContactMessage(e.target.value)}
-                    placeholder={
-                      locale === 'pl'
-                        ? 'Opisz swoją sytuację, numer ogłoszenia lub pytanie dotyczące kaucji...'
-                        : 'Explain your lease situation, listing ID, or landlord question...'
-                    }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                  />
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
-                  <span className="text-xs text-slate-500">
-                    Direct email: <a href="mailto:info@relok8.online" className="text-indigo-600 font-semibold underline">info@relok8.online</a>
-                  </span>
-
-                  <button
-                    type="submit"
-                    disabled={isSendingContact}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>{isSendingContact ? (locale === 'pl' ? 'Wysyłanie...' : 'Sending...') : (locale === 'pl' ? 'Wyślij wiadomość' : 'Send message')}</span>
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-slate-500">
+                {locale === 'pl'
+                  ? 'RODO / GDPR: Masz prawo do usunięcia wszystkich powiązanych danych.'
+                  : 'GDPR compliance: You have the right to permanent deletion of all stored data.'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-4 py-2 bg-white hover:bg-rose-50 text-rose-700 font-bold text-xs rounded-xl border border-rose-300 transition-colors cursor-pointer"
+              >
+                {locale === 'pl' ? 'Usuń konto' : 'Delete account'}
+              </button>
+            </div>
+          )}
+        </div>
 
       </div>
     </div>
