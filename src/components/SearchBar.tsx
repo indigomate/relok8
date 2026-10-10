@@ -29,9 +29,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   onSearchChange,
   onSearchSubmit,
   locale = 'en',
-  onExpandClick,
-  isFloatingExpanded = false,
-  onCloseFloating
+  onExpandClick
 }) => {
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [activeDropdown, setActiveDropdown] = useState<'where' | 'date' | 'type' | 'budget' | null>(null);
@@ -57,27 +55,25 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     { key: 'twoBed', label: strings.roomTypeTwoBed, val: '2-bedroom' }
   ];
 
-  // Compact summary computation
   const citySummary = searchState.city === 'All Poland' || !searchState.city || searchState.city === 'Anywhere in Poland'
-    ? strings.searchWhereAny
+    ? 'Anywhere in Poland'
     : searchState.city;
 
   const dateSummary = searchState.moveInDate
-    ? `${locale === 'pl' ? 'Od' : 'From'} ${formatDate(searchState.moveInDate, locale)}`
-    : strings.searchMoveInFlexible;
+    ? formatDate(searchState.moveInDate, locale)
+    : 'Flexible';
 
   const budgetSummary = searchState.maxRent < 10000
-    ? `${locale === 'pl' ? 'Do' : 'Up to'} PLN ${searchState.maxRent.toLocaleString()}`
-    : strings.searchBudgetAny;
+    ? `Up to PLN ${searchState.maxRent.toLocaleString()}`
+    : 'Any budget';
 
+  // Screenshot 6 clean pill format: "Anywhere in Poland · Flexible · Up to PLN 5,000"
   const compactSummary = `${citySummary} · ${dateSummary} · ${budgetSummary}`;
 
   // Simple clean calendar generator for move-in date
   const generateCalendarDays = () => {
-    const today = new Date(2026, 9, 1); // Oct 2026 baseline for academic year
     const days: { dateStr: string; label: number; disabled: boolean }[] = [];
     for (let i = 1; i <= 31; i++) {
-      const d = new Date(2026, 9, i);
       const iso = `2026-10-${String(i).padStart(2, '0')}`;
       days.push({ dateStr: iso, label: i, disabled: false });
     }
@@ -92,7 +88,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           type="button"
           onClick={onExpandClick}
           aria-label="Expand search"
-          className="flex items-center gap-2.5 px-3.5 py-2 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 shadow-xs hover:shadow-md transition-all text-xs font-semibold text-slate-800 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+          className="flex items-center gap-2.5 px-4 py-2 rounded-full border border-slate-200/90 bg-white hover:bg-slate-50 shadow-xs hover:shadow-sm transition-all text-xs font-semibold text-slate-800 cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
         >
           <span className="truncate max-w-[280px] sm:max-w-[380px]">{compactSummary}</span>
           <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
@@ -103,11 +99,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     );
   }
 
-  // EXPANDED STATE (HERO OR FLOATING MODAL)
+  // EXPANDED STATE (HERO OR SEARCH ROW)
   return (
     <div ref={containerRef} className="w-full relative">
       {/* Desktop Expanded Bar */}
-      <div className="hidden md:flex items-center bg-white rounded-full border border-slate-200 shadow-md divide-x divide-slate-100 p-1.5 transition-all">
+      <div className="hidden md:flex items-center bg-white rounded-full border border-slate-200 shadow-sm divide-x divide-slate-100 p-1.5 transition-all">
         {/* 1. WHERE */}
         <div className="relative flex-1">
           <button
@@ -194,7 +190,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
                 <span className="text-xs font-bold text-slate-900">
-                  {locale === 'pl' ? 'Wybierz datę wprowadzenia' : 'Select move-in date'}
+                  {locale === 'pl' ? 'Wybierz datę' : 'Select move-in date'}
                 </span>
                 <button
                   type="button"
@@ -212,9 +208,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 </button>
               </div>
 
-              {/* October 2026 Calendar grid */}
               <div className="text-center font-semibold text-xs text-slate-700 mb-2">
-                {locale === 'pl' ? 'Październik 2026' : 'October 2026'}
+                October 2026
               </div>
               <div className="grid grid-cols-7 gap-1 text-center text-[11px]">
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
@@ -315,7 +310,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           {activeDropdown === 'budget' && (
             <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
               <div className="text-xs font-bold text-slate-900 mb-2">
-                {locale === 'pl' ? 'Miesięczny budżet (PLN)' : 'Monthly budget (PLN)'}
+                Monthly budget (PLN)
               </div>
               <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
                 <span>PLN {searchState.minRent || 500}</span>
@@ -361,7 +356,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               setActiveDropdown(null);
               if (onSearchSubmit) onSearchSubmit();
             }}
-            className="flex items-center gap-1.5 md:gap-2 px-3.5 md:px-5 py-2.5 md:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none whitespace-nowrap cursor-pointer"
+            className="flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none whitespace-nowrap cursor-pointer"
           >
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">{strings.searchSubmit}</span>
@@ -369,27 +364,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Collapsed Search Trigger */}
+      {/* Mobile Search Input Button (Screenshot 6: exact rounded border pill with magnifying glass and summary text) */}
       <div className="md:hidden">
         <button
           type="button"
           onClick={() => setMobileSheetOpen(true)}
-          className="w-full min-h-[52px] flex items-center justify-between px-3.5 py-2.5 bg-white rounded-full border border-slate-200 shadow-sm text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
+          className="w-full min-h-[46px] flex items-center gap-3 px-4 py-2.5 bg-white rounded-full border border-slate-300 text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer shadow-2xs hover:border-slate-400 transition-colors"
         >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-              <Search className="w-4 h-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-slate-900 truncate">
-                {locale === 'pl' ? 'Dokąd się przeprowadzasz?' : 'Where are you moving?'}
-              </div>
-              <div className="text-[11px] text-slate-500 truncate max-w-[170px] sm:max-w-[260px]">
-                {compactSummary}
-              </div>
-            </div>
-          </div>
-          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+          <Search className="w-4 h-4 text-slate-500 shrink-0 stroke-[2.2]" />
+          <span className="text-xs sm:text-sm font-normal text-slate-800 truncate">
+            {compactSummary}
+          </span>
         </button>
       </div>
 
@@ -403,7 +388,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             <button
               type="button"
               onClick={() => setMobileSheetOpen(false)}
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100"
+              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -444,55 +429,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               </div>
             </div>
 
-            {/* Move-in date */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  {strings.searchMoveInDate}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => onSearchChange({ moveInDate: '' })}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer ${
-                    !searchState.moveInDate ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {strings.searchMoveInFlexible}
-                </button>
-              </div>
-              <div className="grid grid-cols-7 gap-1.5 text-center text-xs">
-                {generateCalendarDays().slice(0, 14).map((d) => (
-                  <button
-                    key={d.dateStr}
-                    type="button"
-                    onClick={() => onSearchChange({ moveInDate: d.dateStr })}
-                    className={`min-h-[40px] py-2 rounded-lg text-xs font-medium flex items-center justify-center cursor-pointer transition-colors ${
-                      searchState.moveInDate === d.dateStr
-                        ? 'bg-indigo-600 text-white font-bold'
-                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Room Type */}
+            {/* Room type */}
             <div>
               <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-2">
                 {strings.searchRoomType}
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {roomTypeOptions.map((opt) => (
                   <button
                     key={opt.key}
                     type="button"
                     onClick={() => onSearchChange({ roomType: opt.val })}
-                    className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-medium border flex items-center cursor-pointer transition-colors ${
-                      searchState.roomType === opt.val || (!searchState.roomType && opt.val === 'All room types')
-                        ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
+                      (searchState.roomType === opt.val) || (!searchState.roomType && opt.val === 'All room types')
+                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                        : 'border-slate-200 text-slate-800 hover:bg-slate-50'
                     }`}
                   >
                     {opt.label}
@@ -503,13 +454,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
             {/* Budget */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  {strings.searchBudget}
-                </label>
-                <span className="text-xs font-bold text-indigo-600">
-                  Up to PLN {searchState.maxRent}
-                </span>
+              <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-2">
+                <span>{strings.searchBudget}</span>
+                <span className="text-indigo-600 font-bold">≤ PLN {searchState.maxRent}</span>
               </div>
               <input
                 type="range"
@@ -518,21 +465,31 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 step={100}
                 value={searchState.maxRent}
                 onChange={(e) => onSearchChange({ maxRent: Number(e.target.value) })}
-                className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
+                className="w-full accent-indigo-600"
               />
             </div>
           </div>
 
-          <div className="pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <div className="pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-slate-100 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onSearchChange({ city: 'All Poland', roomType: 'All room types', maxRent: 5000 });
+                setMobileSheetOpen(false);
+              }}
+              className="flex-1 min-h-[46px] py-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
             <button
               type="button"
               onClick={() => {
                 setMobileSheetOpen(false);
                 if (onSearchSubmit) onSearchSubmit();
               }}
-              className="w-full min-h-[48px] py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-colors cursor-pointer"
+              className="flex-2 min-h-[46px] py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-colors cursor-pointer"
             >
-              {locale === 'pl' ? 'Pokaż oferty' : 'Show rooms'}
+              Search
             </button>
           </div>
         </div>

@@ -42,6 +42,7 @@ import { ListPage } from './pages/ListPage';
 import { LeaveYourLeasePage } from './pages/LeaveYourLeasePage';
 import { SavingsCalculatorPage } from './pages/SavingsCalculatorPage';
 import { AccountPage } from './pages/AccountPage';
+import { MessagesPage } from './pages/MessagesPage';
 
 import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
@@ -917,6 +918,12 @@ function Relok8App() {
           locale={locale}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
+      ) : currentRoute.type === 'messages' ? (
+        <MessagesPage
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          locale={locale}
+          currentUser={currentUser}
+        />
       ) : currentRoute.type === 'account' ? (
         <AccountPage
           currentUser={currentUser}
@@ -1174,6 +1181,7 @@ function Relok8App() {
         onNavigateHome={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
         onNavigateSaved={() => navigateTo(locale === 'pl' ? '/pl/saved' : '/saved')}
         onNavigateAccount={() => navigateTo(locale === 'pl' ? '/pl/account' : '/account')}
+        onNavigateMessages={() => navigateTo(locale === 'pl' ? '/pl/messages' : '/messages')}
         onOpenListRoom={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenLogin={() => {

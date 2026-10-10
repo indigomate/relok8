@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Heart, PlusCircle, User, HelpCircle } from 'lucide-react';
+import { Search, Heart, PlusCircle, MessageSquare, User } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface MobileBottomNavProps {
@@ -9,10 +9,11 @@ interface MobileBottomNavProps {
   onNavigateHome?: () => void;
   onNavigateSaved?: () => void;
   onNavigateAccount?: () => void;
+  onNavigateMessages?: () => void;
   onOpenIntake?: () => void;
   onOpenListRoom?: () => void;
-  onOpenLogin: () => void;
   onOpenHelp?: () => void;
+  onOpenLogin: () => void;
   locale: SupportedLocale;
   currentUser?: any | null;
 }
@@ -23,18 +24,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onNavigateHome,
   onNavigateSaved,
   onNavigateAccount,
+  onNavigateMessages,
   onOpenIntake,
   onOpenListRoom,
   onOpenLogin,
-  onOpenHelp,
   locale,
   currentUser
 }) => {
   const isExplore = currentPath === 'home' || currentPath === 'city';
   const isSaved = currentPath === 'saved';
-  const isHelp = currentPath === 'help';
   const isList = currentPath === 'list';
-  const isAccount = currentPath === 'account';
+  const isMessages = currentPath === 'messages';
+  const isProfile = currentPath === 'account';
 
   const handleListClick = () => {
     if (onOpenListRoom) onOpenListRoom();
@@ -52,12 +53,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     else window.location.pathname = locale === 'pl' ? '/pl/saved' : '/saved';
   };
 
-  const handleHelpClick = () => {
-    if (onOpenHelp) onOpenHelp();
-    else window.location.pathname = locale === 'pl' ? '/pl/help' : '/help';
+  const handleMessagesClick = () => {
+    if (onNavigateMessages) onNavigateMessages();
+    else if (onNavigateAccount) onNavigateAccount();
+    else window.location.pathname = locale === 'pl' ? '/pl/messages' : '/messages';
   };
 
-  const handleAccountClick = () => {
+  const handleProfileClick = () => {
     if (currentUser) {
       if (onNavigateAccount) onNavigateAccount();
       else window.location.pathname = locale === 'pl' ? '/pl/account' : '/account';
@@ -69,73 +71,73 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <nav 
       aria-label="Mobile navigation" 
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200 px-2 sm:px-4 py-2 flex items-center justify-around shadow-lg pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-3 py-2 flex items-center justify-around shadow-sm pb-[max(0.6rem,env(safe-area-inset-bottom))]"
     >
       {/* 1. Explore */}
       <button
         type="button"
         onClick={handleHomeClick}
-        className={`flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
-          isExplore ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
+          isExplore ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
-        <Search className={`w-5 h-5 ${isExplore ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Szukaj' : 'Explore'}</span>
+        <Search className={`w-5 h-5 ${isExplore ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Szukaj' : 'Explore'}</span>
       </button>
 
       {/* 2. Saved */}
       <button
         type="button"
         onClick={handleSavedClick}
-        className={`relative flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
-          isSaved ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+        className={`relative flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
+          isSaved ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
         <div className="relative">
-          <Heart className={`w-5 h-5 ${isSaved ? 'fill-rose-500 text-rose-500 stroke-[2.5]' : 'stroke-[1.8]'}`} />
+          <Heart className={`w-5 h-5 ${isSaved ? 'fill-indigo-600 text-indigo-600 stroke-[2.4]' : 'stroke-[1.8]'}`} />
           {savedCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+            <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
               {savedCount}
             </span>
           )}
         </div>
-        <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Zapisane' : 'Saved'}</span>
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Zapisane' : 'Saved'}</span>
       </button>
 
-      {/* 3. List your place (CTA) */}
+      {/* 3. List */}
       <button
         type="button"
         onClick={handleListClick}
-        className={`flex flex-col items-center gap-1 min-w-[52px] sm:min-w-[64px] py-1 cursor-pointer transition-colors ${
-          isList ? 'text-indigo-600 font-bold' : 'text-indigo-600 hover:text-indigo-700 font-semibold'
+        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
+          isList ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
-        <PlusCircle className={`w-5 h-5 ${isList ? 'stroke-[2.8]' : 'stroke-[2.2]'}`} />
-        <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Dodaj lokal' : 'List place'}</span>
+        <PlusCircle className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Dodaj' : 'List'}</span>
       </button>
 
-      {/* 4. Help */}
+      {/* 4. Messages */}
       <button
         type="button"
-        onClick={handleHelpClick}
-        className={`flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
-          isHelp ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+        onClick={handleMessagesClick}
+        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
+          isMessages ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
-        <HelpCircle className={`w-5 h-5 ${isHelp ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Pomoc' : 'Help'}</span>
+        <MessageSquare className={`w-5 h-5 ${isMessages ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Wiadomości' : 'Messages'}</span>
       </button>
 
-      {/* 5. Account */}
+      {/* 5. Profile */}
       <button
         type="button"
-        onClick={handleAccountClick}
-        className={`flex flex-col items-center gap-1 min-w-[48px] sm:min-w-[56px] py-1 cursor-pointer transition-colors ${
-          isAccount ? 'text-indigo-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+        onClick={handleProfileClick}
+        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
+          isProfile ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
         }`}
       >
-        <User className={`w-5 h-5 ${isAccount ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-tight">{locale === 'pl' ? 'Profil' : 'Profile'}</span>
+        <User className={`w-5 h-5 ${isProfile ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Profil' : 'Profile'}</span>
       </button>
     </nav>
   );
