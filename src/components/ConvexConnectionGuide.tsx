@@ -11,6 +11,7 @@ import {
   testConvexConnection,
   useConvex 
 } from '../lib/convex/client';
+import { ConvexTasksExample } from './ConvexTasksExample';
 
 interface ConvexConnectionGuideProps {
   onClose?: () => void;
@@ -147,7 +148,7 @@ export const ConvexConnectionGuide: React.FC<ConvexConnectionGuideProps> = ({
     },
   ];
 
-  return (
+  const guideCard = (
     <div className="bg-white text-slate-800 rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-700 p-6 text-white">
@@ -485,6 +486,22 @@ GEMINI_API_KEY="..."`;
           </div>
         </section>
 
+        {/* Section 4: Live React Component Integration (useQuery & useMutation) */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+              4
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Live Component Integration (useQuery &amp; useMutation)</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Query and mutate Convex tasks in real time using official Convex React hooks.
+              </p>
+            </div>
+          </div>
+          <ConvexTasksExample />
+        </section>
+
         {/* Real-time Feature Guarantee */}
         <section className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-start gap-3">
           <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -498,4 +515,16 @@ GEMINI_API_KEY="..."`;
       </div>
     </div>
   );
+
+  if (isModal) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div className="relative w-full max-w-4xl my-8 max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+          {guideCard}
+        </div>
+      </div>
+    );
+  }
+
+  return guideCard;
 };

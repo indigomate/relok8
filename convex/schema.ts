@@ -2,6 +2,13 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  // Tasks table schema (query, mutate, toggle)
+  tasks: defineTable({
+    text: v.string(),
+    isCompleted: v.boolean(),
+  }),
+
+  // Relok8 Listings table (atomic holds and real-time reactive sync)
   listings: defineTable({
     title: v.string(),
     address: v.string(),
@@ -25,8 +32,6 @@ export default defineSchema({
     isLocked: v.boolean(),
     lockedUntil: v.optional(v.number()), // Unix timestamp for 15-min hold
     amenities: v.array(v.string()),
-
-    // Extended fields to preserve rich property presentation
     district: v.optional(v.string()),
     description: v.optional(v.string()),
     images: v.optional(v.array(v.string())),

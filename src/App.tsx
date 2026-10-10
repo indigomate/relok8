@@ -26,6 +26,7 @@ import { LeaveYourLeaseModal } from './components/LeaveYourLeaseModal';
 import { HelpModal } from './components/HelpModal';
 import { LoginModal } from './components/LoginModal';
 import { CookieBanner } from './components/CookieBanner';
+import { ConvexConnectionGuide } from './components/ConvexConnectionGuide';
 import { PenaltyCalculatorModal } from './components/PenaltyCalculatorModal';
 import { Toast } from './components/Toast';
 
@@ -233,6 +234,7 @@ function Relok8App() {
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isCesjaOpen, setIsCesjaOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [showConvexGuide, setShowConvexGuide] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(() => !isClerkSignedIn && (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up'));
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>(() => currentRoute.type === 'sign-up' ? 'signup' : 'signin');
@@ -1167,6 +1169,7 @@ function Relok8App() {
         onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
+        onOpenConvexGuide={() => setShowConvexGuide(true)}
         onOpenReportListing={() => {
           showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Report listing sent to info@relok8.online');
         }}
@@ -1275,6 +1278,12 @@ function Relok8App() {
         />
       )}
 
+      {showConvexGuide && (
+        <ConvexConnectionGuide
+          isModal
+          onClose={() => setShowConvexGuide(false)}
+        />
+      )}
       <CookieBanner locale={locale} />
 
     </div>

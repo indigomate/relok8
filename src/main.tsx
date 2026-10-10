@@ -3,6 +3,7 @@ import { Clerk } from '@clerk/clerk-js';
 import { ui } from '@clerk/ui';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ConvexProvider, ConvexReactClient } from 'convex/react';
 import App from './App.tsx';
 import './index.css';
 
@@ -18,26 +19,38 @@ const PUBLISHABLE_KEY = isProductionDomain
   ? (import.meta.env.VITE_CLERK_PRODUCTION_KEY || LIVE_PUBLISHABLE_KEY)
   : (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || DEV_PUBLISHABLE_KEY);
 
+// ---------------------------------------------------------------------------
+// Convex Backend Initialization
+// Reads VITE_CONVEX_URL from environment / .env.local
+// ---------------------------------------------------------------------------
+const convexUrl = 
+  import.meta.env.VITE_CONVEX_URL || 
+  'https://happy-otter-123.convex.cloud';
+
+const convex = new ConvexReactClient(convexUrl);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider 
-      publishableKey={PUBLISHABLE_KEY} 
-      afterSignOutUrl="/"
-      Clerk={Clerk as any}
-      ui={ui as any}
-      appearance={{
-        variables: {
-          colorPrimary: '#4F46E5',
-          borderRadius: '0.75rem',
-        },
-        elements: {
-          footer: 'hidden',
-          footerAction: 'hidden',
-          footerPages: 'hidden'
-        }
-      }}
-    >
-      <App />
-    </ClerkProvider>
+    <ConvexProvider client={convex}>
+      <ClerkProvider 
+        publishableKey={PUBLISHABLE_KEY} 
+        afterSignOutUrl="/"
+        Clerk={Clerk as any}
+        ui={ui as any}
+        appearance={{
+          variables: {
+            colorPrimary: '#4F46E5',
+            borderRadius: '0.75rem',
+          },
+          elements: {
+            footer: 'hidden',
+            footerAction: 'hidden',
+            footerPages: 'hidden'
+          }
+        }}
+      >
+        <App />
+      </ClerkProvider>
+    </ConvexProvider>
   </StrictMode>,
 );
