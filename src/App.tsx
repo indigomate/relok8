@@ -1145,6 +1145,7 @@ function Relok8App() {
         <NotificationsPage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
+          currentUser={currentUser}
           onOpenListing={(id) => {
             const found = listings.find((l) => l.id === id);
             navigateToListing(id, found?.title || '', locale);
@@ -1154,6 +1155,8 @@ function Relok8App() {
         <RewardsPage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
+          currentUser={currentUser}
+          onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
       ) : currentRoute.type === 'enrollments' ? (
         <EnrollmentsPage

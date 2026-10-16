@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Relok8User, UserRole } from '../types/relok8';
 import { getDevUsers, getActiveUserId, setActiveUserId, updateUserAvailability } from '../lib/api';
-import { UserCheck, Shield, ChevronUp, ChevronDown, Moon, Sun, Check, Sparkles } from 'lucide-react';
+import { UserCheck, Shield, ChevronUp, ChevronDown, Moon, Sun, Check, Sparkles, X } from 'lucide-react';
 
 interface DevRoleSwitcherProps {
   onUserChanged?: (user: Relok8User) => void;
@@ -13,8 +13,22 @@ export const DevRoleSwitcher: React.FC<DevRoleSwitcherProps> = ({ onUserChanged 
     return null;
   }
 
+  const [isHidden, setIsHidden] = useState(() => {
+    try {
+      return localStorage.getItem('r8_dev_switcher_hidden') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(() => {
+    try {
+      const stored = localStorage.getItem('r8_dev_switcher_minimized');
+      return stored !== null ? stored === 'true' : true; // Default minimized
+    } catch {
+      return true;
+    }
+  });
   const [users, setUsers] = useState<Relok8User[]>([]);
   const [activeId, setActiveId] = useState<string>(getActiveUserId());
   const [activeUser, setActiveUser] = useState<Relok8User | null>(null);
@@ -57,6 +71,21 @@ export const DevRoleSwitcher: React.FC<DevRoleSwitcherProps> = ({ onUserChanged 
     }
   };
 
+  const handleSetMinimized = (val: boolean) => {
+    setIsMinimized(val);
+    try {
+      localStorage.setItem('r8_dev_switcher_minimized', String(val));
+    } catch {}
+  };
+
+  const handleDismiss = () => {
+    setIsHidden(true);
+    try {
+      localStorage.setItem('r8_dev_switcher_hidden', 'true');
+    } catch {}
+  };
+
+  if (isHidden) return null;
   if (!activeUser) return null;
 
   const roleBadgeColors: Record<UserRole, string> = {
@@ -69,19 +98,30 @@ export const DevRoleSwitcher: React.FC<DevRoleSwitcherProps> = ({ onUserChanged 
     return (
       <aside
         aria-label="Developer role simulation controls"
-        className="fixed bottom-20 md:bottom-4 left-3 md:left-4 z-40 select-none text-left font-sans"
+        className="fixed bottom-20 md:bottom-4 left-3 md:left-4 z-40 select-none text-left font-sans group"
       >
-        <button
-          type="button"
-          onClick={() => setIsMinimized(false)}
-          className="w-10 h-10 rounded-full bg-white border border-slate-300 shadow-lg flex items-center justify-center p-0.5 hover:scale-105 transition-transform cursor-pointer relative"
-          title={`Simulating ${activeUser.name} (${activeUser.role}) - Click to expand`}
-        >
-          <img src={activeUser.avatar} alt={activeUser.name} className="w-full h-full rounded-full object-cover" />
-          <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
-            activeUser.isAvailable ? 'bg-emerald-500' : 'bg-slate-400'
-          }`} />
-        </button>
+        <div className="relative inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => handleSetMinimized(false)}
+            className="w-10 h-10 rounded-full bg-white border border-slate-300 shadow-md flex items-center justify-center p-0.5 hover:scale-105 transition-transform cursor-pointer relative"
+            title={`Simulating ${activeUser.name} (${activeUser.role}) - Click to switch role`}
+          >
+            <img src={activeUser.avatar} alt={activeUser.name} className="w-full h-full rounded-full object-cover" />
+            <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+              activeUser.isAvailable ? 'bg-emerald-500' : 'bg-slate-400'
+            }`} />
+          </button>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-slate-700 shadow-xs cursor-pointer"
+            title="Hide dev switcher"
+            aria-label="Hide dev switcher"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
       </aside>
     );
   }
@@ -136,12 +176,21 @@ export const DevRoleSwitcher: React.FC<DevRoleSwitcherProps> = ({ onUserChanged 
             </button>
             <button
               type="button"
-              onClick={() => setIsMinimized(true)}
+              onClick={() => handleSetMinimized(true)}
               className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer text-[10px] font-bold"
               title="Minimize to avatar icon"
               aria-label="Minimize"
             >
               —
+            </button>
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+              title="Close dev switcher"
+              aria-label="Close"
+            >
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
