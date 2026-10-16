@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Onlo Monochrome Speech Bubble -->
+  <path 
+    d="M50 14 C29.5 14 14 29.5 14 50 C14 58.2 16.7 65.8 21.3 72 L16 86 L30.2 80.8 C36.1 84.7 42.8 86 50 86 C70.5 86 86 70.5 86 50 C86 29.5 70.5 14 50 14 Z" 
+    stroke="currentColor" 
+    stroke-width="9" 
+    stroke-linecap="round" 
+    stroke-linejoin="round"
+  />
+  <!-- Onlo Monochrome Eyes -->
+  <rect x="38" y="40" width="8.5" height="18" rx="4.25" fill="currentColor" />
+  <rect x="53.5" y="40" width="8.5" height="18" rx="4.25" fill="currentColor" />
+</svg>
