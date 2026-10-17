@@ -65,7 +65,7 @@ export const generateAIProxyResponse = action({
     let functionExecuted: string | undefined = undefined;
     let replyText = "";
 
-    // 1. Check for specific function execution triggers
+    // 1. Check for specific natural question triggers
     if (promptLower.includes("campus") || promptLower.includes("university") || promptLower.includes("uni") || promptLower.includes("distance") || promptLower.includes("minutes")) {
       functionExecuted = "calculate_university_proximity";
       const minutesToCampus = args.listingContext.city === "Warsaw" ? "12 min by Metro M1 to Warsaw University & SGH"
@@ -73,13 +73,13 @@ export const generateAIProxyResponse = action({
         : args.listingContext.city === "Wrocław" ? "14 min by bus to Wrocław University of Science and Technology"
         : "10-15 min public transit to city academic campuses";
       
-      replyText = `📍 Proximity Calculation [function: calculate_university_proximity]:\nThis room on ${args.listingContext.address} is located ${minutesToCampus}. Directly accessible with student-discounted public transit (ZTM/MPK).`;
+      replyText = `Hey! This room on ${args.listingContext.address} is located about ${minutesToCampus}. It's super easy to reach with student-discounted public transit (50% off with your student ID!).`;
     } else if (promptLower.includes("embed") || promptLower.includes("similar") || promptLower.includes("match") || promptLower.includes("budget") || promptLower.includes("cheaper")) {
       functionExecuted = "query_listing_embeddings";
-      replyText = `🔍 Embedding Similarity Query [function: query_listing_embeddings]:\nRetrieved cosine similarity vectors for ${args.listingContext.city} listings with rent near ${args.listingContext.monthlyRent} PLN. High affinity match score: 94.6% for Erasmus/international students seeking ${args.listingContext.roomType}.`;
+      replyText = `I checked similar rooms in ${args.listingContext.city} around ${args.listingContext.monthlyRent} PLN/month. There are great options for students seeking a ${args.listingContext.roomType.toLowerCase()}. Let me know if you want me to filter by furnished or bills included!`;
     } else if (promptLower.includes("landlord") || promptLower.includes("approval") || promptLower.includes("consent") || promptLower.includes("cesja") || promptLower.includes("contract")) {
       functionExecuted = "simulate_landlord_approval_workflow";
-      replyText = `📄 Landlord Approval Workflow [function: simulate_landlord_approval_workflow]:\nUnder Polish Civil Code Art. 509 KC, the lease takeover agreement requires landlord consent. Relok8 initiates the automated WhatsApp prompt with 1-click reply buttons (APPROVE_LEASE / REJECT_LEASE). Response SLA is under 4 hours.`;
+      replyText = `Under Polish Civil Code Art. 509 KC, taking over a lease is a straightforward assignment (Cesja). The landlord gives consent, you take over the exact existing contract with 0 PLN broker fees, and your deposit is transferred safely. Not legal advice.`;
     } else {
       // General Gemini call if GEMINI_API_KEY is present
       const apiKey = process.env.GEMINI_API_KEY;
@@ -87,15 +87,17 @@ export const generateAIProxyResponse = action({
         try {
           const ai = new GoogleGenAI({ apiKey });
           const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-3.8-flash",
             contents: [
               {
                 role: "user",
                 parts: [
                   {
-                    text: `You are Relok8's AI proxy assistant for Polish student housing lease takeovers (Polish Civil Code Art. 509 KC).
-The listing context is: "${args.listingContext.title}" located in ${args.listingContext.city}, address: ${args.listingContext.address}, rent: ${args.listingContext.monthlyRent} PLN, room type: ${args.listingContext.roomType}.
-Answer the tenant inquiry accurately, focusing on lease takeover safety, meldunek compliance, transparent pricing, and zero broker fees.
+                    text: `You are Onlo, the native resident companion for Relok8 (relok8.online). You embody a friendly, knowledgeable local peer helping students and expats rent in Poland.
+You know all about Polish student housing: lease takeovers (Polish Civil Code Art. 509 KC), činsh (administrative rent), meldunek (city address registration), transit to universities, safety, and deposit return.
+Speak naturally, warmly, and concisely like a savvy local friend. Avoid stiff robotic jargon. If asked in Polish, answer fluently in Polish.
+
+Listing context: "${args.listingContext.title}" located in ${args.listingContext.city}, address: ${args.listingContext.address}, rent: ${args.listingContext.monthlyRent} PLN, room type: ${args.listingContext.roomType}.
 
 User question: "${args.userPrompt}"`
                   }
@@ -103,12 +105,12 @@ User question: "${args.userPrompt}"`
               }
             ]
           });
-          replyText = response.text || "Relok8 AI Proxy ready to assist with your lease takeover.";
+          replyText = response.text || `Hey! I'm Onlo. I know this flat on ${args.listingContext.address} inside and out. Feel free to ask about činsh, campus transit, flatmates, or meldunek!`;
         } catch (err: any) {
-          replyText = `As your Relok8 AI proxy for ${args.listingContext.title}, I can confirm this room has verified lease takeover eligibility under Art. 509 KC. You can secure a 15-minute EarlyLock hold or ask about university proximity.`;
+          replyText = `Hey! As Onlo, I can confirm this room on ${args.listingContext.address} is eligible for a clean lease takeover under Art. 509 KC with 0 agency fees. Ask me about transit to campus, bills, or how the deposit works!`;
         }
       } else {
-        replyText = `As your Relok8 AI proxy for "${args.listingContext.title}" (${args.listingContext.city}), I verify this room is available for verified lease transfer under Polish Civil Code Art. 509 KC. Would you like me to check campus transit proximity or initiate landlord WhatsApp pre-approval?`;
+        replyText = `Hey! I'm Onlo, your local friend on Relok8. This room on ${args.listingContext.address} (${args.listingContext.city}) is available for a direct lease transfer with landlord pre-approval and 0 PLN broker fees. Want me to check commute times to campus or how czynsz is calculated?`;
       }
     }
 

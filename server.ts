@@ -622,6 +622,82 @@ app.post('/api/onlo/helper', async (req: Request, res: Response) => {
   }
 });
 
+// ONLO NATIVE HOUSING CHAT API
+app.post('/api/onlo/ask', async (req: Request, res: Response) => {
+  try {
+    const { question, locale, listingContext } = req.body;
+    if (!question || !question.trim()) {
+      return res.status(400).json({ error: 'Question is required' });
+    }
+
+    const isPolish = locale === 'pl' || /[ąćęłńóśźż]/i.test(question);
+    const qLower = question.toLowerCase();
+
+    // Check if GEMINI_API_KEY is available
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey });
+
+        const contextInfo = listingContext
+          ? `Specific flat context: Title: "${listingContext.title}", City: ${listingContext.city}, Address: ${listingContext.address || 'Central'}, Rent: ${listingContext.monthlyRent || listingContext.rentPLN} PLN, Room type: ${listingContext.roomType}.`
+          : 'General student and expat housing context in Poland across Warsaw, Kraków, Wrocław, Gdańsk, Poznań, and Lublin.';
+
+        const systemPrompt = `You are Onlo, the native resident companion for Relok8 (relok8.online).
+You embody a friendly, knowledgeable local peer in Poland who helps students, expats, and tenants navigate renting, lease takeovers (Cesja under Polish Civil Code Art. 509 KC), činsh (administrative fees), meldunek (mandatory municipal address registration), university commutes, and deposit protection.
+Speak like a warm, savvy local friend who knows the city and the rental system. Keep your answers concise, practical, and helpful (2-4 sentences). Never sound like a robotic corporate disclaimer bot. If asked in Polish, answer in natural Polish. Always end legal/contract remarks with "Not legal advice." (or "To nie jest porada prawna.").
+
+${contextInfo}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: `${systemPrompt}\n\nQuestion: "${question.trim()}"` }]
+            }
+          ]
+        });
+
+        if (response.text) {
+          return res.json({ answer: response.text.trim() });
+        }
+      } catch (geminiErr) {
+        console.warn('Gemini chat failed, falling back to local knowledge:', geminiErr);
+      }
+    }
+
+    // Deterministic peer responses based on key topics if no Gemini key or offline
+    let answer = "";
+    if (qLower.includes("czynsz") || qLower.includes("admin") || qLower.includes("bills") || qLower.includes("rachunki")) {
+      answer = isPolish
+        ? "Czynsz administracyjny to opłata odprowadzana do spółdzielni lub wspólnoty mieszkaniowej (często obejmuje wywóz śmieci, zaliczkę na ogrzewanie i wodę). Na Relok8 zawsze podajemy czynsz osobno lub jasno zaznaczamy, co dokładnie zawiera, abyś nie miał ukrytych niespodzianek!"
+        : "Czynsz is the administrative building fee paid to the housing co-op (it typically covers trash collection, central heating, and water advances). On Relok8, we always break out czynsz clearly so you know your exact total monthly cost!";
+    } else if (qLower.includes("meldunek") || qLower.includes("registration") || qLower.includes("zameldowanie")) {
+      answer = isPolish
+        ? "Tak! Zgodnie z polskim prawem każdy najemca z ważną umową najmu ma prawo zameldować się w urzędzie gminy/dzielnicy (meldunek czasowy). Do zameldowania wystarczy Twój dokument tożsamości i podpisana umowa lub aneks cesji!"
+        : "Yes! Under Polish law, every tenant with a valid lease agreement has the legal right to register their address (meldunek czasowy) at the municipal office. All you need is your passport/ID and your signed lease takeover agreement!";
+    } else if (qLower.includes("cesja") || qLower.includes("takeover") || qLower.includes("art. 509") || qLower.includes("leave") || qLower.includes("przejęcie")) {
+      answer = isPolish
+        ? "Cesja umowy najmu (na podstawie Art. 509 Kodeksu Cywilnego) to przejęcie praw i obowiązków z dotychczasowej umowy najemcy. Wymaga pisemnej zgody właściciela, nie generuje opłat agencyjnych (0 zł prowizji) i pozwala zwolnić kaucję poprzedniego lokatora!"
+        : "A lease takeover (Cesja under Polish Civil Code Art. 509 KC) transfers the existing rental agreement from the departing tenant to the new student with landlord consent. It skips broker agency fees (0 PLN commission) and provides a clean deposit transfer!";
+    } else if (qLower.includes("kaucj") || qLower.includes("deposit")) {
+      answer = isPolish
+        ? "Kaucja w Polsce wynosi zazwyczaj równowartość 1-miesięcznego czynszu. Przy cesji na Relok8 nowy najemca wpłaca kaucję zabezpieczoną, która po podpisaniu protokołu zdawczo-odbiorczego rozlicza kaucję ustępującego lokatora bez opóźnień."
+        : "Security deposits in Poland are usually equal to 1 month's rent. During a Relok8 lease takeover, the deposit handover is coordinated alongside the key handover protocol (protokół zdawczo-odbiorczy) so neither side is left waiting!";
+    } else {
+      answer = isPolish
+        ? "Cześć! Jestem Onlo. Pomagam studentom i ekspatom w bezpiecznym wynajmie i cesjach umów w Polsce. Możesz mnie zapytać o czynsz, meldunek, czas dojazdu na uczelnię lub jak bezpiecznie przejąć pokój!"
+        : "Hey! I'm Onlo, your local friend on Relok8. I help students and expats find rooms and safely take over leases across Poland. Ask me about czynsz, meldunek, campus transit, or how to leave your lease early without penalties!";
+    }
+
+    res.json({ answer });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to process question' });
+  }
+});
+
 // SAVED PLACES & NOTIFICATIONS API
 app.get('/api/saved-places', (req: Request, res: Response) => {
   const userId = getReqUserId(req);

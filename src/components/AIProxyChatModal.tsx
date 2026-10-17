@@ -68,18 +68,18 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     return [];
   }, [listing.id, listing.city]);
 
-  // Clean initial greeting message from Onlo
+  // Clean initial greeting message from Onlo as friendly local peer
   const initialGreeting = useMemo<ConvexAIMessageDoc>(() => ({
     _id: `init_${listing.id}`,
     _creationTime: 0,
     listingId: listing.id,
     sender: 'ai',
     content: locale === 'pl'
-      ? `Cześć! Jestem Onlo, asystentem AI platformy Relok8. Odpowiem na Twoje pytania dotyczące pokoju na ${listing.address || listing.district}, dojazdów do uczelni, rozliczenia kaucji lub znajdę podobne oferty w okolicy.`
-      : `Hi! I'm Onlo, Relok8's AI assistant. I can help you with questions about this room on ${listing.address || listing.district}, campus transit times, deposit clearing, or similar rooms nearby.`,
+      ? `Cześć! Jestem Onlo. Znam ten pokój na ${listing.address || listing.district || listing.city} od podszewki. Śmiało pytaj o czynsz, rachunki, dojazd na uczelnię, współlokatorów, meldunek czy zasady cesji umowy!`
+      : `Hey! I'm Onlo, your local friend on Relok8. I know this flat on ${listing.address || listing.district || listing.city} inside and out. Ask me about czynsz, bills, campus transit, flatmates, meldunek, or how taking over the lease works!`,
     functionExecuted: undefined,
     timestamp: Date.now() - 60000,
-  }), [listing.id, listing.address, listing.district, locale]);
+  }), [listing.id, listing.address, listing.district, listing.city, locale]);
 
   // Reactive message history derived from Convex state with strict deduplication
   const messages = useMemo(() => {
@@ -180,18 +180,21 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
         {/* Header */}
         <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3 min-w-0 pr-2">
-            <OnloAvatar size={38} variant="avatar" />
+            <div className="relative">
+              <OnloAvatar size={38} variant="avatar" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300" />
+            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-[17px] font-bold text-slate-900 leading-tight">
-                  {locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}
+                  Onlo
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                  Onlo AI
+                <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+                  {locale === 'pl' ? 'Twój lokalny przewodnik' : 'Local guide'}
                 </span>
               </div>
               <p className="text-[12px] text-slate-500 leading-tight mt-0.5 truncate">
-                {listing.title} · {locale === 'pl' ? 'Asystent cesji Relok8' : 'Relok8 AI Proxy'}
+                {listing.title} · {listing.city}
               </p>
             </div>
           </div>
@@ -200,7 +203,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close assistant"
+              aria-label="Close Onlo chat"
               className="w-9 h-9 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
@@ -209,18 +212,24 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
         </div>
 
         {/* Suggestion Chips */}
-        <div className="px-4 py-2.5 border-b border-slate-100 bg-white flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
-          {[
-            'Distance to campus',
-            'How the deposit works',
-            'Show similar rooms nearby'
-          ].map((chip) => (
+        <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+          {(locale === 'pl' ? [
+            'Co zawiera czynsz?',
+            'Dojazd na uczelnię',
+            'Czy jest meldunek?',
+            'Jak działa przejęcie umowy?'
+          ] : [
+            'What is in czynsz?',
+            'Commute to campus',
+            'Is meldunek allowed?',
+            'How does lease takeover work?'
+          ]).map((chip) => (
             <button
               key={chip}
               type="button"
               onClick={() => handleSendPrompt(chip)}
               disabled={isGenerating}
-              className="h-9 px-4 rounded-full border border-slate-200 hover:border-slate-300 active:bg-slate-50 text-[13px] font-medium text-slate-800 shrink-0 transition-colors cursor-pointer disabled:opacity-50"
+              className="h-8 px-3.5 rounded-full bg-white border border-slate-200 hover:border-slate-300 active:bg-slate-100 text-[12px] font-medium text-slate-700 shrink-0 transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
             >
               {chip}
             </button>
@@ -259,7 +268,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                     <div className="space-y-3 flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-slate-900">Onlo</span>
-                        <span className="text-[10px] text-indigo-700 font-semibold bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-md">Onlo AI</span>
+                        <span className="text-[11px] text-slate-400 font-medium">· {locale === 'pl' ? 'lokalny przewodnik' : 'local guide'}</span>
                       </div>
                       <div 
                         onClick={() => setActiveTimestampId(activeTimestampId === uniqueKey ? null : uniqueKey)}

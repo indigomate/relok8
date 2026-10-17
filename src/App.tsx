@@ -52,6 +52,7 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { RewardsPage } from './pages/RewardsPage';
 import { EnrollmentsPage } from './pages/EnrollmentsPage';
 import { DevRoleSwitcher } from './components/DevRoleSwitcher';
+import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
 import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
@@ -1707,6 +1708,17 @@ function Relok8App() {
             university: u.university,
             isVerified: u.isVerified,
           });
+        }}
+      />
+      <OnloGlobalWidget
+        locale={locale}
+        onNavigateToListings={() => {
+          const prefix = locale === 'pl' ? '/pl' : '';
+          navigateTo(`${prefix}/`);
+        }}
+        onNavigateToIntake={() => {
+          const prefix = locale === 'pl' ? '/pl' : '';
+          navigateTo(`${prefix}/list`);
         }}
       />
       <CookieBanner locale={locale} />
