@@ -42,6 +42,15 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [photoLoaded, setPhotoLoaded] = useState<Record<number, boolean>>({});
+
+  // Safety watchdog: prevent hanging loading spinners on detail page
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPhotoLoaded((prev) => ({ ...prev, [activePhotoIdx]: true }));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [activePhotoIdx, listing.images]);
+
   const [copied, setCopied] = useState(false);
   const [isTakeoverFaqOpen, setIsTakeoverFaqOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);

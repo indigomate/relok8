@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeft, ChevronRight, Heart, Clock, Calendar, Check, 
-  ShieldCheck, MessageSquare, Sparkles, FileText, Lock 
+  ShieldCheck, MessageSquare, Sparkles, FileText, Lock, Home, ImageOff 
 } from 'lucide-react';
 import { Listing, isExampleListing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
@@ -34,10 +34,56 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onOpenDepositClearing,
   locale = 'en'
 }) => {
+  const FALLBACK_ROOM_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
+
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
-  const [isImgLoaded, setIsImgLoaded] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>(() => {
+    const raw = listing.images?.[0];
+    return (raw && typeof raw === 'string' && raw.trim().length > 0) ? raw : FALLBACK_ROOM_IMAGE;
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const convex = useConvex();
+
+  // Synchronize image source on index or listing updates
+  useEffect(() => {
+    const candidate = listing.images?.[currentImgIndex] || listing.images?.[0];
+    if (candidate && typeof candidate === 'string' && candidate.trim().length > 0) {
+      setImgSrc(candidate);
+      setHasError(false);
+      setIsLoading(true);
+    } else {
+      setImgSrc(FALLBACK_ROOM_IMAGE);
+      setHasError(false);
+      setIsLoading(true);
+    }
+  }, [currentImgIndex, listing.images]);
+
+  // Safety watchdog: ensure spinner never hangs indefinitely for remote images
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [imgSrc]);
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+  };
+
+  const handleImageError = () => {
+    setIsLoading(false);
+    // If the remote image failed and wasn't already the fallback, try the fallback
+    if (imgSrc !== FALLBACK_ROOM_IMAGE) {
+      setImgSrc(FALLBACK_ROOM_IMAGE);
+    } else {
+      // If even the fallback fails or is unreachable, show clean placeholder
+      setHasError(true);
+    }
+  };
 
   // Real-time Convex lock tracking
   const convexDoc = convex.db.listings.find((l) => l._id === listing.id);
@@ -61,14 +107,16 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsImgLoaded(false);
+    if (!listing.images || listing.images.length <= 1) return;
+    setIsLoading(true);
     setCurrentImgIndex((prev) => (prev === 0 ? listing.images.length - 1 : prev - 1));
   };
 
   const handleNextImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsImgLoaded(false);
+    if (!listing.images || listing.images.length <= 1) return;
+    setIsLoading(true);
     setCurrentImgIndex((prev) => (prev === listing.images.length - 1 ? 0 : prev + 1));
   };
 
@@ -84,18 +132,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const moveInDateFormatted = formatDate(listing.availableDate, locale);
   const leaseEndDateFormatted = formatDate(listing.leaseEndDate, locale);
   const isDemo = isExampleListing(listing);
-
-  const fallbackRoomImage = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
-  const currentImageSrc = listing.images?.[currentImgIndex] || listing.images?.[0] || fallbackRoomImage;
-
-  // Safety fallback: ensure spinner never hangs indefinitely
-  useEffect(() => {
-    setIsImgLoaded(false);
-    const timer = setTimeout(() => {
-      setIsImgLoaded(true);
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [currentImgIndex, currentImageSrc]);
 
   return (
     <article
@@ -113,27 +149,42 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     >
       {/* 1. Photo Container with exact rounded corners & overlay buttons */}
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
-        {!isImgLoaded && (
-          <div className="absolute inset-0 bg-slate-200 animate-pulse z-0 flex items-center justify-center">
-            <div className="w-6 h-6 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin opacity-40" />
+        {/* Loading spinner */}
+        {isLoading && !hasError && (
+          <div className="absolute inset-0 bg-slate-200 animate-pulse z-0 flex items-center justify-center pointer-events-none">
+            <div className="w-6 h-6 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin opacity-50" />
           </div>
         )}
-        <img
-          src={currentImageSrc}
-          alt={`${listing.title} - ${listing.roomType} in ${listing.district}, ${listing.city} Poland`}
-          loading="lazy"
-          decoding="async"
-          width="400"
-          height="300"
-          onLoad={() => setIsImgLoaded(true)}
-          className={`w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 ${
-            isImgLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
-          onError={(e) => {
-            setIsImgLoaded(true);
-            e.currentTarget.src = fallbackRoomImage;
-          }}
-        />
+
+        {/* Placeholder UI when image completely fails */}
+        {hasError ? (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100 text-slate-400 p-4 select-none">
+            <div className="w-10 h-10 rounded-2xl bg-slate-200 flex items-center justify-center text-slate-500 mb-2">
+              <Home className="w-5 h-5 stroke-[1.8]" />
+            </div>
+            <span className="text-xs font-bold text-slate-700 text-center truncate max-w-[90%]">
+              {listing.title || 'Student Room'}
+            </span>
+            <span className="text-[11px] text-slate-500 mt-0.5">
+              {listing.district || listing.city} · {listing.roomType}
+            </span>
+          </div>
+        ) : (
+          <img
+            key={imgSrc}
+            src={imgSrc}
+            alt={`${listing.title} - ${listing.roomType} in ${listing.district}, ${listing.city} Poland`}
+            loading="lazy"
+            decoding="async"
+            width="400"
+            height="300"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            className={`w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 ${
+              isLoading ? 'opacity-0' : 'opacity-100'
+            }`}
+          />
+        )}
 
         {/* Top-left: Takeover / Lock Pill or Available status or Example listing */}
         <div className="absolute top-3 left-3 z-10 pointer-events-none select-none flex items-center gap-1.5">
