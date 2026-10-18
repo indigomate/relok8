@@ -16,29 +16,29 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
   locale = 'en'
 }) => {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-8 space-y-10">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
+      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
         
         {/* Back navigation */}
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer p-1 -ml-1 rounded-md hover:bg-indigo-50"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to marketplace</span>
+          <span>{locale === 'pl' ? 'Wróć do ogłoszeń' : 'Back to marketplace'}</span>
         </button>
 
         {/* Hero Section */}
-        <div className="space-y-3 max-w-2xl">
+        <div className="space-y-2.5 sm:space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/70 text-indigo-800 text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
             <span>Official Guide · Art. 509 KC</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             How Lease Takeover Poland Works on Relok8
           </h1>
-          <p className="text-base text-slate-600 leading-relaxed">
+          <p className="text-xs sm:text-base text-slate-600 leading-relaxed">
             Take over an active rental contract directly from outgoing international students and expats with formal landlord approval, zero broker commissions, and clear address registration status (Meldunek).
           </p>
         </div>

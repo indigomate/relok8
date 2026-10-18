@@ -138,23 +138,23 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const unreadCount = notifications.filter(n => !n.readAt).length;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-24 font-sans">
-      {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-32 sm:pb-24 font-sans">
+      {/* Top Header - Compact single-row layout */}
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 sm:h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="p-2 -ml-2 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">
               {locale === 'pl' ? 'Powiadomienia i Alerty' : 'Notifications & Alerts'}
             </h1>
-            <p className="text-xs text-slate-500 hidden sm:block">
+            <p className="text-xs text-slate-500 hidden sm:block truncate">
               {locale === 'pl'
                 ? 'Aktualizacje w czasie rzeczywistym dotyczące zapisanych pokoi, zgód właścicieli i zapytań o cesję.'
                 : 'Real-time updates on saved rooms, landlord approvals, and lease takeover inquiries.'}
@@ -166,14 +166,14 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
           <button
             type="button"
             onClick={handleMarkAllAsRead}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer shrink-0 ml-2"
           >
-            {locale === 'pl' ? 'Oznacz wszystkie jako przeczytane' : 'Mark all as read'}
+            {locale === 'pl' ? 'Oznacz przeczytane' : 'Mark all read'}
           </button>
         )}
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
         
         {/* Role-Specific Context Banner */}
         <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">

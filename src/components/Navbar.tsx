@@ -105,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 h-[72px] bg-white/95 backdrop-blur-md border-b border-slate-200 transition-colors">
-      <div className="max-w-7xl mx-auto h-full px-4 sm:px-6 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto h-full px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4">
         
         {/* Left: Brand Logo */}
         <a
@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         )}
 
         {/* Right: List your place · Saved · Notifications · Language · Account menu */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
           
           {/* List your place */}
           <button

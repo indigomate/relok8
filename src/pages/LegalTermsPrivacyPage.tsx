@@ -16,22 +16,22 @@ export const LegalTermsPrivacyPage: React.FC<LegalTermsPrivacyPageProps> = ({
   const isTerms = view === 'terms';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-8 space-y-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-8">
         
         {/* Back navigation */}
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer p-1 -ml-1 rounded-md hover:bg-indigo-50"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to marketplace</span>
+          <span>{locale === 'pl' ? 'Wróć do ogłoszeń' : 'Back to marketplace'}</span>
         </button>
 
         {/* Title */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-tight">
             {isTerms ? 'Terms of Service & Lease Assignment Policy' : 'Privacy Policy & RODO / GDPR Compliance'}
           </h1>
           <p className="text-xs text-slate-500">

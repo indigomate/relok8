@@ -111,22 +111,22 @@ export const EnrollmentsPage: React.FC<EnrollmentsPageProps> = ({ onBack, locale
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-36 sm:pb-24 font-sans">
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 sm:h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="p-2 -ml-2 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-indigo-600" />
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2 leading-tight truncate">
+              <GraduationCap className="w-5 h-5 text-indigo-600 shrink-0" />
               <span>{locale === 'pl' ? 'Uczelnie i Przyjazd do Polski' : 'Study & Arrival in Poland'}</span>
             </h1>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-500 hidden sm:block truncate">
               Official university portals in Lublin and the 6 essential arrival steps for students and expats.
             </p>
           </div>

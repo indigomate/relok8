@@ -273,7 +273,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     : 'U';
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 space-y-6">
         
         {/* Navigation & Back link */}

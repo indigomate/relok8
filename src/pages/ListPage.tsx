@@ -145,8 +145,8 @@ export const ListPage: React.FC<ListPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left">
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-8 space-y-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
+      <div className="max-w-[900px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-8">
         
         {/* Breadcrumb / Back button */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -163,16 +163,16 @@ export const ListPage: React.FC<ListPageProps> = ({
         </div>
 
         {/* Hero Section */}
-        <div className="space-y-3">
+        <div className="space-y-2.5 sm:space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
             <span>{locale === 'pl' ? 'Cesja bez prowizji · 0 zł opłat' : 'Zero Broker Fees · Free Listing'}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             {locale === 'pl' ? 'Przekaż swój pokój lub mieszkanie innemu najemcy' : 'List Your Room for a Zero-Penalty Lease Takeover'}
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
+          <p className="text-xs sm:text-base text-slate-600 leading-relaxed max-w-2xl">
             {locale === 'pl'
               ? 'Wyprowadzasz się przed końcem umowy najmu? Znajdź godnego zaufania studenta lub ekspata za zgodą właściciela i odzyskaj kaucję bez kar.'
               : 'Leaving Poland or your lease early? Find a verified replacement tenant to step into your contract, get your deposit back, and pay 0 PLN in landlord penalties.'}
@@ -214,7 +214,7 @@ export const ListPage: React.FC<ListPageProps> = ({
           </div>
         ) : (
           /* Stepped Intake Form */
-          <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-8 shadow-xs">
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-8 space-y-6 sm:space-y-8 shadow-xs">
             
             {/* Step Indicators */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -619,18 +619,18 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-4">
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setStep(3)}
-                    className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 text-xs font-semibold cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 text-xs font-semibold cursor-pointer text-center"
                   >
                     &larr; {locale === 'pl' ? 'Wróć' : 'Back'}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50 text-center"
                   >
                     {isSubmitting ? (locale === 'pl' ? 'Publikowanie...' : 'Publishing...') : (locale === 'pl' ? 'Opublikuj ogłoszenie bez prowizji' : 'Publish Free Listing')}
                   </button>

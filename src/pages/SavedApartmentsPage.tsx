@@ -21,26 +21,30 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
   locale = 'en'
 }) => {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-8 space-y-6">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-5 sm:space-y-6">
         
         {/* Header with back button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-slate-200">
           <div>
-            <button
-              type="button"
-              onClick={onBrowseListings}
-              className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold mb-2 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to all rooms</span>
-            </button>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
-              <Bookmark className="w-6 h-6 text-indigo-600 fill-indigo-600" />
-              <span>Saved Apartments ({savedListings.length})</span>
+            <div className="flex items-center gap-2 mb-1.5">
+              <button
+                type="button"
+                onClick={onBrowseListings}
+                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer p-1 -ml-1 rounded-md hover:bg-indigo-50"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>{locale === 'pl' ? 'Wróć do pokoi' : 'All rooms'}</span>
+              </button>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+              <Bookmark className="w-5 h-5 text-indigo-600 fill-indigo-600" />
+              <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved Apartments'} ({savedListings.length})</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
-              Your shortlisted student housing and expat lease assignments across Poland.
+            <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">
+              {locale === 'pl' 
+                ? 'Twoja lista zapisanych ofert cesji i pokoi studenckich w Polsce.'
+                : 'Your shortlisted student housing and expat lease assignments across Poland.'}
             </p>
           </div>
 

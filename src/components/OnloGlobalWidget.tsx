@@ -113,12 +113,12 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
       {/* Sitewide Floating Trigger Button */}
       <aside
         aria-label="Ask Onlo"
-        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 select-none font-sans"
+        className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] md:bottom-6 right-3 sm:right-4 md:right-6 z-40 select-none font-sans"
       >
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`h-12 px-4 rounded-full flex items-center gap-2.5 shadow-lg transition-all duration-200 cursor-pointer ${
+          className={`h-10 sm:h-12 px-3 sm:px-4 rounded-full flex items-center gap-2 sm:gap-2.5 shadow-lg transition-all duration-200 cursor-pointer ${
             isOpen
               ? 'bg-slate-900 text-white hover:bg-slate-800'
               : 'bg-white hover:bg-slate-50 text-slate-900 border border-slate-200/90 hover:shadow-xl hover:scale-105 active:scale-95'
@@ -126,10 +126,10 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
           title="Ask Onlo - Your local student housing guide in Poland"
         >
           <div className="relative">
-            <OnloAvatar size={28} variant="avatar" />
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300" />
+            <OnloAvatar size={24} variant="avatar" className="sm:w-7 sm:h-7" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300" />
           </div>
-          <span className="text-xs font-bold tracking-tight">
+          <span className="text-[11px] sm:text-xs font-bold tracking-tight">
             {isOpen ? (locale === 'pl' ? 'Zamknij' : 'Close') : (locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo')}
           </span>
         </button>
@@ -137,9 +137,9 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
 
       {/* Global Onlo Chat Drawer */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-end sm:justify-end p-0 sm:p-6 bg-black/30 backdrop-blur-[2px] animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-end sm:justify-end p-0 sm:p-6 bg-black/35 backdrop-blur-[2px] animate-in fade-in duration-200">
           <div 
-            className="w-full sm:max-w-md h-[85vh] sm:h-[580px] bg-white sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 duration-200 font-sans"
+            className="w-full sm:max-w-md h-[82vh] sm:h-[580px] bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 duration-200 font-sans"
           >
             {/* Header */}
             <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">

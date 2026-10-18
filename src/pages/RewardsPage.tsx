@@ -67,22 +67,22 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-36 sm:pb-24 font-sans">
-      {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* Top Header - Compact single-row layout */}
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 sm:h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onBack}
-            className="p-2 -ml-2 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
             aria-label="Back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              {locale === 'pl' ? 'Program Nagród i Odznaki Lokatora' : 'Tenant Rewards & Response Badges'}
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">
+              {locale === 'pl' ? 'Program Nagród i Odznaki' : 'Tenant Rewards & Badges'}
             </h1>
-            <p className="text-xs text-slate-500 hidden sm:block">
+            <p className="text-xs text-slate-500 hidden sm:block truncate">
               {locale === 'pl'
                 ? 'Odpowiadaj sprawnie na pytania studentów, aby zdobyć odznakę i wyróżnienie ogłoszenia.'
                 : 'Answer prospects promptly to earn points, unlock the Fast Responder badge, and boost your room.'}
@@ -93,14 +93,14 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
         <button
           type="button"
           onClick={handleGoToListing}
-          className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs inline-flex items-center gap-1.5 cursor-pointer"
+          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-colors shadow-2xs inline-flex items-center gap-1.5 cursor-pointer shrink-0 ml-2"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>{locale === 'pl' ? 'Wystaw pokój' : 'List your place'}</span>
+          <span>{locale === 'pl' ? 'Wystaw' : 'List room'}</span>
         </button>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
 
         {/* Prospect & Non-Tenant Guidance Banner */}
         {isProspect && (

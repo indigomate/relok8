@@ -28,15 +28,15 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
   const totalSaved = penaltySaved + depositSaved;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-8 space-y-10">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
+      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
         
         {/* Back navigation */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1.5 font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer p-1 -ml-1 rounded-md hover:bg-indigo-50"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{locale === 'pl' ? 'Wróć do ogłoszeń' : 'Back to rooms'}</span>
@@ -46,13 +46,13 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
         </div>
 
         {/* Hero Section */}
-        <div className="space-y-4 max-w-3xl">
+        <div className="space-y-2.5 sm:space-y-4 max-w-3xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold uppercase tracking-wider">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>{locale === 'pl' ? 'Bezpieczne przekazanie umowy · 0 zł prowizji' : 'Direct Lease Handover · Zero Broker Fees'}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             {locale === 'pl'
               ? 'Wyprowadź się przed końcem umowy bez utraty kaucji i kar'
               : 'Exit Your Rental Lease Early in Poland with Zero Penalties'}

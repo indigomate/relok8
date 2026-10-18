@@ -249,7 +249,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 text-left">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
       
       {/* Schema.org FAQPage JSON-LD */}
       <script
@@ -257,7 +257,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-8 space-y-10">
+      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
         
         {/* Breadcrumb & Back */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -274,18 +274,18 @@ export const HelpPage: React.FC<HelpPageProps> = ({
         </div>
 
         {/* Hero Section */}
-        <div className="space-y-4 max-w-3xl">
+        <div className="space-y-2.5 sm:space-y-4 max-w-3xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider">
             <HelpCircle className="w-3.5 h-3.5" />
             <span>{locale === 'pl' ? 'Baza wiedzy & Wsparcie' : 'Knowledge Base & Support'}</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             {locale === 'pl'
               ? 'Jak możemy Ci dzisiaj pomóc?'
               : 'How can we help you today?'}
           </h1>
-          <p className="text-base text-slate-600 leading-relaxed">
+          <p className="text-xs sm:text-base text-slate-600 leading-relaxed">
             {locale === 'pl'
               ? 'Wszystko o cesji umowy najmu (Art. 509 KC), legalnym meldunku dla obcokrajowców, rozliczeniach kaucji oraz unikaniu kar za wcześniejszą wyprowadzkę.'
               : 'Everything you need to know about peer-to-peer lease transfers in Poland (Art. 509 KC), meldunek address registration, security deposit handovers, and avoiding lease penalties.'}

@@ -494,24 +494,24 @@ export const PlacePage: React.FC<PlacePageProps> = ({
   const activeStepIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-32 sm:pb-24 font-sans">
-      {/* 1. Header: Compact title row (28-30px, one-line subtitle, place select on right) */}
-      <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-3">
+    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-36 sm:pb-24 font-sans">
+      {/* 1. Header: Compact title row (aligned back button, responsive title) */}
+      <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <button
               type="button"
               onClick={onBack}
-              className="p-2 -ml-2 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-200/60 transition-colors cursor-pointer shrink-0"
               aria-label="Back"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div>
-              <h1 className="text-2xl sm:text-[28px] lg:text-[30px] font-bold text-slate-900 tracking-tight leading-tight">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-[28px] lg:text-[30px] font-bold text-slate-900 tracking-tight leading-tight truncate">
                 {isLandlord ? 'My Places (Landlord Portal)' : 'My Place'}
               </h1>
-              <p className="text-xs text-slate-500 truncate">
+              <p className="text-xs text-slate-500 hidden sm:block truncate">
                 One shared place record: both tenant and landlord look at the same facts and handover steps.
               </p>
             </div>
