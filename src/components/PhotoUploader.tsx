@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Camera, Upload, Trash2, X, RefreshCw, CheckCircle2, 
-  AlertCircle, Image as ImageIcon, Sparkles, Check, ShieldCheck 
+  AlertCircle, Image as ImageIcon, Sparkles, Check, ShieldCheck,
+  Bed, Laptop, Bath, Info, ArrowRight
 } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { OnloAvatar } from './OnloAvatar';
@@ -11,6 +12,14 @@ interface PhotoUploaderProps {
   onChange: (photos: string[]) => void;
   locale?: SupportedLocale;
   maxPhotos?: number;
+}
+
+interface AIValidationResult {
+  isValid: boolean;
+  rejectionReason: 'selfie' | 'non_room' | 'blurry' | 'messy' | null;
+  detectedArea: 'sleeping' | 'workspace' | 'bathroom' | 'kitchen' | 'living' | 'other' | 'none';
+  feedback: string;
+  actionableGuidance: string;
 }
 
 export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
@@ -25,8 +34,18 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isValidatingAI, setIsValidatingAI] = useState(false);
-  const [aiFeedback, setAiFeedback] = useState<{ text: string; isError?: boolean } | null>(null);
+  
+  const [aiFeedback, setAiFeedback] = useState<{
+    text: string;
+    guidance?: string;
+    isError?: boolean;
+    reason?: string;
+  } | null>(null);
+
+  // Tracks verified areas per photo index or category
+  const [photoAreaLabels, setPhotoAreaLabels] = useState<Record<number, string>>({});
   const [capturedAreas, setCapturedAreas] = useState<Set<string>>(() => new Set());
+  const [cameraTargetArea, setCameraTargetArea] = useState<'sleeping' | 'workspace' | 'bathroom_kitchen'>('sleeping');
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -140,10 +159,10 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     });
   };
 
-  // Onlo AI Room Photo Verification API caller
+  // Onlo AI Room Vision Verification API
   const validateWithOnlo = async (
     resizedDataUrl: string
-  ): Promise<{ isValid: boolean; detectedArea: string; feedback: string }> => {
+  ): Promise<AIValidationResult> => {
     try {
       const res = await fetch('/api/ai/validate-room-photo', {
         method: 'POST',
@@ -153,12 +172,36 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       if (res.ok) {
         return await res.json();
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Onlo validation endpoint error:', err);
+    }
     return {
       isValid: true,
+      rejectionReason: null,
       detectedArea: 'other',
-      feedback: locale === 'pl' ? 'Zdjęcie zaakceptowane.' : 'Photo approved.'
+      feedback: locale === 'pl' ? 'Zdjęcie zaakceptowane.' : 'Photo approved.',
+      actionableGuidance: locale === 'pl' ? 'Pamiętaj o dodaniu zdjęć biurka i sypialni.' : 'Remember to include shots of the study desk and sleeping area.'
     };
+  };
+
+  // Friendly human label for detected area
+  const getAreaLabel = (areaKey: string): string => {
+    if (areaKey === 'sleeping' || areaKey === 'bedroom') {
+      return locale === 'pl' ? 'Sypialnia / Łóżko' : 'Sleeping area';
+    }
+    if (areaKey === 'workspace' || areaKey === 'desk') {
+      return locale === 'pl' ? 'Miejsce do nauki' : 'Workspace';
+    }
+    if (areaKey === 'bathroom') {
+      return locale === 'pl' ? 'Łazienka' : 'Bathroom';
+    }
+    if (areaKey === 'kitchen') {
+      return locale === 'pl' ? 'Kuchnia' : 'Kitchen';
+    }
+    if (areaKey === 'living') {
+      return locale === 'pl' ? 'Salon / Wnętrze' : 'Living space';
+    }
+    return locale === 'pl' ? 'Wnętrze pokoju' : 'Room interior';
   };
 
   // Capture frame from active video feed with AI validation
@@ -183,16 +226,28 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         setIsValidatingAI(false);
 
         if (!aiResult.isValid) {
-          setAiFeedback({ text: aiResult.feedback, isError: true });
+          setAiFeedback({ 
+            text: aiResult.feedback, 
+            guidance: aiResult.actionableGuidance,
+            isError: true,
+            reason: aiResult.rejectionReason || 'non_room'
+          });
           return;
         }
 
         // Valid room photo!
-        if (aiResult.detectedArea && aiResult.detectedArea !== 'none') {
-          setCapturedAreas(prev => new Set(prev).add(aiResult.detectedArea));
-        }
-        setAiFeedback({ text: aiResult.feedback, isError: false });
-        setTimeout(() => setAiFeedback(null), 3500);
+        const area = aiResult.detectedArea && aiResult.detectedArea !== 'none' ? aiResult.detectedArea : cameraTargetArea;
+        setCapturedAreas(prev => new Set(prev).add(area));
+        
+        const newIdx = photos.length;
+        setPhotoAreaLabels(prev => ({ ...prev, [newIdx]: getAreaLabel(area) }));
+
+        setAiFeedback({ 
+          text: aiResult.feedback, 
+          guidance: aiResult.actionableGuidance,
+          isError: false 
+        });
+        setTimeout(() => setAiFeedback(null), 4000);
 
         if (photos.length < maxPhotos) {
           onChange([...photos, compressed]);
@@ -218,8 +273,10 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
     setAiFeedback(null);
 
     const validNewImages: string[] = [];
+    const newLabels: Record<number, string> = { ...photoAreaLabels };
 
-    for (const file of filesToRead) {
+    for (let i = 0; i < filesToRead.length; i++) {
+      const file = filesToRead[i];
       const dataUrl = await new Promise<string>((resolve) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve((e.target?.result as string) || '');
@@ -232,20 +289,33 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       const aiResult = await validateWithOnlo(compressed);
 
       if (!aiResult.isValid) {
-        setAiFeedback({ text: aiResult.feedback, isError: true });
+        setAiFeedback({ 
+          text: aiResult.feedback, 
+          guidance: aiResult.actionableGuidance,
+          isError: true,
+          reason: aiResult.rejectionReason || 'non_room'
+        });
         continue;
       }
 
-      if (aiResult.detectedArea && aiResult.detectedArea !== 'none') {
-        setCapturedAreas(prev => new Set(prev).add(aiResult.detectedArea));
-      }
-      setAiFeedback({ text: aiResult.feedback, isError: false });
-      setTimeout(() => setAiFeedback(null), 3500);
+      const area = aiResult.detectedArea && aiResult.detectedArea !== 'none' ? aiResult.detectedArea : 'other';
+      setCapturedAreas(prev => new Set(prev).add(area));
+      
+      const targetIdx = photos.length + validNewImages.length;
+      newLabels[targetIdx] = getAreaLabel(area);
+
+      setAiFeedback({ 
+        text: aiResult.feedback, 
+        guidance: aiResult.actionableGuidance,
+        isError: false 
+      });
+      setTimeout(() => setAiFeedback(null), 4500);
 
       validNewImages.push(compressed);
     }
 
     setIsValidatingAI(false);
+    setPhotoAreaLabels(newLabels);
 
     if (validNewImages.length > 0) {
       onChange([...photos, ...validNewImages]);
@@ -265,100 +335,189 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
   const removePhoto = (index: number) => {
     onChange(photos.filter((_, i) => i !== index));
+    // Re-index area labels
+    setPhotoAreaLabels(prev => {
+      const updated: Record<number, string> = {};
+      let offset = 0;
+      for (let i = 0; i < photos.length; i++) {
+        if (i === index) continue;
+        if (prev[i]) updated[offset] = prev[i];
+        offset++;
+      }
+      return updated;
+    });
   };
 
-  const hasBed = capturedAreas.has('bedroom') || photos.length >= 1;
-  const hasDesk = capturedAreas.has('desk') || photos.length >= 2;
-  const hasBathOrKitchen = capturedAreas.has('bathroom') || capturedAreas.has('kitchen') || photos.length >= 3;
+  // State checks for the 3 key areas
+  const hasSleeping = capturedAreas.has('sleeping') || capturedAreas.has('bedroom') || photos.length >= 1;
+  const hasWorkspace = capturedAreas.has('workspace') || capturedAreas.has('desk') || photos.length >= 2;
+  const hasBathroomKitchen = capturedAreas.has('bathroom') || capturedAreas.has('kitchen') || photos.length >= 3;
+
+  // Compute actionable next step guidance
+  const nextGuidance = useMemo(() => {
+    if (!hasSleeping) {
+      return {
+        title: locale === 'pl' ? 'Krok 1: Sfotografuj strefę sypialną' : 'Step 1: Capture the sleeping area',
+        tip: locale === 'pl' 
+          ? 'Stań w drzwiach i zrób zdjęcie łóżka z naturalnym światłem z okna.' 
+          : 'Stand near the doorway and take a clear photo of the bed with natural window light.'
+      };
+    }
+    if (!hasWorkspace) {
+      return {
+        title: locale === 'pl' ? 'Krok 2: Pokaż miejsce do nauki i pracy' : 'Step 2: Capture the study workspace',
+        tip: locale === 'pl'
+          ? 'Zrób zdjęcie biurka, krzesła i gniazdek zasilających, przy których student będzie się uczyć.'
+          : 'Frame the desk, study chair, and outlets where an applicant will study.'
+      };
+    }
+    if (!hasBathroomKitchen) {
+      return {
+        title: locale === 'pl' ? 'Krok 3: Pokaż łazienkę lub kuchnię' : 'Step 3: Capture bathroom or kitchen access',
+        tip: locale === 'pl'
+          ? 'Zrób szerokie ujęcie łazienki (prysznic/wanna) lub wyposażenia wspólnej kuchni.'
+          : 'Take a clear shot of the bathroom shower/tub or shared kitchen amenities.'
+      };
+    }
+    return {
+      title: locale === 'pl' ? 'Wszystkie 3 kluczowe strefy zweryfikowane!' : 'All 3 essential room areas verified!',
+      tip: locale === 'pl'
+        ? 'Świetna robota! Możesz dodać do 10 zdjęć, np. widok z okna lub szafę.'
+        : 'Great work! You can add up to 10 photos, such as storage wardrobe or window view.'
+    };
+  }, [hasSleeping, hasWorkspace, hasBathroomKitchen, locale]);
 
   return (
     <div className="space-y-4">
-      {/* Onlo AI Room Photo Checklist */}
-      <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/80 space-y-2.5">
+      {/* Onlo AI Room Vision Verification Checklist */}
+      <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100/90 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <OnloAvatar size={22} variant="avatar" />
-            <span className="text-xs font-bold text-slate-900">
-              {locale === 'pl' ? 'Weryfikacja zdjęć Onlo AI' : 'Onlo AI Room Inspection'}
-            </span>
+            <OnloAvatar size={24} variant="avatar" />
+            <div>
+              <span className="text-xs font-bold text-slate-900 block leading-tight">
+                {locale === 'pl' ? 'Weryfikacja kadru Onlo AI' : 'Onlo AI Room Vision'}
+              </span>
+              <span className="text-[11px] text-slate-500 font-medium">
+                {locale === 'pl' ? 'Automatyczne wykrywanie stref i odrzucanie selfie' : 'Automatic room inspection & selfie rejection'}
+              </span>
+            </div>
           </div>
-          <span className="text-[11px] font-semibold text-indigo-700 bg-white px-2 py-0.5 rounded-full border border-indigo-200">
-            {locale === 'pl' ? 'Tylko zdjęcia pokoju' : 'Room interiors only'}
+          <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full shrink-0">
+            {locale === 'pl' ? 'Tylko wnętrza' : 'Interiors only'}
           </span>
         </div>
 
-        <p className="text-[11px] text-slate-600 leading-relaxed">
-          {locale === 'pl'
-            ? 'Onlo automatycznie weryfikuje zdjęcia pokoju, odrzucając selfie i nieczytelne pliki. Upewnij się, że sfotografujesz:'
-            : 'Onlo automatically verifies room photos, rejecting selfies and non-room shots. Ensure you capture:'}
-        </p>
-
         {/* 3 Core Areas Checklist */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-xs">
-          <div className={`p-2 rounded-xl border flex items-center gap-2 transition-colors ${
-            hasBed ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-white border-slate-200 text-slate-700'
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+          {/* 1. Sleeping */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition-colors ${
+            hasSleeping ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-white border-slate-200 text-slate-700'
           }`}>
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-              hasBed ? 'bg-emerald-600 text-white' : 'border border-slate-300'
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+              hasSleeping ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300 text-transparent'
             }`}>
-              {hasBed && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+              <Check className="w-3 h-3 stroke-[3]" />
             </div>
-            <span className="font-semibold text-[11px] truncate">
-              {locale === 'pl' ? 'Łóżko / sypialnia' : 'Bed & sleeping area'}
-            </span>
+            <div className="min-w-0">
+              <span className="font-bold text-[11px] block truncate">
+                {locale === 'pl' ? '1. Strefa sypialna' : '1. Sleeping area'}
+              </span>
+              <span className="text-[10px] text-slate-500 block truncate">
+                {locale === 'pl' ? 'Łóżko, materac, sypialnia' : 'Bed & sleeping space'}
+              </span>
+            </div>
           </div>
 
-          <div className={`p-2 rounded-xl border flex items-center gap-2 transition-colors ${
-            hasDesk ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-white border-slate-200 text-slate-700'
+          {/* 2. Workspace */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition-colors ${
+            hasWorkspace ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-white border-slate-200 text-slate-700'
           }`}>
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-              hasDesk ? 'bg-emerald-600 text-white' : 'border border-slate-300'
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+              hasWorkspace ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300 text-transparent'
             }`}>
-              {hasDesk && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+              <Check className="w-3 h-3 stroke-[3]" />
             </div>
-            <span className="font-semibold text-[11px] truncate">
-              {locale === 'pl' ? 'Biurko / nauka' : 'Desk & study space'}
-            </span>
+            <div className="min-w-0">
+              <span className="font-bold text-[11px] block truncate">
+                {locale === 'pl' ? '2. Miejsce do pracy' : '2. Study workspace'}
+              </span>
+              <span className="text-[10px] text-slate-500 block truncate">
+                {locale === 'pl' ? 'Biurko, krzesło do nauki' : 'Desk & study table'}
+              </span>
+            </div>
           </div>
 
-          <div className={`p-2 rounded-xl border flex items-center gap-2 transition-colors ${
-            hasBathOrKitchen ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-white border-slate-200 text-slate-700'
+          {/* 3. Bath / Kitchen */}
+          <div className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition-colors ${
+            hasBathroomKitchen ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-white border-slate-200 text-slate-700'
           }`}>
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
-              hasBathOrKitchen ? 'bg-emerald-600 text-white' : 'border border-slate-300'
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+              hasBathroomKitchen ? 'bg-emerald-600 text-white' : 'border-2 border-slate-300 text-transparent'
             }`}>
-              {hasBathOrKitchen && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+              <Check className="w-3 h-3 stroke-[3]" />
             </div>
-            <span className="font-semibold text-[11px] truncate">
-              {locale === 'pl' ? 'Kuchnia / łazienka' : 'Kitchen or bathroom'}
-            </span>
+            <div className="min-w-0">
+              <span className="font-bold text-[11px] block truncate">
+                {locale === 'pl' ? '3. Łazienka / Kuchnia' : '3. Bath or kitchen'}
+              </span>
+              <span className="text-[10px] text-slate-500 block truncate">
+                {locale === 'pl' ? 'Prysznic, aneks lub sprzęt' : 'Shower or shared kitchen'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Actionable Next Guidance Callout */}
+        <div className="p-3 rounded-xl bg-white/80 border border-indigo-100 flex items-start gap-2.5 text-xs">
+          <Info className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="font-bold text-slate-900 block">{nextGuidance.title}</span>
+            <span className="text-[11px] text-slate-600 block mt-0.5">{nextGuidance.tip}</span>
           </div>
         </div>
       </div>
 
-      {/* AI Feedback Banner (Success or Warning) */}
+      {/* AI Feedback Banner (Success or Warning with Actionable Advice) */}
       {aiFeedback && (
-        <div className={`p-3.5 rounded-2xl text-xs flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1 duration-200 border ${
+        <div className={`p-4 rounded-2xl text-xs space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200 border ${
           aiFeedback.isError 
-            ? 'bg-rose-50 border-rose-200 text-rose-900' 
-            : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+            ? 'bg-rose-50 border-rose-200 text-rose-950' 
+            : 'bg-emerald-50 border-emerald-200 text-emerald-950'
         }`}>
-          {aiFeedback.isError ? (
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-          ) : (
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-          )}
-          <div className="flex-1">
-            <span className="font-bold">Onlo: </span>
-            <span>{aiFeedback.text}</span>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {aiFeedback.isError ? (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              )}
+              <span className="font-bold text-xs">
+                {aiFeedback.isError 
+                  ? (locale === 'pl' ? 'Zdjęcie odrzucone przez Onlo' : 'Photo rejected by Onlo AI')
+                  : (locale === 'pl' ? 'Kadr zaakceptowany!' : 'Room photo verified!')}
+              </span>
+            </div>
+            <button 
+              type="button" 
+              onClick={() => setAiFeedback(null)}
+              className="text-slate-400 hover:text-slate-600 cursor-pointer p-0.5"
+              aria-label="Dismiss feedback"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <button 
-            type="button" 
-            onClick={() => setAiFeedback(null)}
-            className="text-slate-400 hover:text-slate-600 cursor-pointer"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
+
+          <p className="text-[12px] leading-relaxed text-slate-800 pl-6">
+            {aiFeedback.text}
+          </p>
+
+          {aiFeedback.guidance && (
+            <div className="pl-6 pt-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-700">
+              <ArrowRight className="w-3 h-3 text-indigo-600 shrink-0" />
+              <span>{aiFeedback.guidance}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -417,7 +576,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               {locale === 'pl' ? 'Zrób zdjęcie aparatem' : 'Snap photo on site'}
             </span>
             <span className="block text-[11px] text-slate-500 font-normal truncate">
-              {locale === 'pl' ? 'Użyj aparatu w telefonie' : 'Live room camera capture'}
+              {locale === 'pl' ? 'Kamera z asystentem kadru Onlo' : 'Live room camera capture'}
             </span>
           </div>
         </button>
@@ -425,12 +584,12 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
       {/* AI Processing Status */}
       {isValidatingAI && (
-        <div className="p-3 rounded-xl bg-indigo-50/80 border border-indigo-100 flex items-center gap-2.5 text-xs text-indigo-900 font-medium">
+        <div className="p-3.5 rounded-xl bg-indigo-50/80 border border-indigo-100 flex items-center gap-2.5 text-xs text-indigo-900 font-medium">
           <div className="w-4 h-4 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin shrink-0" />
           <span>
             {locale === 'pl'
-              ? 'Onlo weryfikuje kadr pod kątem pokoju i jakości...'
-              : 'Onlo is inspecting room interior and clarity...'}
+              ? 'Onlo AI sprawdza kadr (weryfikacja wnętrza, brak selfie, czytelność)...'
+              : 'Onlo AI Vision is verifying room interior, clarity, and checking for selfies...'}
           </span>
         </div>
       )}
@@ -456,18 +615,18 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           </p>
           <p className="text-[11px] text-slate-500 mt-0.5">
             {locale === 'pl'
-              ? 'Dodaj rzeczywiste zdjęcia pokoju, łóżka i biurka (min. 1 zdjęcie)'
-              : 'Add real photos of the room, bed, and desk (minimum 1 photo)'}
+              ? 'Dodaj rzeczywiste zdjęcia pokoju: łóżko, biurko oraz łazienkę lub kuchnię'
+              : 'Add real photos of the room: bed, study desk, and bathroom or kitchen'}
           </p>
         </div>
       )}
 
-      {/* Photo Previews Grid */}
+      {/* Photo Previews Grid with Verified Area Tags */}
       {photos.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-600 px-0.5">
             <span>
-              {locale === 'pl' ? 'Dodane zdjęcia:' : 'Verified room photos:'}{' '}
+              {locale === 'pl' ? 'Zweryfikowane zdjęcia:' : 'Verified room photos:'}{' '}
               <span className="font-bold text-slate-900">{photos.length}</span> / {maxPhotos}
             </span>
             <span className="text-[11px] text-slate-400">
@@ -487,11 +646,18 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                   className="w-full h-full object-cover"
                 />
 
-                {idx === 0 && (
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-900/85 backdrop-blur-xs text-white text-[10px] font-bold">
-                    {locale === 'pl' ? 'Główne' : 'Cover'}
-                  </span>
-                )}
+                {/* Primary Tag or Detected Area Badge */}
+                <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+                  {idx === 0 ? (
+                    <span className="px-2 py-0.5 rounded-md bg-slate-900/85 backdrop-blur-xs text-white text-[10px] font-bold">
+                      {locale === 'pl' ? 'Główne' : 'Cover'}
+                    </span>
+                  ) : photoAreaLabels[idx] ? (
+                    <span className="px-2 py-0.5 rounded-md bg-indigo-900/80 backdrop-blur-xs text-white text-[10px] font-semibold truncate max-w-[120px]">
+                      {photoAreaLabels[idx]}
+                    </span>
+                  ) : null}
+                </div>
 
                 <button
                   type="button"
@@ -507,13 +673,13 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         </div>
       )}
 
-      {/* In-Browser Camera Modal Overlay */}
+      {/* In-Browser Camera Modal Overlay with Area Framing Guides */}
       {isCameraActive && (
-        <div className="fixed inset-0 z-50 bg-black/85 flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-between p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="w-full max-w-lg flex items-center justify-between text-white z-10">
             <span className="text-xs font-bold tracking-wide flex items-center gap-2">
               <Camera className="w-4 h-4 text-emerald-400" />
-              <span>{locale === 'pl' ? 'Kamera Relok8 · Kadr pokoju' : 'Relok8 Room Camera'}</span>
+              <span>{locale === 'pl' ? 'Kamera Onlo AI · Kadr pokoju' : 'Onlo AI Room Camera'}</span>
             </span>
             <button
               type="button"
@@ -522,6 +688,37 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               aria-label="Close camera"
             >
               <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Target Area Selector Pill Row */}
+          <div className="z-10 flex items-center gap-2 overflow-x-auto max-w-full px-2 py-1 bg-white/10 backdrop-blur-md rounded-full">
+            <button
+              type="button"
+              onClick={() => setCameraTargetArea('sleeping')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                cameraTargetArea === 'sleeping' ? 'bg-indigo-600 text-white shadow-sm' : 'text-white/80 hover:text-white'
+              }`}
+            >
+              {locale === 'pl' ? 'Sypialnia' : 'Sleeping Area'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCameraTargetArea('workspace')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                cameraTargetArea === 'workspace' ? 'bg-indigo-600 text-white shadow-sm' : 'text-white/80 hover:text-white'
+              }`}
+            >
+              {locale === 'pl' ? 'Biurko' : 'Workspace'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCameraTargetArea('bathroom_kitchen')}
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                cameraTargetArea === 'bathroom_kitchen' ? 'bg-indigo-600 text-white shadow-sm' : 'text-white/80 hover:text-white'
+              }`}
+            >
+              {locale === 'pl' ? 'Łazienka/Kuchnia' : 'Bath/Kitchen'}
             </button>
           </div>
 
@@ -546,10 +743,17 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                 muted
                 className="w-full h-full object-cover"
               />
-              {/* Center Framing Guide */}
-              <div className="absolute inset-8 border border-white/30 rounded-2xl pointer-events-none flex items-center justify-center">
-                <span className="text-[11px] text-white/70 bg-black/50 px-2 py-1 rounded-md backdrop-blur-xs">
-                  {locale === 'pl' ? 'Ustaw kadr na łóżko, biurko lub wnętrze' : 'Center on bed, desk, or room interior'}
+              {/* Framing Guide Lines */}
+              <div className="absolute inset-8 border border-white/30 rounded-2xl pointer-events-none flex flex-col items-center justify-between p-3">
+                <span className="text-[10px] text-white/70 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-xs">
+                  {cameraTargetArea === 'sleeping' 
+                    ? (locale === 'pl' ? 'Skieruj obiektyw na łóżko i strefę sypialną' : 'Frame bed & sleeping space')
+                    : cameraTargetArea === 'workspace'
+                    ? (locale === 'pl' ? 'Skieruj obiektyw na biurko i krzesło do nauki' : 'Frame desk & study workspace')
+                    : (locale === 'pl' ? 'Skieruj obiektyw na łazienkę lub kuchnię' : 'Frame bathroom shower or kitchen counter')}
+                </span>
+                <span className="text-[10px] text-emerald-450 text-white/80 bg-black/60 px-2 py-0.5 rounded-md">
+                  {locale === 'pl' ? 'Brak selfie · Czysty kadr' : 'No selfies · Clear room shot'}
                 </span>
               </div>
             </div>
@@ -568,7 +772,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <button
               type="button"
               onClick={capturePhoto}
-              disabled={isCapturing || Boolean(cameraError)}
+              disabled={isCapturing || Boolean(cameraError) || isValidatingAI}
               className="w-16 h-16 rounded-full bg-white p-1 shadow-lg hover:scale-105 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer"
               aria-label="Capture photo"
             >

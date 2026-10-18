@@ -722,18 +722,31 @@ app.post('/api/ai/validate-room-photo', async (req: Request, res: Response) => {
         const { GoogleGenAI } = await import('@google/genai');
         const ai = new GoogleGenAI({ apiKey });
 
-        const prompt = `You are Onlo, an AI room inspector for student housing in Poland on Relok8.
-Analyze this photo uploaded for a student room listing.
-Determine:
-1. isValid: boolean (TRUE if the photo shows an interior room, bedroom, bed, study desk, living space, kitchen, bathroom, hallway, or balcony. FALSE if it is a selfie, human portrait/face, pet close-up, outdoor street, meme, document, car, or blurry unidentifiable clutter).
-2. detectedArea: "bedroom" | "desk" | "kitchen" | "bathroom" | "living" | "other" | "none"
-3. feedback: A friendly, short 1-sentence note as Onlo (${isPolish ? 'in Polish' : 'in English'}). If valid, praise the shot (e.g. "${isPolish ? 'Świetne zdjęcie strefy do nauki!' : 'Great shot of the study desk!'}"). If rejected, explain kindly why (e.g. "${isPolish ? 'To wygląda na selfie. Prosimy o zdjęcie sypialni, biurka lub kuchni!' : 'This looks like a selfie. Please snap a photo of the bedroom, desk, or kitchen instead!'}").
+        const prompt = `You are Onlo, the resident AI vision inspector for student housing in Poland on Relok8 (relok8.online).
+Inspect this uploaded photo intended for a student room rental listing.
 
-Respond in JSON ONLY with this exact structure:
+STRICT VERIFICATION CRITERIA:
+1. REJECT SELFIS & HUMAN PORTRAITS: If the image is a selfie, front-facing camera portrait, headshot, or human selfie in any setting, return isValid: false and rejectionReason: "selfie".
+2. REJECT NON-ROOM CONTENT: If the photo shows cars, food, pets close-up, outdoor street views without building interiors, screenshots, IDs, documents, memes, or completely unidentifiable dark/blurry noise, return isValid: false and rejectionReason: "non_room".
+3. ACCEPT VALID INTERIORS: Approve photos that clearly show an interior space:
+   - "sleeping": Bed, mattress, sleeping space, wardrobe, nightstand.
+   - "workspace": Desk, study table, study chair, lamp, monitor, laptop setup.
+   - "bathroom": Shower, bathtub, sink, toilet, tiles.
+   - "kitchen": Kitchen counter, stove, sink, fridge, dining space.
+   - "living": Living room, sofa, communal seating area.
+   - "other": Balcony, hallway, or general interior space.
+
+Provide actionable guidance in ${isPolish ? 'Polish' : 'English'}:
+- For rejection: Explain warmly why it was rejected and tell them what specific room area to capture next.
+- For approval: Acknowledge the detected area and suggest which remaining areas (sleeping, workspace, bathroom/kitchen) would make their listing stand out.
+
+Respond in JSON ONLY:
 {
   "isValid": true,
-  "detectedArea": "bedroom",
-  "feedback": "..."
+  "rejectionReason": null,
+  "detectedArea": "sleeping",
+  "feedback": "...",
+  "actionableGuidance": "..."
 }`;
 
         const response = await ai.models.generateContent({
@@ -759,10 +772,15 @@ Respond in JSON ONLY with this exact structure:
 
         if (response.text) {
           const parsed = JSON.parse(response.text);
+          const isValid = Boolean(parsed.isValid);
           return res.json({
-            isValid: Boolean(parsed.isValid),
-            detectedArea: parsed.detectedArea || 'other',
-            feedback: parsed.feedback || (parsed.isValid ? 'Room photo approved!' : 'Please upload a photo of the room interior.')
+            isValid,
+            rejectionReason: parsed.rejectionReason || (isValid ? null : 'non_room'),
+            detectedArea: parsed.detectedArea || (isValid ? 'other' : 'none'),
+            feedback: parsed.feedback || (isValid ? 'Room photo approved!' : 'Please upload a photo of the room interior.'),
+            actionableGuidance: parsed.actionableGuidance || (isValid 
+              ? 'Next: Capture any remaining areas (sleeping, study desk, bathroom/kitchen).'
+              : 'Please take a clear photo of the bed, study desk, or kitchen instead.')
           });
         }
       } catch (geminiErr) {
@@ -773,8 +791,10 @@ Respond in JSON ONLY with this exact structure:
     // Default fallback when AI key is absent
     return res.json({
       isValid: true,
+      rejectionReason: null,
       detectedArea: 'other',
-      feedback: isPolish ? 'Zdjęcie zaakceptowane.' : 'Photo approved.'
+      feedback: isPolish ? 'Zdjęcie zaakceptowane.' : 'Photo approved.',
+      actionableGuidance: isPolish ? 'Pamiętaj o dodaniu zdjęć biurka i sypialni.' : 'Remember to include shots of the study desk and sleeping area.'
     });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Failed to validate photo' });
