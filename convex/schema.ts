@@ -193,4 +193,15 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
   }),
+
+  // Email Alert Subscribers table (for filtered city notifications)
+  subscribers: defineTable({
+    email: v.string(),
+    city: v.string(), // "All Poland", "Warsaw", "Kraków", etc.
+    active: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_email", ["email"])
+    .index("by_city", ["city"])
+    .index("by_email_city", ["email", "city"]),
 });

@@ -15,6 +15,7 @@ import type * as leases from "../leases.js";
 import type * as listings from "../listings.js";
 import type * as payments from "../payments.js";
 import type * as profiles from "../profiles.js";
+import type * as subscribers from "../subscribers.js";
 import type * as tasks from "../tasks.js";
 import type * as whatsapp from "../whatsapp.js";
 
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   listings: typeof listings;
   payments: typeof payments;
   profiles: typeof profiles;
+  subscribers: typeof subscribers;
   tasks: typeof tasks;
   whatsapp: typeof whatsapp;
 }>;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface OnloAvatarProps {
   className?: string;
@@ -12,8 +12,20 @@ export const OnloAvatar: React.FC<OnloAvatarProps> = ({
   variant = 'icon'
 }) => {
   const pixelSize = typeof size === 'number' ? `${size}px` : size;
+  const [useFallback, setUseFallback] = useState(false);
 
   if (variant === 'avatar') {
+    if (!useFallback) {
+      return (
+        <img
+          src="/onlo.png"
+          alt="Onlo AI"
+          style={{ width: pixelSize, height: pixelSize }}
+          className={`inline-block shrink-0 rounded-[24%] shadow-xs select-none object-contain ${className}`}
+          onError={() => setUseFallback(true)}
+        />
+      );
+    }
     return (
       <div 
         style={{ width: pixelSize, height: pixelSize }} 

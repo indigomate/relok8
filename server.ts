@@ -8,7 +8,9 @@ import {
   isResendConfigured,
   buildInquiryEmailHtml,
   buildInquiryReplyHtml,
-  buildContactSupportHtml
+  buildContactSupportHtml,
+  buildSubscriptionConfirmationHtml,
+  buildNewListingAlertHtml
 } from './src/lib/resend';
 import {
   executeAIGateway,
@@ -178,6 +180,41 @@ function persistListingsToDisk(data: any[]): void {
 }
 
 let listings: any[] = loadListingsFromDisk();
+
+// Subscribers collection (persisted to disk & synced with Convex)
+export interface SubscriberRecord {
+  id: string;
+  email: string;
+  city: string;
+  active: boolean;
+  createdAt: number;
+}
+
+const SUBSCRIBERS_FILE = path.join(DATA_DIR, 'subscribers.json');
+
+function loadSubscribersFromDisk(): SubscriberRecord[] {
+  try {
+    if (fs.existsSync(SUBSCRIBERS_FILE)) {
+      return JSON.parse(fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8'));
+    }
+  } catch (e) {
+    console.error('Error reading subscribers from disk:', e);
+  }
+  return [];
+}
+
+function persistSubscribersToDisk(data: SubscriberRecord[]) {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error persisting subscribers to disk:', err);
+  }
+}
+
+let subscribers: SubscriberRecord[] = loadSubscribersFromDisk();
 
 // In-memory collections for Inquiries, Users, Agreements
 interface Inquiry {
@@ -913,11 +950,122 @@ app.post('/api/listings', (req: Request, res: Response) => {
   listings.unshift(newListing);
   persistListingsToDisk(listings);
 
+  // Real-time Resend email notifications to matching city subscribers
+  try {
+    const listingCity = (newListing.city || '').trim().toLowerCase();
+    const matching = subscribers.filter((s) => {
+      if (!s.active) return false;
+      const subCity = s.city.trim().toLowerCase();
+      return (
+        subCity === listingCity ||
+        subCity === 'poland' ||
+        subCity === 'all poland' ||
+        subCity === 'anywhere in poland'
+      );
+    });
+
+    if (matching.length > 0) {
+      const alertHtml = buildNewListingAlertHtml({
+        listingTitle: newListing.title,
+        city: newListing.city,
+        district: newListing.district,
+        monthlyRent: newListing.monthlyRentPLN,
+        roomType: newListing.roomType,
+        moveInDate: newListing.availableDate,
+        listingUrl: `https://relok8.online/room/${newListing.id}`,
+        image: newListing.images?.[0]
+      });
+
+      // Dispatch async notifications via Resend
+      matching.forEach((sub) => {
+        sendResendEmail({
+          to: sub.email,
+          subject: `New Room in ${newListing.city}: ${newListing.title} (PLN ${newListing.monthlyRentPLN}/mo)`,
+          html: alertHtml,
+          text: `A new room in ${newListing.city} has been listed on Relok8: ${newListing.title} at PLN ${newListing.monthlyRentPLN}/mo. View at https://relok8.online/room/${newListing.id}`
+        }).catch((err) => console.warn('Resend alert dispatch error:', err));
+      });
+    }
+  } catch (e) {
+    console.warn('Subscriber notification error:', e);
+  }
+
   res.status(201).json({
     ...newListing,
     message: 'Listing successfully published',
     listing: newListing
   });
+});
+
+// POST /api/subscribers - Register or update email alert subscriber
+app.post('/api/subscribers', async (req: Request, res: Response) => {
+  try {
+    const { email, city } = req.body;
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email address is required' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCity = (city || 'Poland').trim();
+
+    // Check if subscription already exists
+    let existing = subscribers.find(
+      (s) => s.email === cleanEmail && s.city.toLowerCase() === cleanCity.toLowerCase()
+    );
+
+    let isNew = false;
+    if (!existing) {
+      existing = {
+        id: `sub_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        email: cleanEmail,
+        city: cleanCity,
+        active: true,
+        createdAt: Date.now(),
+      };
+      subscribers.push(existing);
+      isNew = true;
+    } else {
+      existing.active = true;
+    }
+
+    persistSubscribersToDisk(subscribers);
+
+    // Send instant welcome confirmation via Resend
+    const confirmationHtml = buildSubscriptionConfirmationHtml({
+      city: cleanCity,
+      email: cleanEmail,
+    });
+
+    const emailRes = await sendResendEmail({
+      to: cleanEmail,
+      subject: `Relok8 Alert Activated: Rooms in ${cleanCity}`,
+      html: confirmationHtml,
+      text: `You have successfully subscribed to real-time lease takeover alerts for ${cleanCity} on Relok8.online. You will receive an instant notification when a matching room is listed.`
+    });
+
+    res.status(200).json({
+      success: true,
+      subscriber: existing,
+      isNew,
+      emailStatus: emailRes.status,
+      message: 'Subscribed to room alerts successfully'
+    });
+  } catch (err: any) {
+    console.error('Error subscribing email:', err);
+    res.status(500).json({ error: err.message || 'Failed to subscribe' });
+  }
+});
+
+// GET /api/subscribers - Retrieve subscribers list or city count
+app.get('/api/subscribers', (req: Request, res: Response) => {
+  const cityQuery = req.query.city ? String(req.query.city).trim().toLowerCase() : undefined;
+  if (cityQuery) {
+    const matching = subscribers.filter(
+      (s) => s.active && (s.city.toLowerCase() === cityQuery || s.city.toLowerCase() === 'poland')
+    );
+    return res.json({ city: req.query.city, count: matching.length, subscribers: matching });
+  }
+  res.json({ total: subscribers.length, subscribers });
 });
 
 // DELETE /api/listings/:id

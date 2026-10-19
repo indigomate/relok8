@@ -225,6 +225,116 @@ export function buildContactSupportHtml(params: {
   `;
 }
 
+export function buildSubscriptionConfirmationHtml(params: {
+  city: string;
+  email: string;
+}): string {
+  const cityLabel = params.city || 'Poland';
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
+    .card { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+    .header { background: #4f46e5; color: #ffffff; padding: 28px 24px; text-align: left; }
+    .header h1 { margin: 0 0 6px 0; font-size: 22px; font-weight: 700; }
+    .header p { margin: 0; font-size: 14px; opacity: 0.9; }
+    .body { padding: 24px; font-size: 15px; line-height: 1.6; }
+    .highlight-box { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 12px; padding: 16px; margin: 20px 0; }
+    .footer { padding: 18px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>Alert Activated: ${escapeHtml(cityLabel)}</h1>
+      <p>Relok8 Real-Time Room Notifications</p>
+    </div>
+    <div class="body">
+      <p>Hello,</p>
+      <p>You have successfully subscribed to real-time lease takeover alerts for <strong>${escapeHtml(cityLabel)}</strong>.</p>
+      
+      <div class="highlight-box">
+        <strong>What happens next?</strong><br>
+        The moment a verified student or departing tenant publishes a room or flat matching <strong>${escapeHtml(cityLabel)}</strong>, you will receive an instant notification here with direct contact details.
+      </div>
+
+      <p style="font-size: 13px; color: #64748b;">
+        All Relok8 listings feature 0 PLN agency fees, pre-verified landlord consent for lease takeover (Art. 509 KC), and clear Meldunek address registration status.
+      </p>
+    </div>
+    <div class="footer">
+      Relok8.online · Student Housing & Lease Transfers in Poland · Sent to ${escapeHtml(params.email)}
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+export function buildNewListingAlertHtml(params: {
+  listingTitle: string;
+  city: string;
+  district?: string;
+  monthlyRent: number;
+  roomType: string;
+  moveInDate?: string;
+  listingUrl?: string;
+  image?: string;
+}): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #1e293b; margin: 0; padding: 24px; }
+    .card { max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); }
+    .header { background: #0f172a; color: #ffffff; padding: 24px; text-align: left; }
+    .header h1 { margin: 0 0 6px 0; font-size: 20px; font-weight: 700; }
+    .badge { display: inline-block; background: #4f46e5; color: #ffffff; font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .body { padding: 24px; font-size: 15px; line-height: 1.6; }
+    .image-preview { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 18px; background: #f1f5f9; }
+    .specs-grid { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 18px 0; }
+    .price { font-size: 24px; font-weight: 800; color: #4f46e5; }
+    .btn { display: inline-block; background: #4f46e5; color: #ffffff !important; padding: 12px 28px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 14px; margin-top: 14px; }
+    .footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="badge">New Listing Alert · ${escapeHtml(params.city)}</span>
+      <h1>${escapeHtml(params.listingTitle)}</h1>
+    </div>
+    <div class="body">
+      ${params.image ? `<img src="${escapeHtml(params.image)}" alt="Listing" class="image-preview" />` : ''}
+
+      <div class="specs-grid">
+        <div class="price">PLN ${params.monthlyRent.toLocaleString()}<span style="font-size: 14px; font-weight: 400; color: #64748b;">/month</span></div>
+        <p style="margin: 8px 0 0 0; font-size: 14px; color: #475569;">
+          <strong>Location:</strong> ${escapeHtml(params.district ? `${params.district}, ` : '')}${escapeHtml(params.city)}<br>
+          <strong>Type:</strong> ${escapeHtml(params.roomType)}<br>
+          ${params.moveInDate ? `<strong>Available from:</strong> ${escapeHtml(params.moveInDate)}<br>` : ''}
+          <strong>Transfer:</strong> 0 PLN agency fee · Verified landlord consent
+        </p>
+      </div>
+
+      <p>A new room matching your alert has just been listed. Step into this lease before other applicants:</p>
+      
+      ${params.listingUrl ? `<a href="${params.listingUrl}" class="btn">View Room & Message Tenant</a>` : ''}
+    </div>
+    <div class="footer">
+      Relok8.online · Student Housing & Lease Transfers in Poland · Direct Landlord Consent
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 function escapeHtml(str: string): string {
   if (!str) return '';
   return String(str)
@@ -234,3 +344,4 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+

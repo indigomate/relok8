@@ -104,6 +104,36 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     return () => clearInterval(interval);
   }, [isLocked, convexDoc?.lockedUntil]);
 
+  const touchStartXRef = React.useRef<number | null>(null);
+  const touchStartYRef = React.useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null || touchStartYRef.current === null) return;
+    const diffX = e.changedTouches[0].clientX - touchStartXRef.current;
+    const diffY = e.changedTouches[0].clientY - touchStartYRef.current;
+
+    // Trigger only if horizontal swipe dominates vertical scrolling and exceeds threshold
+    if (Math.abs(diffX) > 35 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
+      if (!listing.images || listing.images.length <= 1) return;
+      setIsLoading(true);
+      if (diffX < 0) {
+        // Swiped Left -> Next photo
+        setCurrentImgIndex((prev) => (prev === listing.images.length - 1 ? 0 : prev + 1));
+      } else {
+        // Swiped Right -> Previous photo
+        setCurrentImgIndex((prev) => (prev === 0 ? listing.images.length - 1 : prev - 1));
+      }
+    }
+
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+  };
+
   const handlePrevImg = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -147,8 +177,12 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       }}
       className="group relative rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 transition-all duration-200 hover:shadow-md overflow-hidden cursor-pointer flex flex-col justify-between text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
     >
-      {/* 1. Photo Container with exact rounded corners & overlay buttons */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100">
+      {/* 1. Photo Container with touch swipe support & exact rounded corners */}
+      <div 
+        className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Loading spinner */}
         {isLoading && !hasError && (
           <div className="absolute inset-0 bg-slate-200 animate-pulse z-0 flex items-center justify-center pointer-events-none">
