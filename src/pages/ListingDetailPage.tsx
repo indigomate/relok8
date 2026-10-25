@@ -1,3 +1,4 @@
+import { createOrGetThread, sendThreadMessage } from '../lib/api';
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Heart, Share2, MapPin, Check, Shield, 
@@ -88,29 +89,12 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
     }
     const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`;
     try {
-      const res = await fetch('/api/threads', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-id': (currentUser as any)?.id || 'user-mateo',
-        },
-        body: JSON.stringify({ placeId: listing.id })
-      });
-      if (res.ok) {
-        const thread = await res.json();
-        if (thread?.id) {
-          await fetch(`/api/threads/${thread.id}/messages`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-user-id': (currentUser as any)?.id || 'user-mateo',
-            },
-            body: JSON.stringify({ body: finalMessage })
-          });
-        }
-      }
-
-    } catch (err) {}
+      const thread = await createOrGetThread(listing.id);
+      await sendThreadMessage(thread.id, finalMessage);
+    } catch (error: any) {
+      window.alert(error.message || 'Could not send your inquiry. Please try again.');
+      return;
+    }
     setInquirySent(true);
     setTimeout(() => {
       setIsContactModalOpen(false);
@@ -372,7 +356,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               className="p-3.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 transition-all active:scale-98 cursor-pointer shadow-xs"
             >
               <OnloAvatar size={18} variant="icon" />
-              <span>{locale === 'pl' ? 'Zapytaj Onlo AI o ten pokój' : 'Ask Onlo AI about this room'}</span>
+              <span>{locale === 'pl' ? 'Zapytaj Onlo o ten pokój' : 'Ask Onlo about this room'}</span>
             </button>
           </div>
 

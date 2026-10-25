@@ -29,6 +29,7 @@ import {
   startPolling,
   approveReplacement
 } from '../lib/api';
+import { OnloAvatar } from '../components/OnloAvatar';
 
 interface MessagesPageProps {
   onBack: () => void;
@@ -126,7 +127,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     try {
       const [u, p] = await Promise.all([
         getCurrentDevUser(),
-        getPlaces()
+        getPlaces({ includeProspects: true })
       ]);
       setDevUser(u);
       setPlaces(p);
@@ -208,25 +209,15 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
   const activeThread = threads.find((t) => t.id === activeThreadId) || threads[0];
   const activePlace = places.find((p) => p.id === (activeThread?.placeId || initialPlaceId)) || places[0];
-  const isLandlord = devUser?.role === 'landlord';
-  const isTenant = devUser?.role === 'tenant';
+  const isLandlord = Boolean(devUser && activePlace?.landlordId === devUser.id);
+  const isTenant = Boolean(devUser && activePlace?.tenantId === devUser.id);
 
   // Covered tenant name for Onlo banner
-  const tenantCoveredName = 'Anna';
+  const tenantCoveredName = currentUser?.name || 'the tenant';
 
   // Resolve prospect names
-  const getProspectName = (prospectId: string): string => {
-    if (prospectId === 'user-mateo') return 'Mateo (Erasmus)';
-    if (prospectId === 'user-priya') return 'Priya (WSEI)';
-    return 'Prospect Inquiry';
-  };
-
-  // Preview snippet for threads
-  const getThreadPreview = (t: Thread): string => {
-    if (t.prospectId === 'user-mateo') return 'Hi, is the room still available for the spring semester?';
-    if (t.prospectId === 'user-priya') return 'Hello! Can I register my meldunek at this address?';
-    return 'Inquiry regarding lease takeover';
-  };
+  const getProspectName = (prospectId: string): string => (threads.find(t => t.prospectId === prospectId) as any)?.prospectName || 'Prospective tenant';
+  const getThreadPreview = (_t: Thread): string => 'Open conversation';
 
   // Filtered threads list
   const filteredThreads = threads.filter((t) => {
@@ -592,7 +583,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
                           {isOnlo && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
-                              <Bot className="w-3 h-3 text-indigo-600" />
+                              <OnloAvatar size={13} variant="icon" state="idle" />
                               <span>Onlo</span>
                             </span>
                           )}
@@ -707,9 +698,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
             {/* When Onlo is handling: Soft indigo banner with Take over button */}
             {activeTab === 'prospects' && activeThread?.handledBy === 'onlo' && (
-              <div className="bg-indigo-50/90 border-b border-indigo-100 px-4 py-2.5 flex items-center justify-between gap-3 text-xs text-indigo-900 shrink-0">
+              <div className="bg-indigo-50/90 border-b border-indigo-100 px-4 py-2 flex items-center justify-between gap-3 text-xs text-indigo-900 shrink-0">
                 <div className="flex items-center gap-2">
-                  <Bot className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <OnloAvatar size={22} variant="avatar" state="idle" title="Onlo is active" className="shrink-0" />
                   <span>
                     Onlo is answering for <span className="font-bold">{tenantCoveredName}</span>. Take over to reply yourself.
                   </span>
@@ -730,7 +721,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             {activeTab === 'prospects' && activeThread && activeThread.handledBy !== 'onlo' && (
               <div className="bg-slate-50 border-b border-slate-200/80 px-4 py-2 flex items-center justify-between gap-3 text-xs text-slate-700 shrink-0">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <OnloAvatar size={22} variant="avatar" state="away" title="Onlo is away (human took over)" className="shrink-0" />
                   <span>You are answering. Hand back to Onlo to handle incoming questions automatically.</span>
                 </div>
                 {(isTenant || isLandlord) && (
@@ -753,13 +744,18 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-slate-50/30"
             >
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 space-y-2">
-                  <Bot className="w-8 h-8 text-indigo-400" />
-                  <p className="text-xs font-medium text-slate-600">
-                    {activeTab === 'place_room'
-                      ? 'Private Place Room between tenant and landlord.'
-                      : 'Start the conversation! Onlo is ready to assist if you are away.'}
-                  </p>
+                <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 space-y-3 p-4">
+                  <OnloAvatar size={80} variant="avatar" state="hello" title="Start the conversation! Onlo is ready to assist" />
+                  <div className="space-y-1 max-w-sm">
+                    <p className="text-sm font-bold text-slate-800">
+                      {activeTab === 'place_room' ? 'Private Place Room' : 'Start the conversation!'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {activeTab === 'place_room'
+                        ? 'Private Place Room between tenant and landlord.'
+                        : 'Onlo is ready to assist if you are away. Ask about lease takeovers, viewings, or flat specs.'}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 messages.map((m, idx) => {
@@ -786,13 +782,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                           isMe ? 'items-end' : 'items-start'
                         } max-w-xl ${isMe ? 'ml-auto' : 'mr-auto'}`}
                       >
-                        {/* Onlo Author label: 'Onlo for [Name] · AI assistant' */}
+                        {/* Onlo Author label with animated Onlo avatar on replies */}
                         {isOnlo && (
-                          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700 mb-1 px-1">
-                            <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
-                              O
-                            </div>
-                            <span>Onlo for {tenantCoveredName} · AI assistant</span>
+                          <div className="flex items-center gap-2 text-[12px] font-semibold text-indigo-700 mb-1.5 px-1">
+                            <OnloAvatar size={20} variant="avatar" state="idle" className="shrink-0 shadow-xs" />
+                            <span>Onlo for <span className="font-bold">{tenantCoveredName}</span> · {locale === 'pl' ? 'Lokalny przewodnik' : 'Local Guide'}</span>
                           </div>
                         )}
 
@@ -864,19 +858,19 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               )}
 
               {/* Typing indicator */}
+              {/* Placement 2: While Onlo writes */}
               {isHelperLoading && (
                 <div className="flex flex-col items-start mr-auto max-w-md animate-in fade-in">
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-indigo-700 mb-1 px-1">
-                    <div className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
-                      O
-                    </div>
-                    <span>Onlo is drafting a reply...</span>
+                    <OnloAvatar size={20} variant="avatar" state="thinking" className="shrink-0" />
+                    <span className="animate-pulse">Onlo is drafting a reply...</span>
                   </div>
                   <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-indigo-50 border border-indigo-150 text-slate-800 text-xs shadow-2xs">
                     <div className="flex items-center gap-1.5 py-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.2s]" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce [animation-delay:0.4s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.4s]" />
+                      <span className="text-[11px] text-indigo-700 ml-1">Checking lease facts</span>
                     </div>
                   </div>
                 </div>
@@ -918,7 +912,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     onClick={handleAskOnloNow}
                     className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
-                    <Bot className="w-3.5 h-3.5 text-indigo-600" />
+                    <OnloAvatar size={16} variant="avatar" state="idle" />
                     <span>Ask Onlo now</span>
                   </button>
                 </div>

@@ -8,11 +8,7 @@ import {
 import { Listing } from '../types';
 import { SupportedLocale } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';
-import { 
-  updateUserProfile, 
-  supabase, 
-  isSupabaseConfigured 
-} from '../lib/supabase/client';
+
 
 interface AccountPageProps {
   currentUser: UserProfile | null;
@@ -75,7 +71,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   // Handle saving personal details
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser || !clerkUser) { setProfileErrorMsg('Sign in to update your profile.'); return; }
 
     setIsSavingProfile(true);
     setProfileSuccessMsg(null);
@@ -91,8 +87,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         await clerkUser.update({
           firstName,
           lastName
-        }).catch(() => {
-          // Ignore if name updates restricted in Clerk dashboard
         });
 
         await clerkUser.updateMetadata({
@@ -101,19 +95,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             university,
             phone
           }
-        }).catch((err) => {
-          console.warn('Clerk metadata sync notice:', err);
-        });
-      }
-
-      // 2. Sync to Supabase if configured
-      if (isSupabaseConfigured()) {
-        await updateUserProfile(currentUser.id, {
-          full_name: fullName,
-          phone_number: phone,
-          whatsapp_number: phone
-        }).catch((err) => {
-          console.warn('Supabase sync notice:', err);
         });
       }
 
@@ -167,12 +148,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     try {
       if (clerkUser && typeof (clerkUser as any).updatePassword === 'function') {
         await (clerkUser as any).updatePassword({ newPassword });
-      } else if (isSupabaseConfigured()) {
-        const { error } = await supabase.auth.updateUser({
-          password: newPassword
-        });
-        if (error) throw error;
-      }
+      } else { throw new Error('Sign in with Clerk to change your password.'); }
 
       setSecurityMsg({
         type: 'success',

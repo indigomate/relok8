@@ -2,6 +2,11 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  uploads: defineTable({ storageId: v.id('_storage'), ownerId: v.string(), url: v.string() }).index('by_storage', ['storageId']).index('by_url', ['url']),
+  domainRecords: defineTable({
+    kind: v.string(), key: v.string(), ownerId: v.string(), placeId: v.optional(v.string()), data: v.any(),
+  }).index("by_kind", ["kind"]).index("by_key", ["kind", "key"]).index("by_owner", ["kind", "ownerId"]).index("by_place", ["kind", "placeId"]),
+  rateLimits: defineTable({ userId: v.string(), operation: v.string(), start: v.number(), count: v.number() }).index("by_user_operation", ["userId", "operation"]),
   // Tasks table (quick queries and mutations)
   tasks: defineTable({
     text: v.string(),
@@ -10,6 +15,9 @@ export default defineSchema({
 
   // Relok8 Leases table (for live lease takeover listings)
   leases: defineTable({
+    landlordUserId: v.optional(v.string()),
+    placeState: v.optional(v.any()),
+    ownerId: v.optional(v.string()),
     title: v.string(),
     address: v.string(),
     city: v.string(),
@@ -57,6 +65,7 @@ export default defineSchema({
 
   // Relok8 Listings table (atomic holds and real-time reactive sync)
   listings: defineTable({
+    ownerId: v.optional(v.string()),
     title: v.string(),
     address: v.string(),
     city: v.string(),
@@ -97,7 +106,7 @@ export default defineSchema({
     status: v.optional(v.string()),
   }),
 
-  // User Profiles table (replaces Supabase public.profiles)
+// Convex is the only data backend.
   profiles: defineTable({
     userId: v.string(), // Clerk ID or custom user identifier
     fullName: v.optional(v.string()),
@@ -111,7 +120,7 @@ export default defineSchema({
     createdAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
-  // Inquiries and Tenant Matches table (replaces Supabase public.matches_and_inquiries)
+// Convex is the only data backend.
   inquiries: defineTable({
     listingId: v.string(),
     userId: v.optional(v.string()),
@@ -133,7 +142,7 @@ export default defineSchema({
     .index("by_listingId", ["listingId"])
     .index("by_userId", ["userId"]),
 
-  // Saved / Favorited Listings (replaces Supabase favorites logic)
+// Convex is the only data backend.
   favorites: defineTable({
     userId: v.string(),
     listingId: v.string(),
@@ -159,7 +168,7 @@ export default defineSchema({
     createdAt: v.number(),
   }),
 
-  // Escrow Transactions (replaces Supabase public.escrow_transactions)
+// Convex is the only data backend.
   escrowTransactions: defineTable({
     listingId: v.string(),
     studentUserId: v.string(),
@@ -171,6 +180,7 @@ export default defineSchema({
 
   // AI Moderation Runs and Chat Messages
   aiMessages: defineTable({
+    userId: v.optional(v.string()),
     listingId: v.string(),
     sender: v.string(), // "user" | "ai"
     content: v.string(),

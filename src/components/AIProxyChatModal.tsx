@@ -76,7 +76,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     sender: 'ai',
     content: locale === 'pl'
       ? `Cześć! Jestem Onlo. Znam ten pokój na ${listing.address || listing.district || listing.city} od podszewki. Śmiało pytaj o czynsz, rachunki, dojazd na uczelnię, współlokatorów, meldunek czy zasady cesji umowy!`
-      : `Hey! I'm Onlo, your local friend on Relok8. I know this flat on ${listing.address || listing.district || listing.city} inside and out. Ask me about czynsz, bills, campus transit, flatmates, meldunek, or how taking over the lease works!`,
+      : `Hey! I'm Onlo, your local friend on Relok8. I can help explain the listing, but its details have not been independently verified. Ask me about czynsz, bills, campus transit, flatmates, meldunek, or how taking over the lease works!`,
     functionExecuted: undefined,
     timestamp: Date.now() - 60000,
   }), [listing.id, listing.address, listing.district, listing.city, locale]);
@@ -119,7 +119,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     text = text.replace(/High affinity match score:[^.\n]+/gi, '');
     // If it's a similar listings answer, return clean summary line
     if (text.toLowerCase().includes('embedding') || text.toLowerCase().includes('similar') || text.toLowerCase().includes('match')) {
-      return `Here are 3 similar rooms in ${listing.city}, around PLN ${formatPLN(listing.monthlyRentPLN, locale).replace('PLN', '').trim()} a month.`;
+      return text.trim();
     }
     return text.trim();
   };
@@ -168,7 +168,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
       onClick={onClose}
     >
       {/* Bottom Sheet */}
-      <div 
+      <div
         className="w-full max-w-[440px] mx-auto bg-white rounded-t-[20px] shadow-2xl flex flex-col h-[82vh] max-h-[82vh] overflow-hidden animate-in slide-in-from-bottom duration-260"
         onClick={(e) => e.stopPropagation()}
       >
@@ -243,7 +243,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             const uniqueKey = msg._id ? `${msg._id}_${idx}` : `msg_${idx}`;
             const cleanedContent = isUser ? msg.content : cleanAssistantContent(msg.content);
             const isSimilarListingsQuery = !isUser && (
-              msg.functionExecuted === 'query_listing_embeddings' || 
+              msg.functionExecuted === 'query_listing_embeddings' ||
               cleanedContent.toLowerCase().includes('similar rooms') ||
               cleanedContent.toLowerCase().includes('around pln')
             );
@@ -254,7 +254,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                 {isUser ? (
                   /* User Bubble: right-aligned, light purple/indigo soft fill, rounded-2xl with bottom-right 4px */
                   <div className="flex justify-end">
-                    <div 
+                    <div
                       onClick={() => setActiveTimestampId(activeTimestampId === uniqueKey ? null : uniqueKey)}
                       className="max-w-[85%] rounded-2xl rounded-br-xs px-4 py-2.5 bg-indigo-50 text-indigo-950 text-[15px] leading-[22px] cursor-pointer"
                     >
@@ -270,7 +270,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         <span className="text-xs font-bold text-slate-900">Onlo</span>
                         <span className="text-[11px] text-slate-400 font-medium">· {locale === 'pl' ? 'lokalny przewodnik' : 'local guide'}</span>
                       </div>
-                      <div 
+                      <div
                         onClick={() => setActiveTimestampId(activeTimestampId === uniqueKey ? null : uniqueKey)}
                         className="text-[15px] leading-[22px] text-slate-900 cursor-pointer"
                       >
@@ -325,7 +325,9 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                       {/* Disclaimer under last answer */}
                       {isLastAssistantMessage && (
                         <p className="text-[12px] leading-[18px] text-slate-400 pt-2">
-                          Onlo AI can make mistakes and doesn't give legal advice.{' '}
+                          {locale === 'pl'
+                            ? 'Onlo udziela wskazówek sąsiedzkich i nie świadczy formalnych porad prawnych. '
+                            : 'Onlo provides local guidance and does not provide formal legal advice. '}
                           <button
                             type="button"
                             onClick={() => {
@@ -352,12 +354,26 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             );
           })}
 
-          {/* Typing Indicator */}
+          {/* Typing Indicator with Onlo Thinking Avatar */}
           {isGenerating && (
-            <div className="flex items-center gap-1.5 py-2">
-              <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" />
-              <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce [animation-delay:120ms]" />
-              <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce [animation-delay:240ms]" />
+            <div className="flex items-start gap-3 animate-in fade-in py-1">
+              <OnloAvatar size={28} variant="avatar" state="thinking" className="mt-0.5 shrink-0" />
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-900">Onlo</span>
+                  <span className="text-[11px] text-indigo-600 font-medium animate-pulse">
+                    · {locale === 'pl' ? 'zastanawia się...' : 'thinking...'}
+                  </span>
+                </div>
+                <div className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl rounded-tl-xs bg-indigo-50/70 border border-indigo-100 text-indigo-950 text-xs shadow-2xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:120ms]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:240ms]" />
+                  <span className="text-[12px] font-medium ml-1">
+                    {locale === 'pl' ? 'Onlo przygotowuje odpowiedź...' : 'Onlo is answering...'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 

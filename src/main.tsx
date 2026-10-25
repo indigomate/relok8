@@ -1,55 +1,23 @@
-import { ClerkProvider } from '@clerk/react';
-import { Clerk } from '@clerk/clerk-js';
-import { ui } from '@clerk/ui';
+import { ClerkProvider, useAuth } from '@clerk/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
-import App from './App.tsx';
+import { ConvexReactClient } from 'convex/react';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import App from './App';
+import { configureBackend } from './lib/backend';
 import './index.css';
 
-const LIVE_PUBLISHABLE_KEY = 'pk_live_Y2xlcmsucmVsb2s4Lm9ubGluZSQ';
-const DEV_PUBLISHABLE_KEY = 'pk_test_dW5pdGVkLW1vbmtleS02OTUyLmNsZXJrLmFjY291bnRzLmRldiQ';
-
-// Detect whether running on the production domain (relok8.online) or preview/dev
-const isProductionDomain = 
-  typeof window !== 'undefined' && 
-  (window.location.hostname === 'relok8.online' || window.location.hostname.endsWith('.relok8.online'));
-
-const PUBLISHABLE_KEY = isProductionDomain
-  ? (import.meta.env.VITE_CLERK_PRODUCTION_KEY || LIVE_PUBLISHABLE_KEY)
-  : (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || DEV_PUBLISHABLE_KEY);
-
-// ---------------------------------------------------------------------------
-// Convex Backend Initialization (chatty-seahorse-914)
-// ---------------------------------------------------------------------------
-const convexUrl = 
-  import.meta.env.VITE_CONVEX_URL || 
-  'https://chatty-seahorse-914.convex.cloud';
-
-const convex = new ConvexReactClient(convexUrl);
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConvexProvider client={convex}>
-      <ClerkProvider 
-        publishableKey={PUBLISHABLE_KEY} 
-        afterSignOutUrl="/"
-        Clerk={Clerk as any}
-        ui={ui as any}
-        appearance={{
-          variables: {
-            colorPrimary: '#4F46E5',
-            borderRadius: '0.75rem',
-          },
-          elements: {
-            footer: 'hidden',
-            footerAction: 'hidden',
-            footerPages: 'hidden'
-          }
-        }}
-      >
-        <App />
-      </ClerkProvider>
-    </ConvexProvider>
-  </StrictMode>,
-);
+const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const url = import.meta.env.VITE_CONVEX_URL;
+const root = createRoot(document.getElementById('root')!);
+if (!key || !url || key.includes('YOUR_') || !url.startsWith('https://')) {
+  root.render(<main style={{ maxWidth: 640, margin: '12vh auto', padding: 24 }}><h1>Relok8 setup required</h1><p>Configure the Clerk and Convex development environment to start the app. See README.md.</p></main>);
+} else {
+  const client = new ConvexReactClient(url);
+  configureBackend(client);
+  root.render(<StrictMode><ClerkProvider publishableKey={key} afterSignOutUrl="/">
+    <ConvexProviderWithClerk client={client} useAuth={useAuth}>
+      <App />
+    </ConvexProviderWithClerk>
+  </ClerkProvider></StrictMode>);
+}

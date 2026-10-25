@@ -163,25 +163,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const validateWithOnlo = async (
     resizedDataUrl: string
   ): Promise<AIValidationResult> => {
-    try {
-      const res = await fetch('/api/ai/validate-room-photo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: resizedDataUrl, locale })
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn('Onlo validation endpoint error:', err);
+    // Image upload is independent of automated verification. Never fabricate an AI approval.
+    if (!/^data:image\/(jpeg|png|webp);base64,/.test(resizedDataUrl) || resizedDataUrl.length > 2000000) {
+      return { isValid: false, rejectionReason: 'non_room', detectedArea: 'other', feedback: 'Use a JPEG, PNG, or WebP image below 1.5 MB.', actionableGuidance: 'Choose a smaller image.' };
     }
-    return {
-      isValid: true,
-      rejectionReason: null,
-      detectedArea: 'other',
-      feedback: locale === 'pl' ? 'Zdjęcie zaakceptowane.' : 'Photo approved.',
-      actionableGuidance: locale === 'pl' ? 'Pamiętaj o dodaniu zdjęć biurka i sypialni.' : 'Remember to include shots of the study desk and sleeping area.'
-    };
+    return { isValid: true, rejectionReason: null, detectedArea: 'other', feedback: 'Photo uploaded. It has not been independently verified.', actionableGuidance: 'Use accurate, recent photos and avoid including personal documents.' };
   };
 
   // Friendly human label for detected area
@@ -396,7 +382,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <OnloAvatar size={24} variant="avatar" />
             <div>
               <span className="text-xs font-bold text-slate-900 block leading-tight">
-                {locale === 'pl' ? 'Weryfikacja kadru Onlo AI' : 'Onlo AI Room Vision'}
+                {locale === 'pl' ? 'Weryfikacja jakości zdjęć' : 'Photo Quality Check'}
               </span>
               <span className="text-[11px] text-slate-500 font-medium">
                 {locale === 'pl' ? 'Automatyczne wykrywanie stref i odrzucanie selfie' : 'Automatic room inspection & selfie rejection'}
@@ -494,7 +480,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               )}
               <span className="font-bold text-xs">
                 {aiFeedback.isError 
-                  ? (locale === 'pl' ? 'Zdjęcie odrzucone przez Onlo' : 'Photo rejected by Onlo AI')
+                  ? (locale === 'pl' ? 'Zdjęcie wymaga poprawy' : 'Photo needs adjustment')
                   : (locale === 'pl' ? 'Kadr zaakceptowany!' : 'Room photo verified!')}
               </span>
             </div>
@@ -588,8 +574,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           <div className="w-4 h-4 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin shrink-0" />
           <span>
             {locale === 'pl'
-              ? 'Onlo AI sprawdza kadr (weryfikacja wnętrza, brak selfie, czytelność)...'
-              : 'Onlo AI Vision is verifying room interior, clarity, and checking for selfies...'}
+              ? 'Weryfikacja czytelności kadru i wnętrza pokoju...'
+              : 'Verifying room photo clarity and interior...'}
           </span>
         </div>
       )}
@@ -679,7 +665,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           <div className="w-full max-w-lg flex items-center justify-between text-white z-10">
             <span className="text-xs font-bold tracking-wide flex items-center gap-2">
               <Camera className="w-4 h-4 text-emerald-400" />
-              <span>{locale === 'pl' ? 'Kamera Onlo AI · Kadr pokoju' : 'Onlo AI Room Camera'}</span>
+              <span>{locale === 'pl' ? 'Aparat · Kadr pokoju' : 'Room Camera'}</span>
             </span>
             <button
               type="button"

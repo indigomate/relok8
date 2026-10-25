@@ -1,3 +1,4 @@
+import { requireAdmin } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -7,6 +8,7 @@ import { v } from "convex/values";
 export const get = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.db.query("tasks").collect();
   },
 });
@@ -19,6 +21,7 @@ export const add = mutation({
     text: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const taskId = await ctx.db.insert("tasks", {
       text: args.text,
       isCompleted: false,
@@ -35,6 +38,7 @@ export const toggle = mutation({
     id: v.id("tasks"),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const task = await ctx.db.get(args.id);
     if (!task) {
       throw new Error(`Task with id ${args.id} not found`);

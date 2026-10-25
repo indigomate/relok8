@@ -24,7 +24,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
     contractNumber: `CESJA-${presetListing?.city.toUpperCase().slice(0, 3) || 'WAW'}-${Date.now().toString().slice(-4)}`,
     city: presetListing?.city || 'Warsaw',
     date: new Date().toISOString().split('T')[0],
-    effectiveDate: presetListing?.availableDate || '2026-10-15',
+    effectiveDate: presetListing?.availableDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
     landlordName: presetListing?.landlordName || '',
     landlordId: '',
     landlordAddress: presetListing?.address || '',
@@ -40,7 +40,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
     originalLeaseDate: '',
     monthlyRentPLN: presetListing?.monthlyRentPLN || 2400,
     depositPLN: presetListing?.depositPLN || 2500,
-    inspectionProtocolDate: presetListing?.availableDate || '2026-10-15'
+    inspectionProtocolDate: presetListing?.availableDate || new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
   });
 
   const [activeTab, setActiveTab] = useState<'bilingual' | 'fields'>('bilingual');

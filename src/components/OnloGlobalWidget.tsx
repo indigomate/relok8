@@ -1,6 +1,8 @@
+import { backend } from '../lib/backend';
+import { api } from '../../convex/_generated/api';
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, ArrowUp, Sparkles, MessageSquare, ChevronRight, HelpCircle, Shield, CheckCircle2 } from 'lucide-react';
-import { OnloAvatar } from './OnloAvatar';
+import { OnloAvatar, OnloState } from './OnloAvatar';
 import { SupportedLocale } from '../utils/formatters';
 
 interface OnloGlobalWidgetProps {
@@ -25,6 +27,18 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Widget state machine: plays 'hello' once per browser session, then settles to 'idle'
+  const [widgetState, setWidgetState] = useState<OnloState>(() => {
+    try {
+      const hasSeenHello = sessionStorage.getItem('r8_onlo_hello_shown');
+      if (!hasSeenHello) {
+        sessionStorage.setItem('r8_onlo_hello_shown', 'true');
+        return 'hello';
+      }
+    } catch {}
+    return 'idle';
+  });
 
   const initialGreeting: ChatMessage = {
     id: 'init-global-onlo',
@@ -59,17 +73,8 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/onlo/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: trimmed,
-          locale
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      const data = await backend().action(api.services.ask, { question: trimmed, locale });
+      {
         const onloMsg: ChatMessage = {
           id: `onlo-${Date.now()}`,
           sender: 'onlo',
@@ -77,20 +82,12 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
           timestamp: Date.now()
         };
         setMessages(prev => [...prev, onloMsg]);
-      } else {
-        throw new Error('Server error');
+        setWidgetState('happy');
+        setTimeout(() => setWidgetState('idle'), 2000);
       }
-    } catch {
-      // Deterministic peer fallback
-      const fallbackMsg: ChatMessage = {
-        id: `onlo-${Date.now()}`,
-        sender: 'onlo',
-        text: locale === 'pl'
-          ? 'Jestem Onlo! Zgodnie z polskim prawem (Art. 509 KC) przejęcie umowy jest całkowicie bezpieczne i bezpłatne przy zgodzie właściciela. W czym jeszcze mogę Ci pomóc? To nie jest porada prawna.'
-          : 'I\'m Onlo! Under Polish Civil Code Art. 509 KC, taking over a lease is 100% legal, safe, and has 0 agency fees with landlord consent. What else can I help you with? Not legal advice.',
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, fallbackMsg]);
+    } catch (error: any) {
+      setMessages(prev => [...prev, { id: `error-${Date.now()}`, sender: 'onlo', text: error.message || 'The assistant is unavailable. Please sign in or contact the tenant directly.', timestamp: Date.now() }]);
+      setWidgetState('idle');
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +123,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
           title="Ask Onlo - Your local student housing guide in Poland"
         >
           <div className="relative">
-            <OnloAvatar size={24} variant="avatar" className="sm:w-7 sm:h-7" />
+            <OnloAvatar size={24} variant="avatar" state={widgetState} className="sm:w-7 sm:h-7" />
             <span className="absolute -bottom-0.5 -right-0.5 w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300" />
           </div>
           <span className="text-[11px] sm:text-xs font-bold tracking-tight">
@@ -145,7 +142,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
             <div className="p-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-white">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative">
-                  <OnloAvatar size={38} variant="avatar" />
+                  <OnloAvatar size={38} variant="avatar" state={isLoading ? 'thinking' : widgetState} />
                   <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white ring-1 ring-emerald-300" />
                 </div>
                 <div className="min-w-0">
@@ -200,7 +197,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                       </div>
                     ) : (
                       <div className="flex items-start gap-2.5">
-                        <OnloAvatar size={24} variant="avatar" className="mt-0.5 shrink-0" />
+                        <OnloAvatar size={24} variant="avatar" state="static" className="mt-0.5 shrink-0" />
                         <div className="space-y-1 max-w-[85%]">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] font-bold text-slate-900">Onlo</span>
@@ -217,13 +214,24 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
               })}
 
               {isLoading && (
-                <div className="flex items-center gap-2 text-xs text-slate-400 pl-8 py-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:120ms]" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:240ms]" />
-                  <span className="text-[11px] font-medium ml-1">
-                    {locale === 'pl' ? 'Onlo pisze...' : 'Onlo is replying...'}
-                  </span>
+                <div className="flex items-start gap-2.5 animate-in fade-in">
+                  <OnloAvatar size={24} variant="avatar" state="thinking" className="mt-0.5 shrink-0" />
+                  <div className="space-y-1 max-w-[85%]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-900">Onlo</span>
+                      <span className="text-[10px] text-indigo-600 font-medium animate-pulse">
+                        · {locale === 'pl' ? 'zastanawia się...' : 'thinking...'}
+                      </span>
+                    </div>
+                    <div className="rounded-2xl rounded-tl-xs px-3.5 py-2.5 bg-indigo-50/70 border border-indigo-100 text-indigo-950 text-xs flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:120ms]" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:240ms]" />
+                      <span className="text-[11px] font-medium ml-1">
+                        {locale === 'pl' ? 'Onlo przygotowuje odpowiedź...' : 'Onlo is drafting a reply...'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
 

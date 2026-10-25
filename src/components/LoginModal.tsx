@@ -118,14 +118,14 @@ export const LoginModal: React.FC<LoginModalProps> = React.memo(({
       const unsafeMeta = ((user.unsafeMetadata || (user as any).unsafe_metadata) || {}) as Record<string, any>;
       const publicMeta = ((user.publicMetadata || (user as any).public_metadata) || {}) as Record<string, any>;
 
-      const rawRole = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
+      const rawRole = (publicMeta.role as string) || 'student';
       const role = (rawRole === 'member' || !['student', 'expat', 'landlord', 'tenant'].includes(rawRole)) ? 'student' : rawRole;
 
       const primaryEmail = user.primaryEmailAddress || 
         user.emailAddresses?.find(e => e.id === (user as any).primaryEmailAddressId || e.id === (user as any).primary_email_address_id) ||
         user.emailAddresses?.[0];
       const isEmailVerified = primaryEmail?.verification?.status === 'verified';
-      const isVerified = Boolean(publicMeta.isVerified ?? (unsafeMeta.isVerified ?? isEmailVerified));
+      const isVerified = Boolean(publicMeta.isVerified === true);
 
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
       const phone = user.primaryPhoneNumber?.phoneNumber || 

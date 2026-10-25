@@ -7,3 +7,7 @@ coverage/
 .env*
 !.env.example
 .aistudio/
+
+data/*.json
+data/*.sqlite*
+.env.local

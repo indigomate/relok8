@@ -1,3 +1,4 @@
+import { requireSelf } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -7,6 +8,7 @@ import { v } from "convex/values";
 export const getProfile = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
+    const identity = await requireSelf(ctx, args.userId);
     return await ctx.db
       .query("profiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -15,7 +17,7 @@ export const getProfile = query({
 });
 
 /**
- * Upsert a user profile (replaces Supabase profiles upsert).
+// Convex is the only data backend.
  */
 export const upsertProfile = mutation({
   args: {
@@ -30,6 +32,7 @@ export const upsertProfile = mutation({
     university: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireSelf(ctx, args.userId);
     const existing = await ctx.db
       .query("profiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -38,12 +41,12 @@ export const upsertProfile = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         ...(args.fullName !== undefined ? { fullName: args.fullName } : {}),
-        ...(args.email !== undefined ? { email: args.email } : {}),
+        email: identity.email,
         ...(args.avatarUrl !== undefined ? { avatarUrl: args.avatarUrl } : {}),
         ...(args.phoneNumber !== undefined ? { phoneNumber: args.phoneNumber } : {}),
         ...(args.whatsappNumber !== undefined ? { whatsappNumber: args.whatsappNumber } : {}),
-        ...(args.isVerified !== undefined ? { isVerified: args.isVerified } : {}),
-        ...(args.role !== undefined ? { role: args.role } : {}),
+
+
         ...(args.university !== undefined ? { university: args.university } : {}),
       });
       return existing._id;
@@ -51,12 +54,12 @@ export const upsertProfile = mutation({
       return await ctx.db.insert("profiles", {
         userId: args.userId,
         fullName: args.fullName,
-        email: args.email,
+        email: identity.email,
         avatarUrl: args.avatarUrl,
         phoneNumber: args.phoneNumber,
         whatsappNumber: args.whatsappNumber,
-        isVerified: args.isVerified ?? false,
-        role: args.role ?? "student",
+        isVerified: false,
+        role: "student",
         university: args.university,
         createdAt: Date.now(),
       });

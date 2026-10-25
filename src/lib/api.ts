@@ -1,431 +1,64 @@
-/**
- * Relok8 Client API Layer (Section 4)
- * Connects directly to server.ts Express REST endpoints, backed by persistent data/*.json.
- * Polling helper every 3s (no WebSockets).
- * Each function maps 1:1 to future Convex queries and mutations.
- */
-
-import {
-  Place,
-  Thread,
-  Message,
-  Notification,
-  SavedPlace,
-  RewardEvent,
-  Announcement,
-  Invitation,
-  Relok8User,
-  UserRole,
-  RewardConfig,
-  InsurancePlanConfig,
-  HandoverChecklist
-} from '../types/relok8';
-
-const BASE_URL = '/api';
-
-/** Active user simulation for testing (synced with localStorage & role switcher) */
-export const getActiveUserId = (): string => {
-  return localStorage.getItem('r8_simulated_user_id') || 'user-mateo';
+import { backend } from './backend';
+import { api } from '../../convex/_generated/api';
+import type { Place, Thread, Message, Notification, SavedPlace, Relok8User, HandoverChecklist, Invitation, Announcement } from '../types/relok8';
+const read = (operation: string, input: any = {}): Promise<any> => backend().query(api.domain.read, { operation, input });
+const write = (operation: string, input: any = {}): Promise<any> => backend().mutation(api.domain.write, { operation, input });
+export const getActiveUserId = (): string => { try { return JSON.parse(localStorage.getItem('r8_user') || 'null')?.id || ''; } catch { return ''; } };
+export const setActiveUserId = (_id: string): void => { throw new Error('Sign in with your own account; role simulation is disabled.'); };
+export const getPlaces = (params?: any): Promise<Place[]> => read('places', params || {});
+export const getPlace = (id: string): Promise<Place | null> => read('place', { id });
+export const updatePlace = (placeId: string, updates: Partial<Place>): Promise<Place> => write('updatePlace', { placeId, updates });
+export const deletePlace = (placeId: string): Promise<boolean> => write('deletePlace', { placeId });
+export const requestExit = (placeId: string, leaveDate: string, notes?: string): Promise<Place> => write('requestExit', { placeId, leaveDate, ...(notes ? { notes } : {}) });
+export const cancelExit = (placeId: string): Promise<Place> => write('cancelExit', { placeId });
+export const decideExit = (placeId: string, decision: 'approve' | 'suggest_date' | 'decline', reasonOrDate?: string): Promise<Place> => write('decideExit', { placeId, decision, ...(reasonOrDate ? { reasonOrDate } : {}) });
+export const approveReplacement = (placeId: string, prospectId: string): Promise<Place> => write('approveReplacement', { placeId, prospectId });
+export const updateHandoverChecklist = (placeId: string, checklist: Partial<HandoverChecklist>): Promise<Place> => write('checklist', { placeId, checklist });
+export const getThreads = (placeId?: string): Promise<Thread[]> => read('threads', placeId ? { placeId } : {});
+export const getThread = (id: string): Promise<Thread | null> => read('thread', { id });
+export const createOrGetThread = (placeId: string): Promise<Thread> => write('createThread', { placeId });
+export const getThreadMessages = async (threadId: string): Promise<Message[]> => { const messages = await read('messages', { threadId }); await write('markThreadRead', { threadId }).catch(() => {}); return messages; };
+export const sendThreadMessage = (threadId: string, body: string): Promise<{ message: Message; thread: Thread; onloReply?: Message }> => write('sendMessage', { threadId, body });
+export const takeOverThread = (threadId: string): Promise<Thread> => write('takeover', { threadId });
+export const askOnloNow = (threadId: string): Promise<{ reply: Message; thread: Thread }> => write('askOnlo', { threadId });
+export const getPlaceRoomMessages = (placeId: string): Promise<Message[]> => read('roomMessages', { placeId });
+export const sendPlaceRoomMessage = (placeId: string, body: string): Promise<Message> => write('roomMessage', { placeId, body });
+export const onloSuggestReply = (threadId: string): Promise<string> => backend().action(api.services.helper, { action: 'suggest', threadId });
+export const onloSummariseChat = (threadId: string): Promise<string> => backend().action(api.services.helper, { action: 'summarise', threadId });
+export const onloTranslate = (text: string, targetLang: 'en' | 'pl'): Promise<string> => backend().action(api.services.helper, { action: 'translate', text, targetLang });
+export const getSavedPlaces = (): Promise<SavedPlace[]> => read('saved');
+export const toggleSavedPlace = (placeId: string): Promise<{ saved: boolean }> => write('toggleSaved', { placeId });
+export const getNotifications = (): Promise<Notification[]> => read('notifications');
+export const markNotificationRead = (id: string): Promise<void> => write('markRead', { id });
+export const getRewards = (userId?: string): Promise<any> => read('rewards', userId ? { userId } : {});
+export const getAnnouncement = (placeId: string): Promise<Announcement | null> => read('announcement', { placeId });
+export const shareAnnouncementWhatsApp = (placeId: string): Promise<{ channelUrl: string; announcement: Announcement }> => write('shareAnnouncement', { placeId });
+export const createInvitation = (placeId: string, email: string, role: 'tenant' | 'landlord'): Promise<Invitation> => {
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), n => n.toString(16).padStart(2, '0')).join('');
+  return write('invitation', { placeId, email, role, token });
 };
-
-export const setActiveUserId = (userId: string): void => {
-  localStorage.setItem('r8_simulated_user_id', userId);
-};
-
-const getHeaders = (): HeadersInit => {
-  return {
-    'Content-Type': 'application/json',
-    'x-user-id': getActiveUserId(),
-  };
-};
-
-// ==========================================
-// 1. PLACES (Mapped to queries & mutations)
-// ==========================================
-
-export async function getPlaces(params?: {
-  city?: string;
-  status?: string;
-  near?: string;
-  maxCommute?: number;
-}): Promise<Place[]> {
-  const query = new URLSearchParams();
-  if (params?.city) query.set('city', params.city);
-  if (params?.status) query.set('status', params.status);
-  if (params?.near) query.set('near', params.near);
-  if (params?.maxCommute !== undefined) query.set('maxCommute', String(params.maxCommute));
-
-  const res = await fetch(`${BASE_URL}/places?${query.toString()}`, {
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to fetch places');
-  return res.json();
-}
-
-export async function getPlace(id: string): Promise<Place | null> {
-  const res = await fetch(`${BASE_URL}/places/${id}`, {
-    headers: getHeaders(),
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Failed to fetch place ${id}`);
-  return res.json();
-}
-
-export async function updatePlace(id: string, updates: Partial<Place>): Promise<Place> {
-  const res = await fetch(`${BASE_URL}/places/${id}`, {
-    method: 'PUT',
-    headers: getHeaders(),
-    body: JSON.stringify(updates),
-  });
-  if (!res.ok) throw new Error(`Failed to update place ${id}`);
-  return res.json();
-}
-
-export async function deletePlace(id: string): Promise<boolean> {
-  const res = await fetch(`${BASE_URL}/places/${id}`, {
-    method: 'DELETE',
-    headers: getHeaders(),
-  });
-  if (res.status === 404) {
-    const fallback = await fetch(`${BASE_URL}/listings/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    });
-    return fallback.ok;
-  }
-  return res.ok;
-}
-
-export async function requestExit(
-  placeId: string,
-  leaveDate: string,
-  notes?: string
-): Promise<Place> {
-  const res = await fetch(`${BASE_URL}/places/${placeId}/exit`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ leaveDate, notes }),
-  });
-  if (!res.ok) throw new Error('Failed to submit exit request');
-  return res.json();
-}
-
-export async function cancelExit(placeId: string): Promise<Place> {
-  const res = await fetch(`${BASE_URL}/places/${placeId}/exit/cancel`, {
-    method: 'POST',
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to cancel exit request');
-  return res.json();
-}
-
-export async function decideExit(
-  placeId: string,
-  decision: 'approve' | 'suggest_date' | 'decline',
-  reasonOrDate?: string
-): Promise<Place> {
-  const res = await fetch(`${BASE_URL}/places/${placeId}/exit/decision`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ decision, reasonOrDate }),
-  });
-  if (!res.ok) throw new Error('Failed to process exit decision');
-  return res.json();
-}
-
-export async function approveReplacement(
-  placeId: string,
-  prospectId: string
-): Promise<Place> {
-  const res = await fetch(`${BASE_URL}/places/${placeId}/approve-replacement`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ prospectId }),
-  });
-  if (!res.ok) throw new Error('Failed to approve replacement');
-  return res.json();
-}
-
-export async function updateHandoverChecklist(
-  placeId: string,
-  checklist: Partial<HandoverChecklist>
-): Promise<Place> {
-  const res = await fetch(`${BASE_URL}/places/${placeId}/checklist`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(checklist),
-  });
-  if (!res.ok) throw new Error('Failed to update handover checklist');
-  return res.json();
-}
-
-// ==========================================
-// 2. THREADS & MESSAGING
-// ==========================================
-
-export async function getThreads(placeId?: string): Promise<Thread[]> {
-  const url = placeId ? `${BASE_URL}/threads?placeId=${placeId}` : `${BASE_URL}/threads`;
-  const res = await fetch(url, { headers: getHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch threads');
-  return res.json();
-}
-
-export async function getThread(id: string): Promise<Thread | null> {
-  const res = await fetch(`${BASE_URL}/threads/${id}`, { headers: getHeaders() });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Failed to fetch thread');
-  return res.json();
-}
-
-export async function createOrGetThread(placeId: string): Promise<Thread> {
-  const res = await fetch(`${BASE_URL}/threads`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ placeId }),
-  });
-  if (!res.ok) throw new Error('Failed to initiate thread');
-  return res.json();
-}
-
-export async function getThreadMessages(threadId: string): Promise<Message[]> {
-  const res = await fetch(`${BASE_URL}/threads/${threadId}/messages`, {
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to fetch thread messages');
-  return res.json();
-}
-
-export async function sendThreadMessage(
-  threadId: string,
-  body: string
-): Promise<{ message: Message; thread: Thread; onloReply?: Message }> {
-  const res = await fetch(`${BASE_URL}/threads/${threadId}/messages`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ body }),
-  });
-  if (!res.ok) throw new Error('Failed to send message');
-  return res.json();
-}
-
-export async function takeOverThread(threadId: string): Promise<Thread> {
-  const res = await fetch(`${BASE_URL}/threads/${threadId}/takeover`, {
-    method: 'POST',
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to take over thread');
-  return res.json();
-}
-
-export async function askOnloNow(threadId: string): Promise<{ reply: Message; thread: Thread }> {
-  const res = await fetch(`${BASE_URL}/threads/${threadId}/ask-onlo`, {
-    method: 'POST',
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to trigger Onlo');
-  return res.json();
-}
-
-// ==========================================
-// 3. PLACE ROOM (Private Tenant <-> Landlord)
-// ==========================================
-
-export async function getPlaceRoomMessages(placeId: string): Promise<Message[]> {
-  const res = await fetch(`${BASE_URL}/place-room/${placeId}/messages`, {
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to fetch Place Room messages');
-  return res.json();
-}
-
-export async function sendPlaceRoomMessage(
-  placeId: string,
-  body: string
-): Promise<Message> {
-  const res = await fetch(`${BASE_URL}/place-room/${placeId}/messages`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ body }),
-  });
-  if (!res.ok) throw new Error('Failed to send Place Room message');
-  return res.json();
-}
-
-// ==========================================
-// 4. ONLO COMPOSER HELPERS (Suggest, Summarise, Translate)
-// ==========================================
-
-export async function onloSuggestReply(threadId: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/onlo/helper`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ threadId, action: 'suggest' }),
-  });
-  if (!res.ok) throw new Error('Failed to generate suggestion');
-  const data = await res.json();
-  return data.text;
-}
-
-export async function onloSummariseChat(threadId: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/onlo/helper`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ threadId, action: 'summarise' }),
-  });
-  if (!res.ok) throw new Error('Failed to summarise conversation');
-  const data = await res.json();
-  return data.text;
-}
-
-export async function onloTranslate(text: string, targetLang: 'en' | 'pl'): Promise<string> {
-  const res = await fetch(`${BASE_URL}/onlo/helper`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ text, targetLang, action: 'translate' }),
-  });
-  if (!res.ok) throw new Error('Failed to translate text');
-  const data = await res.json();
-  return data.text;
-}
-
-// ==========================================
-// 5. SAVED PLACES & NOTIFICATIONS
-// ==========================================
-
-export async function getSavedPlaces(): Promise<SavedPlace[]> {
-  const res = await fetch(`${BASE_URL}/saved-places`, { headers: getHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch saved places');
-  return res.json();
-}
-
-export async function toggleSavedPlace(placeId: string): Promise<{ saved: boolean }> {
-  const res = await fetch(`${BASE_URL}/saved-places`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ placeId }),
-  });
-  if (!res.ok) throw new Error('Failed to toggle save');
-  return res.json();
-}
-
-export async function getNotifications(): Promise<Notification[]> {
-  const res = await fetch(`${BASE_URL}/notifications`, { headers: getHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch notifications');
-  return res.json();
-}
-
-export async function markNotificationRead(id: string): Promise<void> {
-  await fetch(`${BASE_URL}/notifications/${id}/read`, {
-    method: 'POST',
-    headers: getHeaders(),
-  });
-}
-
-// ==========================================
-// 6. REWARDS & INSURANCE
-// ==========================================
-
-export async function getRewards(userId?: string): Promise<{
-  points: number;
-  unlocked: boolean;
-  events: RewardEvent[];
-  config: RewardConfig;
-  insuranceConfig: InsurancePlanConfig;
-}> {
-  const targetId = userId || getActiveUserId();
-  const res = await fetch(`${BASE_URL}/rewards/${targetId}`, { headers: getHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch rewards');
-  return res.json();
-}
-
-// ==========================================
-// 7. ANNOUNCEMENTS & WHATSAPP
-// ==========================================
-
-export async function getAnnouncement(placeId: string): Promise<Announcement | null> {
-  const res = await fetch(`${BASE_URL}/announcements/${placeId}`, {
-    headers: getHeaders(),
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Failed to fetch announcement');
-  return res.json();
-}
-
-export async function shareAnnouncementWhatsApp(
-  placeId: string
-): Promise<{ channelUrl: string; announcement: Announcement }> {
-  const res = await fetch(`${BASE_URL}/announcements/${placeId}/share-whatsapp`, {
-    method: 'POST',
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to share announcement');
-  return res.json();
-}
-
-// ==========================================
-// 8. INVITATIONS (Linking Tenant <-> Landlord)
-// ==========================================
-
-export async function createInvitation(
-  placeId: string,
-  email: string,
-  role: 'tenant' | 'landlord'
-): Promise<Invitation> {
-  const res = await fetch(`${BASE_URL}/invitations`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ placeId, email, role }),
-  });
-  if (!res.ok) throw new Error('Failed to create invitation');
-  return res.json();
-}
-
-export async function acceptInvitation(token: string): Promise<{ success: boolean; place: Place }> {
-  const res = await fetch(`${BASE_URL}/invitations/${token}/accept`, {
-    method: 'POST',
-    headers: getHeaders(),
-  });
-  if (!res.ok) throw new Error('Failed to accept invitation');
-  return res.json();
-}
-
-// ==========================================
-// 9. USERS & DEVELOPER ROLE SWITCHER
-// ==========================================
-
-export async function getDevUsers(): Promise<Relok8User[]> {
-  const res = await fetch(`${BASE_URL}/dev/users`, { headers: getHeaders() });
-  if (!res.ok) throw new Error('Failed to fetch dev users');
-  return res.json();
-}
-
-export async function getCurrentDevUser(): Promise<Relok8User | null> {
-  const res = await fetch(`${BASE_URL}/dev/current-user`, { headers: getHeaders() });
-  if (!res.ok) return null;
-  return res.json();
-}
-
-export async function updateUserAvailability(
-  isAvailable: boolean,
-  quietHours?: { enabled: boolean; start: string; end: string }
-): Promise<Relok8User> {
-  const res = await fetch(`${BASE_URL}/dev/availability`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ isAvailable, quietHours }),
-  });
-  if (!res.ok) throw new Error('Failed to update availability');
-  return res.json();
-}
-
-// ==========================================
-// 10. POLLING HELPER (Section 4: 3-second poll)
-// ==========================================
-
+export const acceptInvitation = (token: string): Promise<{ success: boolean; place: Place }> => write('acceptInvitation', { token });
+export const getDevUsers = async (): Promise<Relok8User[]> => { const user = await getCurrentDevUser(); return user ? [user] : []; };
+export const getCurrentDevUser = (): Promise<Relok8User | null> => read('currentUser');
+export const updateUserAvailability = (isAvailable: boolean, quietHours?: { enabled: boolean; start: string; end: string }): Promise<Relok8User> => write('availability', { isAvailable, ...(quietHours ? { quietHours } : {}) });
 export function startPolling(callback: () => void | Promise<void>, intervalMs = 3000): () => void {
-  const timer = setInterval(() => {
-    callback();
-  }, intervalMs);
-
+  let pending = false;
+  const timer = setInterval(async () => { if (pending) return; pending = true; try { await callback(); } catch { /* Screens display their own load errors. */ } finally { pending = false; } }, intervalMs);
   return () => clearInterval(timer);
+}
+
+export async function uploadListingPhotos(images: string[]): Promise<string[]> {
+  if (images.length > 12) throw new Error('Choose at most 12 photos.');
+  const urls: string[] = [];
+  for (const source of images) {
+    if (!source.startsWith('data:image/')) throw new Error('Upload photos from your device.');
+    const blob = await (await fetch(source)).blob();
+    if (!['image/jpeg','image/png','image/webp'].includes(blob.type) || blob.size > 1500000) throw new Error('Choose JPEG, PNG, or WebP photos below 1.5 MB.');
+    const uploadUrl = await backend().mutation(api.uploads.generateUploadUrl, {});
+    const response = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
+    if (!response.ok) throw new Error('Photo upload failed. Please try again.');
+    const { storageId } = await response.json();
+    urls.push(await backend().mutation(api.uploads.claim, { storageId }));
+  }
+  return urls;
 }

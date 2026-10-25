@@ -9,7 +9,6 @@ interface FooterProps {
   onOpenHelp: () => void;
   onOpenSavingsCalculator?: () => void;
   onOpenReportListing?: () => void;
-  onOpenConvexGuide?: () => void;
   locale?: SupportedLocale;
   theme?: 'dark' | 'light';
 }
@@ -19,7 +18,6 @@ export const Footer: React.FC<FooterProps> = ({
   onOpenHelp,
   onOpenSavingsCalculator,
   onOpenReportListing,
-  onOpenConvexGuide,
   locale = 'en'
 }) => {
   const strings = t[locale === 'pl' ? 'pl' : 'en'];

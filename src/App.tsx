@@ -26,7 +26,6 @@ import { LeaveYourLeaseModal } from './components/LeaveYourLeaseModal';
 import { HelpModal } from './components/HelpModal';
 import { LoginModal } from './components/LoginModal';
 import { CookieBanner } from './components/CookieBanner';
-import { ConvexConnectionGuide } from './components/ConvexConnectionGuide';
 import { PenaltyCalculatorModal } from './components/PenaltyCalculatorModal';
 import { EarlyLockModal } from './components/EarlyLockModal';
 import { AIProxyChatModal } from './components/AIProxyChatModal';
@@ -51,25 +50,14 @@ import { PlacePage } from './pages/PlacePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { RewardsPage } from './pages/RewardsPage';
 import { EnrollmentsPage } from './pages/EnrollmentsPage';
-import { DevRoleSwitcher } from './components/DevRoleSwitcher';
 import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
 import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
 import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
-import { 
-  getListings, 
-  getListingById, 
-  createListing, 
-  deleteListing,
-  getCurrentUser, 
-  addFavorite, 
-  removeFavorite, 
-  likeListing 
-} from './lib/supabase/client';
-import { deletePlace } from './lib/api';
+import { deletePlace, uploadListingPhotos } from './lib/api';
 import { ConvexProvider } from './lib/convex/client';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
 function Relok8App() {
@@ -114,13 +102,7 @@ function Relok8App() {
   });
 
   // Authenticated User State
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('r8_user');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) {}
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
 
   // Clerk Authentication Sync - authoritative source of truth for user & session state
   const { isSignedIn: isClerkSignedIn, isLoaded: isAuthLoaded } = useAuth();
@@ -134,14 +116,14 @@ function Relok8App() {
       const unsafeMeta = ((clerkUser.unsafeMetadata || (clerkUser as any).unsafe_metadata) || {}) as Record<string, any>;
       const publicMeta = ((clerkUser.publicMetadata || (clerkUser as any).public_metadata) || {}) as Record<string, any>;
 
-      const rawRole = (publicMeta.role as string) || (unsafeMeta.role as string) || 'student';
+      const rawRole = (publicMeta.role as string) || 'student';
       const role = (rawRole === 'member' || !['student', 'expat', 'landlord', 'tenant'].includes(rawRole)) ? 'student' : rawRole;
 
       const primaryEmail = clerkUser.primaryEmailAddress || 
         clerkUser.emailAddresses?.find(e => e.id === (clerkUser as any).primaryEmailAddressId || e.id === (clerkUser as any).primary_email_address_id) ||
         clerkUser.emailAddresses?.[0];
       const isEmailVerified = primaryEmail?.verification?.status === 'verified';
-      const isVerified = Boolean(publicMeta.isVerified ?? (unsafeMeta.isVerified ?? isEmailVerified));
+      const isVerified = Boolean(publicMeta.isVerified === true);
 
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
       const phone = clerkUser.primaryPhoneNumber?.phoneNumber || 
@@ -173,7 +155,10 @@ function Relok8App() {
     } else if (isAuthLoaded && !isClerkSignedIn) {
       // Session inactive, logged out, or account deleted: clear auth state immediately
       setCurrentUser(null);
+      setSavedIds([]);
       try {
+        localStorage.removeItem('r8_saved_ids');
+        localStorage.removeItem('r8_my_listing_ids');
         localStorage.removeItem('r8_user');
       } catch (e) {}
     }
@@ -236,11 +221,17 @@ function Relok8App() {
   const [activeCardInquiry, setActiveCardInquiry] = useState<Listing | null>(null);
 
   // Live Convex reactive subscriptions (chatty-seahorse-914)
-  const liveConvexLeases = useQuery(api.leases?.get, {});
+  const { isAuthenticated: isBackendAuthenticated } = useConvexAuth();
+  const liveConvexLeases = useQuery(api.leases.get, {});
   const createConvexLease = useMutation(api.leases?.create);
   const reserveConvexLease = useMutation(api.leases?.reserve);
   const deleteConvexLease = useMutation(api.leases?.deleteLease);
-  const deleteConvexListing = useMutation(api.listings?.deleteListing);
+  const saveRemote = useMutation(api.favorites.addFavorite);
+  const removeRemote = useMutation(api.favorites.removeFavorite);
+  const ownLeases = useQuery(api.leases.mine, isBackendAuthenticated ? {} : "skip");
+  useEffect(() => { if (ownLeases) localStorage.setItem('r8_my_listing_ids', JSON.stringify(ownLeases.map(lease => lease._id))); }, [ownLeases]);
+  const remoteFavorites = useQuery(api.favorites.getUserFavorites, isBackendAuthenticated && currentUser ? { userId: currentUser.id } : "skip");
+  useEffect(() => { if (remoteFavorites) setSavedIds(remoteFavorites); }, [remoteFavorites]);
 
   // Synchronize live Convex backend leases with reactive listings state
   useEffect(() => {
@@ -263,24 +254,24 @@ function Relok8App() {
           czynszAdminPLN: l.czynszAdminPLN ?? l.czynszAdmin ?? 0,
           billsIncluded: Boolean(l.billsIncluded),
           depositPLN: l.depositPLN ?? l.deposit ?? 2000,
-          availableDate: l.availableDate || l.moveInDate || '2026-10-15',
+          availableDate: l.availableDate || l.moveInDate || new Date().toISOString().slice(0, 10),
           leaseEndDate: l.leaseEndDate || '2027-06-30',
           remainingMonths: l.remainingMonths ?? 9,
           squareMeters: l.squareMeters ?? l.areaM2 ?? 20,
           isFurnished: Boolean(l.isFurnished),
           flatmatesCount: l.flatmatesCount ?? 1,
           distanceToCampus: l.distanceToCampus || '15 min transit',
-          meldunekAllowed: Boolean(l.meldunekAllowed ?? true),
-          landlordApproved: Boolean(l.landlordApproved ?? true),
+          meldunekAllowed: Boolean(l.meldunekAllowed),
+          landlordApproved: false,
           images: l.images || [],
-          landlordName: l.landlordName || 'Verified Landlord',
-          landlordContactEmail: l.landlordContactEmail || 'landlord@relok8.online',
+          landlordName: l.landlordName || 'Property owner',
+          landlordContactEmail: '',
           currentTenant: l.currentTenant ? {
             name: l.currentTenant.name || 'Current Student',
             nationality: l.currentTenant.nationality || 'International',
             role: l.currentTenant.status || l.currentTenant.role || 'Graduating Student',
             avatar: l.currentTenant.avatar || '',
-            verifiedDocs: ['Student ID'],
+            verifiedDocs: [],
             reasonForLeaving: 'Graduation / Relocation',
             joinedYear: '2025'
           } : {
@@ -288,7 +279,7 @@ function Relok8App() {
             nationality: 'International',
             role: 'Graduating Student',
             avatar: '',
-            verifiedDocs: ['Student ID'],
+            verifiedDocs: [],
             reasonForLeaving: 'Graduation / Relocation',
             joinedYear: '2025'
           },
@@ -307,7 +298,6 @@ function Relok8App() {
       }
     }
   }, [liveConvexLeases]);
-  const [showConvexGuide, setShowConvexGuide] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(() => !isClerkSignedIn && (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up'));
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>(() => currentRoute.type === 'sign-up' ? 'signup' : 'signin');
@@ -627,72 +617,14 @@ function Relok8App() {
     });
   }, [currentRoute, listings, locale]);
 
-  // Loading and error states for live Supabase listings
-  const [isLoadingListings, setIsLoadingListings] = useState(false);
+// Convex is the only data backend.
+  const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [listingError, setListingError] = useState<string | null>(null);
 
-  // Load live listings from Supabase listings table with error handling & realtime updates
+// Convex is the only data backend.
   useEffect(() => {
-    let isMounted = true;
-    setIsLoadingListings(true);
-
-    getListings()
-      .then((liveListings) => {
-        if (!isMounted) return;
-        const cleanListings = Array.isArray(liveListings)
-          ? liveListings.filter(
-              (l) =>
-                l &&
-                l.id &&
-                !l.id.startsWith('place-') &&
-                !l.id.startsWith('cx_list_') &&
-                !l.id.startsWith('mock-') &&
-                !l.id.startsWith('demo-')
-            )
-          : [];
-        setListings(cleanListings);
-        localStorage.setItem('r8_listings', JSON.stringify(cleanListings));
-        setListingError(null);
-      })
-      .catch((err) => {
-        if (!isMounted) return;
-        console.error('Error fetching live data from Supabase listings:', err);
-        setListingError(err?.message || 'Failed to fetch listings');
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingListings(false);
-      });
-
-    // Reactive subscription to live updates from Convex engine
-    const handleConvexUpdate = async () => {
-      try {
-        const refreshed = await getListings();
-        if (isMounted) {
-          setListings(refreshed);
-          localStorage.setItem('r8_listings', JSON.stringify(refreshed));
-        }
-      } catch (e) {
-        console.warn('Convex reactive refresh error:', e);
-      }
-    };
-
-    window.addEventListener('convex_db_update', handleConvexUpdate);
-
-    getCurrentUser()
-      .then((user) => {
-        if (!isMounted) return;
-        if (user) {
-          setCurrentUser(user);
-          localStorage.setItem('r8_user', JSON.stringify(user));
-        }
-      })
-      .catch(() => {});
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener('convex_db_update', handleConvexUpdate);
-    };
-  }, []);
+    if (liveConvexLeases !== undefined) { setIsLoadingListings(false); setListingError(null); }
+  }, [liveConvexLeases]);
 
   // Update search state and sync URL query
   const handleSearchChange = (changes: Partial<SearchState>) => {
@@ -722,51 +654,22 @@ function Relok8App() {
     setTimeout(() => setIsFiltering(false), 200);
   };
 
-  // Toggle save using Supabase favorites
-  const handleToggleSave = (id: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-    const isAdding = !savedIds.includes(id);
-    setSavedIds((prev) => {
-      const next = isAdding ? [...prev, id] : prev.filter((i) => i !== id);
-      localStorage.setItem('r8_saved_ids', JSON.stringify(next));
-      return next;
-    });
-
-    if (isAdding) {
-      addFavorite(id).catch(() => {});
-      if (!currentUser) {
-        showToast(
-          locale === 'pl'
-            ? 'Zapisano! Zaloguj się, aby zsynchronizować zapisane pokoje.'
-            : 'Saved! Sign up in 10s to sync your saved rooms across devices.'
-        );
-      } else {
-        showToast(locale === 'pl' ? 'Dodano do zapisanych!' : 'Added to saved!');
-      }
-    } else {
-      removeFavorite(id).catch(() => {});
-      showToast(locale === 'pl' ? 'Usunięto z zapisanych' : 'Removed from saved');
-    }
+// Convex is the only data backend.
+  const handleToggleSave = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation(); e?.preventDefault();
+    if (!currentUser || !isBackendAuthenticated) { showToast('Sign in to save rooms across devices.'); return; }
+    try {
+      if (savedIds.includes(id)) await removeRemote({ listingId: id, userId: currentUser.id });
+      else await saveRemote({ listingId: id, userId: currentUser.id });
+    } catch (error: any) { showToast(error.message || 'Could not update saved rooms.'); }
   };
 
   // Like listing
-  const handleLikeListing = async (id: string) => {
-    setListings((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, likesCount: (l.likesCount || 0) + 1 } : l))
-    );
-    try {
-      await likeListing(id);
-    } catch (e) {}
-  };
+  const handleLikeListing = async (_id: string) => { showToast('Use Save to keep this room in your account.'); };
 
-  // Create listing in Supabase or server
   const handleAddListing = async (newListing: Listing) => {
-    try {
-      if (createConvexLease) {
-        await createConvexLease({
+    if (!isBackendAuthenticated) throw new Error('Sign in before publishing a listing.');
+    const id = await createConvexLease({
           title: newListing.title,
           address: newListing.address,
           city: newListing.city,
@@ -786,7 +689,7 @@ function Relok8App() {
           } : undefined,
           amenities: newListing.amenities || [],
           description: newListing.description,
-          images: newListing.images,
+          images: await uploadListingPhotos(newListing.images),
           czynszAdmin: newListing.czynszAdminPLN,
           billsIncluded: newListing.billsIncluded,
           isFurnished: newListing.isFurnished,
@@ -796,77 +699,17 @@ function Relok8App() {
           landlordName: newListing.landlordName,
           landlordContactEmail: newListing.landlordContactEmail,
         });
-      }
-    } catch (e) {
-      console.warn('Convex createLease notice:', e);
-    }
-    try {
-      const created = await createListing(newListing);
-      const validListing: Listing = (created as any)?.listing || created || newListing;
-      const next = [validListing, ...listings.filter((l) => l.id !== validListing.id)];
-      setListings(next);
-      localStorage.setItem('r8_listings', JSON.stringify(next));
-      showToast(locale === 'pl' ? 'Ogłoszenie zostało pomyślnie dodane i zapisane!' : 'Listing published and saved successfully!');
-    } catch (err: any) {
-      console.error('Error creating listing:', err);
-      const next = [newListing, ...listings.filter((l) => l.id !== newListing.id)];
-      setListings(next);
-      localStorage.setItem('r8_listings', JSON.stringify(next));
-      showToast(locale === 'pl' ? 'Ogłoszenie zapisane.' : 'Listing saved.');
-    }
+    showToast('Listing published successfully.');
+    return { ...newListing, id };
   };
 
   // Delete listing permanently
   const handleDeleteListing = async (id: string) => {
-    // 1. Update listings state immediately
-    const next = listings.filter((l) => l.id !== id);
-    setListings(next);
-    localStorage.setItem('r8_listings', JSON.stringify(next));
-
-    // 2. Remove from my listing IDs
     try {
-      const myIds: string[] = JSON.parse(localStorage.getItem('r8_my_listing_ids') || '[]');
-      const updatedIds = myIds.filter((item) => item !== id);
-      localStorage.setItem('r8_my_listing_ids', JSON.stringify(updatedIds));
-    } catch {}
-
-    // 3. Remove from favorites if present
-    try {
-      const saved: string[] = JSON.parse(localStorage.getItem('r8_saved_ids') || '[]');
-      const updatedSaved = saved.filter((item) => item !== id);
-      setSavedIds(updatedSaved);
-      localStorage.setItem('r8_saved_ids', JSON.stringify(updatedSaved));
-    } catch {}
-
-    // 4. API & backend deletion
-    try {
-      await deleteListing(id);
-    } catch (e) {
-      console.warn('deleteListing client API error:', e);
-    }
-    try {
-      await deletePlace(id);
-    } catch (e) {
-      console.warn('deletePlace API error:', e);
-    }
-
-    // 5. Convex deletion
-    try {
-      if (deleteConvexLease) {
-        await deleteConvexLease({ id });
-      }
-    } catch (e) {
-      console.warn('Convex deleteLease notice:', e);
-    }
-    try {
-      if (deleteConvexListing) {
-        await deleteConvexListing({ id });
-      }
-    } catch (e) {
-      console.warn('Convex deleteListing notice:', e);
-    }
-
-    showToast(locale === 'pl' ? 'Ogłoszenie zostało usunięte.' : 'Listing deleted successfully.');
+      await deleteConvexLease({ id });
+      setSavedIds(previous => previous.filter(value => value !== id));
+      showToast('Listing deleted successfully.');
+    } catch (error: any) { showToast(error.message || 'Could not delete listing.'); throw error; }
   };
 
   // Active City Config if on city route
@@ -991,7 +834,8 @@ function Relok8App() {
       {/* Route Views */}
       {currentRoute.type === 'listing-detail' && currentRoute.listingId ? (
         (() => {
-          const detailListing = listings.find((l) => l.id === currentRoute.listingId) || listings[0];
+          const detailListing = listings.find((l) => l.id === currentRoute.listingId);
+          if (!detailListing) return <main className="max-w-3xl mx-auto px-6 py-20"><h1 className="text-2xl font-bold">{isLoadingListings ? 'Loading listing…' : 'Listing not found'}</h1><p>{isLoadingListings ? 'Please wait while the listing loads.' : 'This listing may have been removed or the link may be incorrect.'}</p></main>;
           return (
             <ListingDetailPage
               listing={detailListing}
@@ -1452,7 +1296,6 @@ function Relok8App() {
         onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
-        onOpenConvexGuide={() => setShowConvexGuide(true)}
         onOpenReportListing={() => {
           showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Report listing sent to info@relok8.online');
         }}
@@ -1673,25 +1516,6 @@ function Relok8App() {
         </div>
       )}
 
-      {showConvexGuide && (
-        <ConvexConnectionGuide
-          isModal
-          onClose={() => setShowConvexGuide(false)}
-        />
-      )}
-      <DevRoleSwitcher
-        onUserChanged={(u) => {
-          setCurrentUser({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role,
-            avatar: u.avatar,
-            university: u.university,
-            isVerified: u.isVerified,
-          });
-        }}
-      />
       <OnloGlobalWidget
         locale={locale}
         onNavigateToListings={() => {

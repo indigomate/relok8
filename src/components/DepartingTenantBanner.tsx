@@ -51,7 +51,7 @@ export const DepartingTenantBanner: React.FC<DepartingTenantBannerProps> = ({
             </span>
             <span className="inline-flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200">
               <Check className="w-4 h-4 text-emerald-600 shrink-0" strokeWidth={2.5} />
-              <span>{isPl ? '100% zwrotu kaucji przy protokole' : '100% deposit returned'}</span>
+              <span>{isPl ? 'Uzgodnij rozliczenie kaucji' : 'Agree deposit settlement'}</span>
             </span>
             <span className="inline-flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200">
               <Check className="w-4 h-4 text-emerald-600 shrink-0" strokeWidth={2.5} />

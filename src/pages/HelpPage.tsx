@@ -1,3 +1,5 @@
+import { backend } from '../lib/backend';
+import { api } from '../../convex/_generated/api';
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowLeft, Search, HelpCircle, Shield, FileCheck, CheckCircle2, 
@@ -230,22 +232,13 @@ export const HelpPage: React.FC<HelpPageProps> = ({
     if (!supportMessage || !supportEmail) return;
     setTicketStatus('submitting');
     try {
-      await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: supportEmail.split('@')[0],
-          email: supportEmail,
-          subject: 'Help Center Inquiry',
-          message: supportMessage,
-          topic: selectedCategory
-        })
-      });
-    } catch (e) {}
-    setTimeout(() => {
+      await backend().action(api.services.contact, { name: supportEmail.split('@')[0], email: supportEmail, subject: 'Help Center Inquiry', message: supportMessage, topic: selectedCategory });
       setTicketStatus('sent');
       setSupportMessage('');
-    }, 400);
+    } catch (error: any) {
+      setTicketStatus('idle');
+      window.alert(error.message || 'Your message was not sent. Please try again.');
+    }
   };
 
   return (

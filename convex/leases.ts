@@ -1,3 +1,5 @@
+import { consume, removeLease } from "./domain";
+import { requireIdentity, requireSelf, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -15,7 +17,7 @@ export const get = query({
     // Auto-release expired locks reactively
     const now = Date.now();
     for (const lease of leases) {
-      if (lease.isLocked && lease.lockedUntil && lease.lockedUntil < now) {
+      if (["PENDING_HOLD", "RESERVED_PENDING", "AVAILABLE"].includes(lease.status) && lease.isLocked && lease.lockedUntil && lease.lockedUntil < now) {
         lease.isLocked = false;
         lease.lockedUntil = undefined;
         lease.status = "AVAILABLE";
@@ -34,7 +36,7 @@ export const get = query({
       );
     }
 
-    return leases;
+    return leases.map(publicListing);
   },
 });
 
@@ -50,7 +52,7 @@ export const getById = query({
       .query("leases")
       .filter((q) => q.eq(q.field("_id"), args.id))
       .first();
-    return lease;
+    return lease ? publicListing(lease) : null;
   },
 });
 
@@ -98,8 +100,16 @@ export const create = mutation({
     transitNearby: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    await consume(ctx, identity, "listing-create", 5);
+    validateListing(args);
+    for (const url of args.images || []) {
+      const upload = await ctx.db.query('uploads').withIndex('by_url', q => q.eq('url', url)).unique();
+      if (!upload || upload.ownerId !== identity.subject) throw new Error('Use your own uploaded photos');
+    }
     const leaseId = await ctx.db.insert("leases", {
       ...args,
+      ownerId: identity.subject,
       isLocked: false,
       status: "AVAILABLE",
       createdAt: Date.now(),
@@ -118,6 +128,8 @@ export const reserve = mutation({
     userName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireSelf(ctx, args.userId);
+    await consume(ctx, identity, "reserve", 10);
     const lease = await ctx.db
       .query("leases")
       .filter((q) => q.eq(q.field("_id"), args.leaseId))
@@ -127,6 +139,7 @@ export const reserve = mutation({
       throw new Error(`Lease ${args.leaseId} not found`);
     }
 
+    if (["APPROVED", "TRANSFERRED", "LEASED"].includes(lease.status || "")) throw new Error("Listing unavailable");
     const now = Date.now();
     if (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now) {
       if (lease.lockedByUserId !== args.userId) {
@@ -134,7 +147,7 @@ export const reserve = mutation({
       }
     }
 
-    const lockedUntil = now + 15 * 60 * 1000;
+    const lockedUntil = lease.lockedByUserId === identity.subject && lease.lockedUntil && lease.lockedUntil! > now ? lease.lockedUntil! : now + 15 * 60 * 1000;
     await ctx.db.patch(lease._id, {
       isLocked: true,
       lockedUntil,
@@ -159,6 +172,8 @@ export const release = mutation({
     leaseId: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    await consume(ctx, identity, "takeover", 10);
     const lease = await ctx.db
       .query("leases")
       .filter((q) => q.eq(q.field("_id"), args.leaseId))
@@ -166,6 +181,7 @@ export const release = mutation({
 
     if (!lease) return false;
 
+    if (lease.lockedByUserId !== identity.subject || !["AVAILABLE", "PENDING_HOLD", "RESERVED_PENDING"].includes(lease.status || "AVAILABLE")) throw new Error("Forbidden");
     await ctx.db.patch(lease._id, {
       isLocked: false,
       lockedUntil: undefined,
@@ -192,7 +208,8 @@ export const deleteLease = mutation({
       .first();
 
     if (lease) {
-      await ctx.db.delete(lease._id);
+      await requireOwner(ctx, lease);
+      await removeLease(ctx, lease);
       return { success: true };
     }
     return { success: false, message: "Not found" };
@@ -207,6 +224,8 @@ export const getByLandlordEmail = query({
     email: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (identity.emailVerified !== true || !identity.email || identity.email.toLowerCase() !== args.email.trim().toLowerCase()) return [];
     if (!args.email) return [];
     const targetEmail = args.email.toLowerCase().trim();
     const leases = await ctx.db.query("leases").collect();
@@ -234,9 +253,13 @@ export const approveTakeover = mutation({
       throw new Error(`Lease ${args.leaseId} not found`);
     }
 
+    await requireLandlord(ctx, lease);
+    if (lease.status !== "PENDING_HOLD" && lease.status !== "RESERVED_PENDING") throw new Error("No pending takeover");
+    if (!lease.lockedUntil || lease.lockedUntil <= Date.now()) throw new Error("Takeover request expired");
     await ctx.db.patch(lease._id, {
       status: "APPROVED",
       isLocked: true,
+      lockedUntil: undefined,
     });
 
     // Also update any matching reservation for this lease
@@ -258,7 +281,7 @@ export const approveTakeover = mutation({
       .collect();
 
     for (const inq of inquiries) {
-      if (inq.status === "pending") {
+      if (inq.status === "pending" && inq.userId === lease.lockedByUserId) {
         await ctx.db.patch(inq._id, {
           status: "handover_agreed",
         });
@@ -269,7 +292,7 @@ export const approveTakeover = mutation({
       success: true,
       status: "APPROVED",
       leaseId: lease._id,
-      message: "Takeover approved under Polish Civil Code Art. 509 KC. Escrow released for final contract handover.",
+      message: "Takeover approved. No funds have been moved; arrange the agreement and deposit directly.",
     };
   },
 });
@@ -292,6 +315,9 @@ export const rejectTakeover = mutation({
       throw new Error(`Lease ${args.leaseId} not found`);
     }
 
+    await requireLandlord(ctx, lease);
+    if (lease.status !== "PENDING_HOLD" && lease.status !== "RESERVED_PENDING") throw new Error("No pending takeover");
+    if (!lease.lockedUntil || lease.lockedUntil <= Date.now()) throw new Error("Takeover request expired");
     await ctx.db.patch(lease._id, {
       status: "AVAILABLE",
       isLocked: false,
@@ -333,6 +359,8 @@ export const requestTakeover = mutation({
     message: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    await consume(ctx, identity, "takeover", 10);
     const lease = await ctx.db
       .query("leases")
       .filter((q) => q.eq(q.field("_id"), args.leaseId))
@@ -341,18 +369,21 @@ export const requestTakeover = mutation({
     if (!lease) throw new Error("Lease not found");
 
     const now = Date.now();
+    if (lease.ownerId === identity.subject || ["APPROVED", "TRANSFERRED", "LEASED"].includes(lease.status) || (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now && lease.lockedByUserId !== identity.subject)) throw new Error("Listing unavailable");
     await ctx.db.patch(lease._id, {
       status: "PENDING_HOLD",
       isLocked: true,
-      lockedUntil: now + 15 * 60 * 1000,
+      lockedUntil: lease.lockedByUserId === identity.subject && lease.lockedUntil && lease.lockedUntil > now ? lease.lockedUntil : now + 15 * 60 * 1000,
       reservedByName: args.studentName,
+      lockedByUserId: identity.subject,
     });
 
     // Record an inquiry for the landlord to review
     await ctx.db.insert("inquiries", {
       listingId: args.leaseId,
       tenantName: args.studentName,
-      tenantEmail: args.studentEmail || "student@university.pl",
+      tenantEmail: identity.email || "",
+      userId: identity.subject,
       message: args.message || "Requesting lease assignment pursuant to Art. 509 KC. Verified student documentation ready.",
       status: "pending",
       createdAt: now,
@@ -371,20 +402,7 @@ export const claimListingAsLandlord = mutation({
     landlordEmail: v.string(),
     landlordName: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const lease = await ctx.db
-      .query("leases")
-      .filter((q) => q.eq(q.field("_id"), args.leaseId))
-      .first();
-
-    if (!lease) throw new Error("Lease not found");
-
-    await ctx.db.patch(lease._id, {
-      landlordContactEmail: args.landlordEmail.toLowerCase().trim(),
-      landlordName: args.landlordName || "Verified Landlord",
-    });
-
-    return { success: true };
+  handler: async () => { throw new Error("Demo data and self-service landlord claims are disabled; use a verified invitation.");
   },
 });
 
@@ -397,51 +415,7 @@ export const seedLandlordDemoListing = mutation({
     landlordName: v.optional(v.string()),
     withPendingTakeover: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const email = args.landlordEmail.toLowerCase().trim();
-    const now = Date.now();
-    const hasTakeover = args.withPendingTakeover ?? true;
-
-    const leaseId = await ctx.db.insert("leases", {
-      title: "Student Studio near University of Warsaw",
-      address: "ul. Krakowskie Przedmieście 26/28, Apt 4",
-      city: "Warsaw",
-      district: "Śródmieście",
-      monthlyRent: 2400,
-      deposit: 2400,
-      roomType: "Entire studio",
-      areaM2: 26,
-      floor: 2,
-      moveInDate: "2026-11-01",
-      leaseEndDate: "2027-06-30",
-      amenities: ["Furnished", "High-speed Wi-Fi", "Washing Machine", "Dishwasher", "Desk"],
-      description: "Quiet studio apartment pre-approved for official student lease transfer (Art. 509 KC). Landlord registered for meldunek.",
-      czynszAdmin: 450,
-      billsIncluded: false,
-      isFurnished: true,
-      flatmatesCount: 0,
-      meldunekAllowed: true,
-      landlordName: args.landlordName || "Verified Landlord",
-      landlordContactEmail: email,
-      isLocked: hasTakeover,
-      lockedUntil: hasTakeover ? now + 15 * 60 * 1000 : undefined,
-      status: hasTakeover ? "PENDING_HOLD" : "AVAILABLE",
-      reservedByName: hasTakeover ? "Kacper Kowalski (UW Student)" : undefined,
-      createdAt: now,
-    });
-
-    if (hasTakeover) {
-      await ctx.db.insert("inquiries", {
-        listingId: leaseId,
-        tenantName: "Kacper Kowalski",
-        tenantEmail: "kacper.kowalski@student.uw.edu.pl",
-        message: "Hello! I am an exchange student at University of Warsaw. My documentation and escrow hold are ready. Requesting takeover consent pursuant to Art. 509 KC.",
-        status: "pending",
-        createdAt: now,
-      });
-    }
-
-    return leaseId;
+  handler: async () => { throw new Error("Demo data and self-service landlord claims are disabled; use a verified invitation.");
   },
 });
 
@@ -451,12 +425,26 @@ export const seedLandlordDemoListing = mutation({
 export const clearAllLeases = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     const all = await ctx.db.query("leases").collect();
     for (const lease of all) {
-      await ctx.db.delete(lease._id);
+      await removeLease(ctx, lease);
     }
     return { deleted: all.length };
   },
 });
 
 
+
+export const mine = query({ args: {}, handler: async (ctx) => {
+  const identity = await requireIdentity(ctx);
+  return (await ctx.db.query('leases').collect()).filter(lease => lease.ownerId === identity.subject).map(publicListing);
+} });
+
+export const assignOwner = mutation({ args: { leaseId: v.id('leases'), ownerId: v.string() }, handler: async (ctx, args) => {
+  await requireAdmin(ctx);
+  if (!/^user_[a-zA-Z0-9]+$/.test(args.ownerId)) throw new Error('Use a verified Clerk user ID');
+  const lease = await ctx.db.get(args.leaseId);
+  if (!lease || lease.ownerId) throw new Error('Only ownerless legacy listings can be assigned');
+  await ctx.db.patch(lease._id, { ownerId: args.ownerId });
+} });

@@ -379,11 +379,11 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               e.preventDefault();
               onOpenAIChat?.(listing, e);
             }}
-            aria-label="Ask Onlo AI about this listing"
+            aria-label="Ask Onlo about this listing"
             className="py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 transition-all active:scale-95 cursor-pointer shadow-xs"
           >
             <OnloAvatar size={16} variant="icon" />
-            <span className="truncate">{locale === 'pl' ? 'Zapytaj Onlo AI' : 'Ask Onlo AI'}</span>
+            <span className="truncate">{locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}</span>
           </button>
         </div>
       </div>

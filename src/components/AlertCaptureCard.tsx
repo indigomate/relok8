@@ -39,47 +39,13 @@ export const AlertCaptureCard: React.FC<AlertCaptureCardProps> = ({
     const targetCity = city || 'Poland';
 
     try {
-      // 1. Store subscriber in Convex 'subscribers' table
-      if (subscribeConvex) {
-        try {
-          await subscribeConvex({
-            email: cleanEmail,
-            city: targetCity,
-          });
-        } catch (convexErr) {
-          console.warn('Convex subscribers mutation notice:', convexErr);
-        }
-      }
-
-      // 2. Persist in backend and send real-time confirmation via Resend
-      const res = await fetch('/api/subscribers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: cleanEmail,
-          city: targetCity,
-          locale,
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to register alert');
-      }
-
+      await subscribeConvex({ email: cleanEmail, city: targetCity });
       setSubmitted(true);
       if (onAlertRegistered) {
         onAlertRegistered(cleanEmail, targetCity);
       }
     } catch (err: any) {
-      console.warn('Subscription dispatch notice:', err);
-      // Even if network blips, mark as submitted so the user isn't stuck
-      setSubmitted(true);
-      if (onAlertRegistered) {
-        onAlertRegistered(cleanEmail, targetCity);
-      }
+      setErrorMsg(err.message || 'Sign in with a verified email to register alerts.');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,7 +59,7 @@ export const AlertCaptureCard: React.FC<AlertCaptureCardProps> = ({
 
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold uppercase tracking-wider mb-2">
         <Mail className="w-3.5 h-3.5 text-indigo-600" />
-        <span>{locale === 'pl' ? 'Powiadomienia w czasie rzeczywistym' : 'Real-time Resend Alert'}</span>
+        <span>{locale === 'pl' ? 'Natychmiastowe powiadomienia' : 'Instant Room Alerts'}</span>
       </div>
 
       <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1 tracking-tight">

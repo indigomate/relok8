@@ -212,7 +212,7 @@ export const t = {
 
     // Leaving Early Section
     leavingEarlyTitle: 'Wyprowadzasz się wcześniej? Uniknij kar umownych',
-    leavingEarlyDesc: 'Przekaż umowę nowemu najemcy za zgodą właściciela i odzyskaj 100% kaucji bez utraty środków.',
+    leavingEarlyDesc: 'Przekaż umowę nowemu najemcy za zgodą właściciela i uzgodnij rozliczenie kaucji.',
     calculateSavings: 'Oblicz oszczędności',
     leaveYourLease: 'Zgłoś przejęcie umowy',
 

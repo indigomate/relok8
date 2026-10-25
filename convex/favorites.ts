@@ -1,3 +1,4 @@
+import { requireSelf } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -7,6 +8,7 @@ import { v } from "convex/values";
 export const getUserFavorites = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
+    const identity = await requireSelf(ctx, args.userId);
     const favs = await ctx.db
       .query("favorites")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
@@ -24,6 +26,7 @@ export const addFavorite = mutation({
     listingId: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireSelf(ctx, args.userId);
     const existing = await ctx.db
       .query("favorites")
       .withIndex("by_user_listing", (q) =>
@@ -51,6 +54,7 @@ export const removeFavorite = mutation({
     listingId: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireSelf(ctx, args.userId);
     const existing = await ctx.db
       .query("favorites")
       .withIndex("by_user_listing", (q) =>

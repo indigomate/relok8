@@ -1,3 +1,4 @@
+import { requireAdmin, requireIdentity } from "./lib/auth";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -10,6 +11,9 @@ export const subscribe = mutation({
     city: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (identity.emailVerified !== true || identity.email?.toLowerCase() !== args.email.trim().toLowerCase()) throw new Error("Use your verified account email");
+    if (args.email.length > 254 || args.city.length > 100) throw new Error("Invalid subscription");
     const cleanEmail = args.email.trim().toLowerCase();
     const cleanCity = args.city.trim() || "Poland";
 
@@ -48,6 +52,9 @@ export const unsubscribe = mutation({
     city: v.string(),
   },
   handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (identity.emailVerified !== true || identity.email?.toLowerCase() !== args.email.trim().toLowerCase()) throw new Error("Use your verified account email");
+    if (args.email.length > 254 || args.city.length > 100) throw new Error("Invalid subscription");
     const cleanEmail = args.email.trim().toLowerCase();
     const cleanCity = args.city.trim();
 
@@ -75,6 +82,7 @@ export const getSubscribersForCity = query({
     city: v.string(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     const targetCity = args.city.trim().toLowerCase();
 
     const all = await ctx.db
@@ -101,6 +109,7 @@ export const getSubscribersForCity = query({
 export const getAllSubscribers = query({
   args: {},
   handler: async (ctx) => {
+    await requireAdmin(ctx);
     return await ctx.db.query("subscribers").collect();
   },
 });

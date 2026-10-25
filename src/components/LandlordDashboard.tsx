@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { useUser } from '@clerk/react';
 import { api } from '../../convex/_generated/api';
 import { 
@@ -30,12 +30,10 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
     overrideLandlordEmail ||
     clerkUser?.primaryEmailAddress?.emailAddress ||
     clerkUser?.emailAddresses?.[0]?.emailAddress ||
-    'judymissi@gmail.com' // Fallback to current authenticated session email
+    ''
   ).trim().toLowerCase();
 
-  const [activeEmail, setActiveEmail] = useState<string>(resolvedEmail);
-  const [isEditingEmail, setIsEditingEmail] = useState(false);
-  const [emailInput, setEmailInput] = useState(resolvedEmail);
+  const activeEmail = resolvedEmail;
   const [actionFeedback, setActionFeedback] = useState<{ id: string; type: 'success' | 'error'; text: string } | null>(null);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'approved'>('all');
@@ -44,15 +42,12 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
   // CONVEX REACTIVE HOOKS:
   // 1. useQuery: Display only listings associated with current logged-in landlord's email
   // ---------------------------------------------------------------------------
-  const listings = useQuery(api.leases.getByLandlordEmail, {
-    email: activeEmail,
-  });
+  const { isAuthenticated } = useConvexAuth();
+  const listings = useQuery(api.leases.getByLandlordEmail, isAuthenticated && resolvedEmail ? { email: resolvedEmail } : "skip");
 
   // 2. useMutation: Approve or reject incoming takeovers
   const approveTakeoverMutation = useMutation(api.leases.approveTakeover);
   const rejectTakeoverMutation = useMutation(api.leases.rejectTakeover);
-  const seedDemoMutation = useMutation(api.leases.seedLandlordDemoListing);
-  const requestTakeoverMutation = useMutation(api.leases.requestTakeover);
 
   // Stats calculation
   const totalCount = listings?.length || 0;
@@ -130,62 +125,6 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
     }
   };
 
-  // Quick Seed Demo Takeover for testing if landlord has no listings yet
-  const handleSeedDemo = async (withPending: boolean = true) => {
-    try {
-      setPendingActionId('seeding');
-      await seedDemoMutation({
-        landlordEmail: activeEmail,
-        landlordName: clerkUser?.fullName || 'Verified Landlord',
-        withPendingTakeover: withPending,
-      });
-      setActionFeedback({
-        id: 'global',
-        type: 'success',
-        text: locale === 'pl'
-          ? 'Utworzono przykładowe mieszkanie z wnioskiem o cesję dla Twojego adresu e-mail.'
-          : 'Example lease takeover created in Convex for your landlord email.',
-      });
-    } catch (err: any) {
-      setActionFeedback({
-        id: 'global',
-        type: 'error',
-        text: err?.message || 'Failed to seed sample listing.',
-      });
-    } finally {
-      setPendingActionId(null);
-    }
-  };
-
-  // Simulate incoming takeover on an available listing
-  const handleSimulateIncomingTakeover = async (leaseId: string) => {
-    try {
-      setPendingActionId(leaseId);
-      await requestTakeoverMutation({
-        leaseId,
-        studentName: 'Zofia Wiśniewska (UW Warsaw)',
-        studentEmail: 'zofia.w@student.uw.edu.pl',
-        studentPhone: '+48 501 234 567',
-        message: 'Hello! I am ready to assume the lease agreement starting next month. All documents verified.',
-      });
-      setActionFeedback({
-        id: leaseId,
-        type: 'success',
-        text: locale === 'pl'
-          ? 'Zasymulowano nowy wniosek o cesję od studenta. Użyj przycisków poniżej, aby zatwierdzić lub odrzucić.'
-          : 'New incoming takeover simulated. Use the buttons below to approve or reject.',
-      });
-    } catch (err: any) {
-      setActionFeedback({
-        id: leaseId,
-        type: 'error',
-        text: err?.message || 'Simulation failed.',
-      });
-    } finally {
-      setPendingActionId(null);
-    }
-  };
-
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 text-left">
       {/* Navigation header */}
@@ -256,7 +195,7 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
             </div>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>{locale === 'pl' ? 'Konto aktywne' : 'Verified'}</span>
+              <span>{locale === 'pl' ? 'Zalogowano' : 'Signed in'}</span>
             </span>
           </div>
           <p className="text-[11px] text-slate-500 pt-1">
@@ -268,47 +207,6 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
 
         {/* Change / Switch email for testing */}
         <div className="flex items-center gap-2.5 self-start md:self-auto">
-          {isEditingEmail ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="email"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="landlord@example.com"
-                className="px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (emailInput.trim()) {
-                    setActiveEmail(emailInput.trim().toLowerCase());
-                    setIsEditingEmail(false);
-                  }
-                }}
-                className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
-              >
-                {locale === 'pl' ? 'Zmień' : 'Apply'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditingEmail(false)}
-                className="px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900"
-              >
-                {locale === 'pl' ? 'Anuluj' : 'Cancel'}
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setEmailInput(activeEmail);
-                setIsEditingEmail(true);
-              }}
-              className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline underline-offset-2 cursor-pointer"
-            >
-              {locale === 'pl' ? 'Przełącz e-mail testowy' : 'Switch email filter'}
-            </button>
-          )}
 
           <button
             type="button"
@@ -699,15 +597,7 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
                         </p>
                       </div>
 
-                      <button
-                        type="button"
-                        disabled={isActionInProgress}
-                        onClick={() => handleSimulateIncomingTakeover(listing._id)}
-                        className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50 self-start sm:self-auto shrink-0"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>{locale === 'pl' ? 'Zasymuluj wniosek o cesję' : 'Simulate takeover request'}</span>
-                      </button>
+                      <span className="text-xs text-slate-500">No pending request</span>
                     </div>
                   )}
                 </div>

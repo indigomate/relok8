@@ -11,7 +11,7 @@ import { PhotoUploader } from '../components/PhotoUploader';
 
 interface ListPageProps {
   onBack: () => void;
-  onSubmitListing: (newListing: Listing) => void;
+  onSubmitListing: (newListing: Listing) => Promise<Listing>;
   locale?: SupportedLocale;
   currentUser?: { id?: string; name?: string; email?: string } | null;
 }
@@ -37,8 +37,21 @@ export const ListPage: React.FC<ListPageProps> = ({
   const [monthlyRentPLN, setMonthlyRentPLN] = useState('');
   const [czynszAdminPLN, setCzynszAdminPLN] = useState('');
   const [depositPLN, setDepositPLN] = useState('');
-  const [availableDate, setAvailableDate] = useState('2026-10-15');
-  const [leaseEndDate, setLeaseEndDate] = useState('2027-06-30');
+  // Dynamic default dates (first of upcoming month and academic year end)
+  const getUpcomingMoveInDate = () => {
+    const d = new Date();
+    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    return nextMonth.toISOString().split('T')[0];
+  };
+
+  const getUpcomingLeaseEndDate = () => {
+    const d = new Date();
+    const targetYear = d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear();
+    return `${targetYear}-06-30`;
+  };
+
+  const [availableDate, setAvailableDate] = useState(getUpcomingMoveInDate);
+  const [leaseEndDate, setLeaseEndDate] = useState(getUpcomingLeaseEndDate);
   const [landlordName, setLandlordName] = useState('');
   const [tenantName, setTenantName] = useState('');
   const [tenantEmail, setTenantEmail] = useState('');
@@ -59,7 +72,7 @@ export const ListPage: React.FC<ListPageProps> = ({
   // Real photos uploaded from device or captured from site camera
   const [photos, setPhotos] = useState<string[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (photos.length === 0) {
       setPhotoError(
@@ -87,7 +100,7 @@ export const ListPage: React.FC<ListPageProps> = ({
       czynszAdminPLN: Number(czynszAdminPLN) || 350,
       billsIncluded: true,
       depositPLN: Number(depositPLN) || 2000,
-      availableDate: availableDate || '2026-10-15',
+      availableDate: availableDate || new Date().toISOString().slice(0, 10),
       leaseEndDate: leaseEndDate || '2027-06-30',
       remainingMonths: 8,
       images: finalImages,
@@ -119,7 +132,7 @@ export const ListPage: React.FC<ListPageProps> = ({
         `Main ${city} Campuses (10 min transit)`
       ],
       transitNearby: 'Central transit hub (3 min walk)',
-      description: `Bright and clean ${roomType} in ${district}, ${city}. Fully furnished, with landlord pre-approval secured for lease takeover (Art. 509 KC). Address registration (meldunek) guaranteed.`,
+      description: `Bright and clean ${roomType} in ${district}, ${city}. Fully furnished, available for a potential lease takeover. Landlord consent and address registration must be confirmed.`,
       depositSettlementType: 'P2P Direct Clearing',
       czynszIncluded: true,
       floor: '2nd floor (with elevator)'
@@ -139,9 +152,14 @@ export const ListPage: React.FC<ListPageProps> = ({
       }
     } catch {}
 
-    onSubmitListing(created);
-    setIsSubmitting(false);
-    setIsSuccess(true);
+    try {
+      const published = await onSubmitListing(created);
+      const mine = JSON.parse(localStorage.getItem('r8_my_listing_ids') || '[]');
+      localStorage.setItem('r8_my_listing_ids', JSON.stringify([published.id, ...mine.filter((id: string) => id !== created.id && id !== published.id)]));
+      setIsSuccess(true);
+    } catch (error: any) {
+      setPhotoError(error.message || 'Publishing failed. Please try again.');
+    } finally { setIsSubmitting(false); }
   };
 
   return (

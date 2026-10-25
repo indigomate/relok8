@@ -29,7 +29,7 @@ import {
   getThreads,
   deletePlace
 } from '../lib/api';
-import { deleteListing } from '../lib/supabase/client';
+
 import { Listing } from '../types';
 
 interface PlacePageProps {
@@ -69,9 +69,9 @@ export const PlacePage: React.FC<PlacePageProps> = ({
     rent?: number;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   // Exit State
-  const [leaveDate, setLeaveDate] = useState('2026-11-01');
+  const [leaveDate, setLeaveDate] = useState(new Date().toISOString().slice(0, 10));
   const [exitNotes, setExitNotes] = useState('');
   const [isSubmittingExit, setIsSubmittingExit] = useState(false);
 
@@ -123,84 +123,9 @@ export const PlacePage: React.FC<PlacePageProps> = ({
     loadData();
   }, [selectedPlaceId]);
 
-  // User's uploaded listings from prop or localStorage
-  const userUploadedListings = useMemo(() => {
-    let sourceListings: Listing[] = [];
-    if (propListings && propListings.length > 0) {
-      sourceListings = propListings;
-    } else {
-      try {
-        const saved = localStorage.getItem('r8_listings');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) sourceListings = parsed;
-        }
-      } catch {}
-    }
-
-    let myIds: string[] = [];
-    try {
-      const stored = localStorage.getItem('r8_my_listing_ids');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) myIds = parsed;
-      }
-    } catch {}
-
-    const userEmail = currentUser?.email?.toLowerCase().trim();
-    const userId = currentUser?.id;
-    const userName = currentUser?.name?.toLowerCase().trim();
-
-    return sourceListings.filter((l) => {
-      if (myIds.includes(l.id)) return true;
-      if (userEmail && l.landlordContactEmail?.toLowerCase().trim() === userEmail) return true;
-      if (userEmail && (l as any).ownerEmail?.toLowerCase().trim() === userEmail) return true;
-      if (userId && (l as any).userId === userId) return true;
-      if (userName && l.currentTenant?.name?.toLowerCase().trim() === userName) return true;
-      if (userName && l.landlordName?.toLowerCase().trim() === userName) return true;
-      return false;
-    });
-  }, [propListings, currentUser]);
-
-  const listingToPlace = (l: Listing, tenantId = 'user-mateo'): Place => ({
-    id: l.id,
-    landlordId: (l as any).userId || 'user-landlord',
-    tenantId: (l as any).userId || tenantId,
-    title: l.title,
-    city: l.city,
-    district: l.district || '',
-    address: l.address || `${l.district ? l.district + ', ' : ''}${l.city}`,
-    rentPLN: l.monthlyRentPLN,
-    czynszPLN: l.czynszAdminPLN || 0,
-    depositPLN: l.depositPLN || l.monthlyRentPLN,
-    availableFrom: l.availableDate || 'Immediate',
-    roomType: l.roomType || 'Private room',
-    flatmates: l.flatmatesCount || 0,
-    furnished: l.isFurnished ?? true,
-    billsIncluded: l.billsIncluded ?? false,
-    meldunekOk: l.meldunekAllowed ?? true,
-    commuteNote: l.distanceToCampus || '10 min transit to campus',
-    nearInstitutions: l.universitiesNearby || [],
-    photos: l.images && l.images.length > 0 ? l.images : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&auto=format&fit=crop'],
-    status: 'available_for_takeover',
-    rules: l.description || 'Standard house rules apply. Quiet hours 22:00-06:00. Non-smoking flat.',
-    landlordBedPricePLN: 39,
-    handoverChecklist: {
-      agreementSigned: false,
-      depositTransferred: false,
-      keysHandedOver: false,
-      meldunekCompleted: false
-    }
-  });
-
-  const mergedPlaces = useMemo(() => {
-    const existingIds = new Set(places.map(p => p.id));
-    const uploadedAsPlaces = userUploadedListings
-      .filter(l => !existingIds.has(l.id))
-      .map(l => listingToPlace(l, currentUser?.id || 'user-mateo'));
-
-    return [...uploadedAsPlaces, ...places];
-  }, [places, userUploadedListings, currentUser]);
+  // The server returns only places the verified caller may manage.
+  const mergedPlaces = places;
+  const userUploadedListings = useMemo(() => (propListings || []).filter(listing => places.some(place => place.id === listing.id && place.tenantId === currentUser?.id)), [propListings, places, currentUser?.id]);
 
   // Default selection to first available place if any
   useEffect(() => {
@@ -214,9 +139,8 @@ export const PlacePage: React.FC<PlacePageProps> = ({
   }, [mergedPlaces, selectedPlaceId]);
 
   const currentPlace = mergedPlaces.find(p => p.id === selectedPlaceId) || mergedPlaces[0];
-  const [roleOverride, setRoleOverride] = useState<'landlord' | 'tenant' | null>(null);
-  const baseIsLandlord = currentUser?.role === 'landlord' || devUser?.role === 'landlord';
-  const isLandlord = roleOverride ? roleOverride === 'landlord' : baseIsLandlord;
+  const baseIsLandlord = Boolean(currentPlace && devUser && currentPlace.landlordId === devUser.id);
+  const isLandlord = baseIsLandlord;
   const isTenant = !isLandlord;
 
   const [onloAutoTriage, setOnloAutoTriage] = useState(true);
@@ -229,7 +153,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
       myIds = JSON.parse(localStorage.getItem('r8_my_listing_ids') || '[]');
     } catch {}
     if (myIds.includes(currentPlace.id)) return true;
-    if (userUploadedListings.some(l => l.id === currentPlace.id)) return true;
+
     if (currentUser?.email && (currentPlace as any).landlordContactEmail?.toLowerCase() === currentUser.email.toLowerCase()) return true;
     if (currentUser?.id && (currentPlace.tenantId === currentUser.id || currentPlace.landlordId === currentUser.id)) return true;
     return false;
@@ -243,23 +167,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
     try {
       if (onDeleteListing) {
         await onDeleteListing(targetId);
-      } else {
-        try {
-          const saved = localStorage.getItem('r8_listings');
-          if (saved) {
-            const list = JSON.parse(saved);
-            const filtered = list.filter((l: any) => l.id !== targetId);
-            localStorage.setItem('r8_listings', JSON.stringify(filtered));
-          }
-        } catch {}
-        try {
-          const myIds = JSON.parse(localStorage.getItem('r8_my_listing_ids') || '[]');
-          const filteredIds = myIds.filter((id: string) => id !== targetId);
-          localStorage.setItem('r8_my_listing_ids', JSON.stringify(filteredIds));
-        } catch {}
-        await deleteListing(targetId).catch(() => {});
-        await deletePlace(targetId).catch(() => {});
-      }
+      } else { await deletePlace(targetId); }
 
       setPlaces(prev => prev.filter(p => p.id !== targetId));
       setFeedback(locale === 'pl' ? 'Ogłoszenie zostało pomyślnie usunięte.' : 'Listing deleted successfully.');
@@ -312,7 +220,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
       const payloadReason = decision === 'decline' ? declineReason : decision === 'suggest_date' ? suggestedDate : undefined;
       const updated = await decideExit(currentPlace.id, decision, payloadReason);
       setPlaces(prev => prev.map(p => p.id === updated.id ? updated : p));
-      
+
       const ann = await getAnnouncement(updated.id);
       setAnnouncement(ann);
 
@@ -518,34 +426,6 @@ export const PlacePage: React.FC<PlacePageProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap self-end sm:self-auto shrink-0">
-            {/* Dedicated Landlord / Tenant View toggle */}
-            <div className="flex rounded-full bg-slate-200/80 p-0.5 border border-slate-300 text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => setRoleOverride('landlord')}
-                className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isLandlord
-                    ? 'bg-white text-indigo-700 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>Landlord view</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRoleOverride('tenant')}
-                className={`px-3 py-1 rounded-full transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isTenant
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>Tenant view</span>
-              </button>
-            </div>
-
             {/* Place select if user has several places */}
             {mergedPlaces.length > 1 && (
               <select
@@ -569,7 +449,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
 
       {/* Main Content Layout: Two-column grid (Main column + 300px right rail) */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-2">
-        
+
         {/* Feedback Alert if present */}
         {feedback && (
           <div className="mb-5 p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-xs font-semibold text-indigo-950 flex items-center justify-between gap-3 animate-in fade-in">
@@ -588,7 +468,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
         )}
 
         <div className="grid grid-cols-1 min-[1000px]:grid-cols-[1fr_300px] gap-6 items-start">
-          
+
           {/* ======================================================== */}
           {/* MAIN COLUMN (In order: 1. Hero, 2. Progress, 3. Action, 4. Room) */}
           {/* ======================================================== */}

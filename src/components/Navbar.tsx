@@ -195,9 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
                 {[
                   { code: 'en', label: 'English (EN)' },
-                  { code: 'pl', label: 'Polski (PL)' },
-                  { code: 'uk', label: 'Українська (UK)' },
-                  { code: 'es', label: 'Español (ES)' }
+                  { code: 'pl', label: 'Polski (PL)' }
                 ].map((item) => (
                   <button
                     key={item.code}
