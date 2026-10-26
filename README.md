@@ -43,3 +43,7 @@ Use the Vite framework, Node 24, build command `npm run build`, and output direc
 ## Tests
 
 `npm run lint` type checks the code. `npm test` exercises the real Convex handlers against convex-test, including anonymous requests, forged IDs, cross-account message reads/writes, private rooms, landlord approval, invitation binding/replay, notification ownership, reservation locks, subscriber privacy, and disabled financial integrations. `npm run build` produces the static frontend. Live Clerk tokens, email delivery, hosted settings, and device/browser journeys require separate staging verification.
+
+### Vercel preview builds
+
+`build-vercel.mjs` supplies the public Clerk development publishable key and Convex development URL only when Vercel identifies the deployment as Preview. Explicit Vercel values take precedence. Production builds require both variables in Vercel and fail if either is missing. No secret keys are stored in this file.

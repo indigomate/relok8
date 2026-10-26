@@ -9,16 +9,17 @@
  */
 
 import type * as aiMessages from "../aiMessages.js";
+import type * as domain from "../domain.js";
 import type * as favorites from "../favorites.js";
 import type * as inquiries from "../inquiries.js";
 import type * as leases from "../leases.js";
-import type * as domain from "../domain.js";
-import type * as uploads from "../uploads.js";
-import type * as services from "../services.js";
+import type * as lib_auth from "../lib/auth.js";
 import type * as payments from "../payments.js";
 import type * as profiles from "../profiles.js";
+import type * as services from "../services.js";
 import type * as subscribers from "../subscribers.js";
 import type * as tasks from "../tasks.js";
+import type * as uploads from "../uploads.js";
 import type * as whatsapp from "../whatsapp.js";
 
 import type {
@@ -29,16 +30,17 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   aiMessages: typeof aiMessages;
+  domain: typeof domain;
   favorites: typeof favorites;
   inquiries: typeof inquiries;
   leases: typeof leases;
-  domain: typeof domain;
-  services: typeof services;
-  uploads: typeof uploads;
+  "lib/auth": typeof lib_auth;
   payments: typeof payments;
   profiles: typeof profiles;
+  services: typeof services;
   subscribers: typeof subscribers;
   tasks: typeof tasks;
+  uploads: typeof uploads;
   whatsapp: typeof whatsapp;
 }>;
 
