@@ -21,6 +21,7 @@ import type * as subscribers from "../subscribers.js";
 import type * as tasks from "../tasks.js";
 import type * as uploads from "../uploads.js";
 import type * as whatsapp from "../whatsapp.js";
+import type * as workflow from "../workflow.js";
 
 import type {
   ApiFromModules,
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   tasks: typeof tasks;
   uploads: typeof uploads;
   whatsapp: typeof whatsapp;
+  workflow: typeof workflow;
 }>;
 
 /**

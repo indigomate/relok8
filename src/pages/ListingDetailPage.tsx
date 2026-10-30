@@ -1,3 +1,6 @@
+import {ReportListing} from '../components/ReportListing';
+import {knownMonthlyCost} from '../utils/listingFlow';
+import {navigateTo} from '../utils/router';
 import { createOrGetThread, sendThreadMessage } from '../lib/api';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -60,6 +63,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [inquiryText, setInquiryText] = useState('');
   const [inquirySent, setInquirySent] = useState(false);
+  const [inquiryPending,setInquiryPending]=useState(false);
 
   const convex = useConvex();
   const convexDoc = convex.db.listings.find((l) => l._id === listing.id);
@@ -67,10 +71,10 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const isDemo = isExampleListing(listing);
 
   const tenant = listing.currentTenant || (listing as any).departingTenant || {
-    name: 'Marek S.',
-    status: 'Leaving after an Erasmus semester',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-    reasonForLeaving: 'Leaving after an Erasmus semester'
+    name: 'Listing author',
+    status: '',
+    avatar: '',
+    reasonForLeaving: ''
   };
 
   const handleShare = () => {
@@ -87,11 +91,16 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       }
       return;
     }
+    if(inquiryPending)return;
+    setInquiryPending(true);
     const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`;
     try {
       const thread = await createOrGetThread(listing.id);
       await sendThreadMessage(thread.id, finalMessage);
+      navigateTo((locale === "pl" ? "/pl" : "") + "/messages", {thread:thread.id});
+      return;
     } catch (error: any) {
+      setInquiryPending(false);
       window.alert(error.message || 'Could not send your inquiry. Please try again.');
       return;
     }
@@ -107,6 +116,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   };
 
   const handleMessageClick = () => {
+    setIsContactModalOpen(true);
     if (!currentUser) {
       if (onRequireLogin) {
         onRequireLogin(`Sign in to message ${tenant.name} directly.`);
@@ -120,14 +130,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const leaseEndDateFormatted = formatDate(listing.leaseEndDate, locale);
 
   // Amenities list matching screenshot 4 / screenshot 8
-  const defaultAmenities = [
-    { label: 'Fibre Wi-Fi' },
-    { label: 'Dishwasher' },
-    { label: 'Balcony' },
-    { label: 'Washing machine' },
-    { label: 'Bicycle storage' },
-    { label: 'Desk and chair' }
-  ];
+  const defaultAmenities = listing.amenities.map(label=>({label}));
 
   return (
     <div className="min-h-screen bg-white text-slate-900 pb-36 sm:pb-28 text-left">
@@ -257,7 +260,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           </div>
         </div>
 
-        {/* Status badges: Example listing, Meldunek OK, Landlord approved (Screenshot 8) */}
+        {/* Status badges: Example listing, Meldunek OK, Permission to advertise confirmed (Screenshot 8) */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {isDemo && (
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
@@ -271,7 +274,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           )}
           {listing.landlordApproved && (
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-100">
-              Landlord approved
+              Permission to advertise confirmed
             </span>
           )}
         </div>
@@ -304,7 +307,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           </div>
           <div className="p-3.5 space-y-0.5">
             <span className="text-slate-500 font-normal">Floor</span>
-            <div className="text-sm font-bold text-slate-900">{listing.floor || '3rd floor'}</div>
+            <div className="text-sm font-bold text-slate-900">{listing.floor || (locale==='pl'?'Nie podano':'Not provided')}</div>
           </div>
           <div className="p-3.5 space-y-0.5">
             <span className="text-slate-500 font-normal">Furnished</span>
@@ -316,7 +319,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         <div className="flex items-baseline justify-between pt-1">
           <div>
             <span className="text-2xl font-black text-slate-900 tnum">
-              PLN {listing.monthlyRentPLN.toLocaleString()}
+              PLN {knownMonthlyCost(listing).toLocaleString()}
             </span>
             <span className="text-slate-500 text-sm font-normal">/mo</span>
           </div>
@@ -325,6 +328,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           </span>
         </div>
 
+        <p className="text-xs text-slate-500">{locale==='pl'?'Czynsz + opłaty administracyjne.':'Rent + administration.'} {listing.billsIncluded?(locale==='pl'?'Media wliczone według autora.':'Utilities included according to the author.'):(locale==='pl'?'Media dodatkowo — potwierdź kwotę.':'Utilities extra — confirm the amount.')}</p>
         {/* Lease Takeover Action Hub */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-slate-50 border border-indigo-100 shadow-xs space-y-3.5 my-2">
           <div className="flex items-center justify-between">
@@ -360,19 +364,21 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             </button>
           </div>
 
+          <button type="button" onClick={()=>setIsEarlyLockOpen(true)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">{locale==='pl'?'Poproś właściciela o zgodę na przejęcie':'Request landlord approval for takeover'}</button>
           {/* Direct Matching Notice */}
           <div className="pt-2 border-t border-indigo-100/60 text-[11px] text-slate-500 flex items-center justify-between gap-2">
             <span>Direct connection between tenant & landlord · Zero agency commissions</span>
           </div>
         </div>
 
+        <ReportListing listingId={listing.id} locale={locale} onRequireLogin={onRequireLogin}/>
         <div className="border-t border-slate-100 my-4" />
 
         {/* "About this place" Section (Screenshot 4) */}
         <div className="space-y-2">
           <h3 className="text-lg font-bold text-slate-900">About this place</h3>
           <p className="text-sm text-slate-600 leading-relaxed">
-            {listing.description || `Furnished studio on a quiet street, a short walk from campus. Bills are included. The tenant is moving out on ${moveInDateFormatted}.`}
+            {listing.description || (locale==='pl'?'Zapytaj autora o szczegóły.':'Ask the author for details.')}
           </p>
         </div>
 
@@ -391,7 +397,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              {tenant.reasonForLeaving || 'Leaving after an Erasmus semester'}
+              {tenant.reasonForLeaving || ''}
             </p>
           </div>
         </div>
@@ -418,16 +424,16 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           <h3 className="text-lg font-bold text-slate-900">Nearby</h3>
           <div className="space-y-2.5 text-xs text-slate-700">
             <div className="flex items-center justify-between py-1 border-b border-slate-100">
-              <span className="font-medium text-slate-800">Politechnika Warszawska</span>
-              <span className="text-slate-500">6 min walk</span>
+              <span className="font-medium text-slate-800">{listing.universitiesNearby.join(", ") || (locale==="pl"?"Uczelnie: nie podano":"Universities: not provided")}</span>
+              <span className="text-slate-500">—</span>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-slate-100">
-              <span className="font-medium text-slate-800">Metro Politechnika</span>
-              <span className="text-slate-500">4 min walk</span>
+              <span className="font-medium text-slate-800">{listing.transitNearby || (locale==="pl"?"Transport: nie podano":"Transport: not provided")}</span>
+              <span className="text-slate-500">—</span>
             </div>
             <div className="flex items-center justify-between py-1 border-b border-slate-100">
-              <span className="font-medium text-slate-800">Tram Plac Politechniki</span>
-              <span className="text-slate-500">3 min walk</span>
+              <span className="font-medium text-slate-800">{locale==="pl"?"Sprawdź dojazd dla swojego adresu":"Check your route for this address"}</span>
+              <span className="text-slate-500">—</span>
             </div>
           </div>
         </div>
@@ -465,7 +471,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 sm:px-4 py-3 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="text-left shrink-0">
           <div className="text-base sm:text-lg font-black text-slate-900 tnum leading-tight">
-            PLN {listing.monthlyRentPLN.toLocaleString()}<span className="text-xs font-normal text-slate-500">/mo</span>
+            PLN {knownMonthlyCost(listing).toLocaleString()}<span className="text-xs font-normal text-slate-500">/mo</span>
           </div>
           <div className="text-[11px] text-slate-500 font-medium">
             From {moveInDateFormatted}
@@ -557,7 +563,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="submit" disabled={inquiryPending}
                   className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
                 >
                   {inquirySent ? 'Sent!' : 'Send Message'}

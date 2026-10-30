@@ -1,3 +1,4 @@
+import {TakeoverProgress} from './TakeoverProgress';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { useUser } from '@clerk/react';
@@ -11,6 +12,7 @@ import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
 
 interface LandlordDashboardProps {
+  onRequireLogin?: () => void;
   locale?: SupportedLocale;
   onBack?: () => void;
   onNavigateToListing?: (id: string) => void;
@@ -18,6 +20,7 @@ interface LandlordDashboardProps {
 }
 
 export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
+  onRequireLogin,
   locale = 'en',
   onBack,
   onNavigateToListing,
@@ -72,7 +75,7 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
       setActionFeedback(null);
       const res = await approveTakeoverMutation({
         leaseId,
-        reason: 'Landlord verified tenant documents and granted Art. 509 KC takeover consent.',
+        reason: 'Landlord approved the applicant. Documents and payment arrangements must be confirmed separately.',
       });
 
       if (res?.success) {
@@ -127,6 +130,7 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8 text-left">
+      <TakeoverProgress locale={locale} onRequireLogin={()=>{if(onRequireLogin)onRequireLogin();else navigateTo(locale==='pl'?'/pl/sign-in':'/sign-in');}}/>
       {/* Navigation header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
@@ -500,7 +504,7 @@ export const LandlordDashboard: React.FC<LandlordDashboardProps> = ({
                             <span>{locale === 'pl' ? 'Wpłynął wniosek o przejęcie umowy' : 'Incoming lease takeover request'}</span>
                           </div>
                           <div className="text-xs text-amber-900">
-                            <strong>{listing.reservedByName || 'Verified Student'}</strong> {locale === 'pl' ? 'zablokował lokal i złożył depozyt kaucji.' : 'has reserved this room and provided security deposit authorization.'}
+                            <strong>{listing.reservedByName || 'Applicant'}</strong> {locale === 'pl' ? 'wysłał wniosek o przejęcie najmu. Nie dokonano płatności.' : 'submitted a takeover request. No payment has been made.'}
                           </div>
                         </div>
 

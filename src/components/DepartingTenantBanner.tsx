@@ -36,7 +36,7 @@ export const DepartingTenantBanner: React.FC<DepartingTenantBannerProps> = ({
               {strings.leavingEarlyTitle}
             </h3>
             <p className="text-base sm:text-lg font-bold text-indigo-600">
-              {isPl ? 'Odzyskaj kaucję i przekaż umowę bez opłat karnych.' : 'Recover your full deposit and exit without termination penalties.'}
+              {isPl ? 'Ustal zmianę najemcy i rozliczenie kaucji z właścicielem.' : 'Discuss a replacement tenant and deposit arrangements with your landlord.'}
             </p>
           </div>
 

@@ -36,7 +36,7 @@ export const get = query({
       );
     }
 
-    return leases.map(publicListing);
+    return leases.filter(l => !["PAUSED","TRANSFERRED","APPROVED","LEASED"].includes(l.status)).map(publicListing);
   },
 });
 
@@ -69,7 +69,7 @@ export const create = mutation({
     deposit: v.number(),
     roomType: v.string(),
     areaM2: v.number(),
-    floor: v.number(),
+    floor: v.optional(v.number()),
     moveInDate: v.string(),
     leaseEndDate: v.string(),
     coordinates: v.optional(

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import {invalidListingStep, draftStore} from '../utils/listingFlow';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, CheckCircle2, UploadCloud, ImagePlus, Trash2, 
   MapPin, Home, DollarSign, Calendar, Shield, ShieldCheck, AlertCircle 
@@ -12,12 +13,14 @@ import { PhotoUploader } from '../components/PhotoUploader';
 interface ListPageProps {
   onBack: () => void;
   onSubmitListing: (newListing: Listing) => Promise<Listing>;
+  onRequireLogin?: () => void;
   locale?: SupportedLocale;
   currentUser?: { id?: string; name?: string; email?: string } | null;
 }
 
 export const ListPage: React.FC<ListPageProps> = ({
   onBack,
+  onRequireLogin,
   onSubmitListing,
   locale = 'en',
   currentUser
@@ -50,15 +53,19 @@ export const ListPage: React.FC<ListPageProps> = ({
     return `${targetYear}-06-30`;
   };
 
-  const [availableDate, setAvailableDate] = useState(getUpcomingMoveInDate);
-  const [leaseEndDate, setLeaseEndDate] = useState(getUpcomingLeaseEndDate);
+  const [availableDate, setAvailableDate] = useState('');
+  const [leaseEndDate, setLeaseEndDate] = useState('');
+  const [landlordEmail, setLandlordEmail] = useState('');
+  const [billsIncluded, setBillsIncluded] = useState(false);
+  const [reviewed, setReviewed] = useState(false);
+  const [publishedId, setPublishedId] = useState('');
   const [landlordName, setLandlordName] = useState('');
   const [tenantName, setTenantName] = useState('');
   const [tenantEmail, setTenantEmail] = useState('');
   const [reasonForLeaving, setReasonForLeaving] = useState('');
   const [distanceToCampus, setDistanceToCampus] = useState('');
   const [flatmatesCount, setFlatmatesCount] = useState('');
-  const [isFurnished, setIsFurnished] = useState(true);
+  const [isFurnished, setIsFurnished] = useState(false);
   const [meldunekAllowed, setMeldunekAllowed] = useState(false);
   const [landlordApproved, setLandlordApproved] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -72,8 +79,45 @@ export const ListPage: React.FC<ListPageProps> = ({
   // Real photos uploaded from device or captured from site camera
   const [photos, setPhotos] = useState<string[]>([]);
 
+  const draftKey = currentUser?.id || 'anonymous';
+  const [draftReady,setDraftReady] = useState(false);
+  const [draftStatus,setDraftStatus] = useState('');
+  const formRef=useRef<HTMLFormElement>(null);
+  const errorRef=useRef<HTMLParagraphElement>(null);
+  const draft = {title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordEmail,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsIncluded,photos};
+  useEffect(()=>{let active=true;(async()=>{try{const saved=await draftStore('read',draftKey)||(draftKey!=='anonymous'?await draftStore('read','anonymous'):undefined);if(active&&saved){if(typeof saved.title === typeof title) setTitle(saved.title);
+if(typeof saved.city === typeof city) setCity(saved.city);
+if(typeof saved.district === typeof district) setDistrict(saved.district);
+if(typeof saved.address === typeof address) setAddress(saved.address);
+if(typeof saved.roomType === typeof roomType) setRoomType(saved.roomType);
+if(typeof saved.squareMeters === typeof squareMeters) setSquareMeters(saved.squareMeters);
+if(typeof saved.monthlyRentPLN === typeof monthlyRentPLN) setMonthlyRentPLN(saved.monthlyRentPLN);
+if(typeof saved.czynszAdminPLN === typeof czynszAdminPLN) setCzynszAdminPLN(saved.czynszAdminPLN);
+if(typeof saved.depositPLN === typeof depositPLN) setDepositPLN(saved.depositPLN);
+if(typeof saved.availableDate === typeof availableDate) setAvailableDate(saved.availableDate);
+if(typeof saved.leaseEndDate === typeof leaseEndDate) setLeaseEndDate(saved.leaseEndDate);
+if(typeof saved.landlordName === typeof landlordName) setLandlordName(saved.landlordName);
+if(typeof saved.landlordEmail === typeof landlordEmail) setLandlordEmail(saved.landlordEmail);
+if(typeof saved.tenantName === typeof tenantName) setTenantName(saved.tenantName);
+if(typeof saved.tenantEmail === typeof tenantEmail) setTenantEmail(saved.tenantEmail);
+if(typeof saved.reasonForLeaving === typeof reasonForLeaving) setReasonForLeaving(saved.reasonForLeaving);
+if(typeof saved.distanceToCampus === typeof distanceToCampus) setDistanceToCampus(saved.distanceToCampus);
+if(typeof saved.flatmatesCount === typeof flatmatesCount) setFlatmatesCount(saved.flatmatesCount);
+if(typeof saved.isFurnished === typeof isFurnished) setIsFurnished(saved.isFurnished);
+if(typeof saved.meldunekAllowed === typeof meldunekAllowed) setMeldunekAllowed(saved.meldunekAllowed);
+if(typeof saved.landlordApproved === typeof landlordApproved) setLandlordApproved(saved.landlordApproved);
+if(typeof saved.billsIncluded === typeof billsIncluded) setBillsIncluded(saved.billsIncluded);
+if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(active)setDraftStatus(locale==='pl'?'Zapis szkicu jest niedostępny. Nie zamykaj strony.':'Draft storage unavailable. Keep this page open.');}finally{if(active)setDraftReady(true);}})();return()=>{active=false;};},[]);
+  useEffect(()=>{if(!draftReady||isSuccess)return;draftStore('write',draftKey,draft).then(()=>setDraftStatus(locale==='pl'?'Szkic zapisany na tym urządzeniu.':'Draft saved on this device.')).catch(()=>setDraftStatus(locale==='pl'?'Nie zapisano szkicu. Nie zamykaj strony.':'Could not save draft. Keep this page open.'));},[draftReady,isSuccess,title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordEmail,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsIncluded,photos]);
+  const goToStep=(next:number)=>{setReviewed(false);const invalid=invalidListingStep(draft);if(next>step&&invalid!==null&&invalid<next){setPhotoError(locale==='pl'?'Uzupełnij wymagane pola przed przejściem dalej.':'Complete the required fields before continuing.');setStep(invalid);requestAnimationFrame(()=>{errorRef.current?.focus();formRef.current?.reportValidity();});return;}setPhotoError(null);setStep(next);};
+  const stepComplete=(n:number)=>{const invalid=invalidListingStep(draft);return invalid===null||n<invalid;};
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    const invalid=invalidListingStep(draft);
+    if(invalid){setStep(invalid);setPhotoError(locale==='pl'?'Sprawdź wymagane pola, kwoty, daty i email właściciela.':'Check required fields, amounts, dates and the landlord email.');requestAnimationFrame(()=>errorRef.current?.focus());return;}
+    if(!reviewed){setReviewed(true);return;}
+    if(!currentUser){onRequireLogin?.();return;}
     if (photos.length === 0) {
       setPhotoError(
         locale === 'pl'
@@ -96,46 +140,39 @@ export const ListPage: React.FC<ListPageProps> = ({
       district,
       address,
       roomType,
-      monthlyRentPLN: Number(monthlyRentPLN) || 2000,
-      czynszAdminPLN: Number(czynszAdminPLN) || 350,
-      billsIncluded: true,
-      depositPLN: Number(depositPLN) || 2000,
-      availableDate: availableDate || new Date().toISOString().slice(0, 10),
-      leaseEndDate: leaseEndDate || '2027-06-30',
-      remainingMonths: 8,
+      monthlyRentPLN: Number(monthlyRentPLN),
+      czynszAdminPLN: Number(czynszAdminPLN),
+      billsIncluded,
+      depositPLN: Number(depositPLN),
+      availableDate,
+      leaseEndDate,
+      remainingMonths: Math.max(0,Math.round((Date.parse(leaseEndDate)-Date.parse(availableDate))/2629800000)),
       images: finalImages,
-      squareMeters: Number(squareMeters) || 25,
+      squareMeters: Number(squareMeters),
       isFurnished,
-      flatmatesCount: roomType === 'Private room' ? Number(flatmatesCount) || 2 : 0,
-      distanceToCampus: distanceToCampus || '10 min transit to university',
+      flatmatesCount: roomType === 'Private room' ? Number(flatmatesCount) || 0 : 0,
+      distanceToCampus,
       meldunekAllowed,
-      landlordApproved,
-      landlordName: landlordName || currentUser?.name || 'Verified Landlord',
-      landlordContactEmail: currentUser?.email || 'info@relok8.online',
-      likesCount: 1,
+      landlordApproved: false,
+      landlordName,
+      landlordContactEmail: landlordEmail.trim().toLowerCase(),
+      likesCount: 0,
       currentTenant: {
         name: tenantName || currentUser?.name || 'Departing Tenant',
         nationality: 'Tenant',
         role: 'Departing Tenant',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+        avatar: '',
         verifiedDocs: [],
         reasonForLeaving,
         joinedYear: '2026'
       },
-      amenities: [
-        'High-Speed Wi-Fi',
-        'Study Desk & Lamp',
-        'Equipped Kitchen',
-        'Washing Machine'
-      ],
-      universitiesNearby: [
-        `Main ${city} Campuses (10 min transit)`
-      ],
-      transitNearby: 'Central transit hub (3 min walk)',
-      description: `Bright and clean ${roomType} in ${district}, ${city}. Fully furnished, available for a potential lease takeover. Landlord consent and address registration must be confirmed.`,
+      amenities: [],
+      universitiesNearby: [],
+      transitNearby: '',
+      description: reasonForLeaving.trim(),
       depositSettlementType: 'P2P Direct Clearing',
-      czynszIncluded: true,
-      floor: '2nd floor (with elevator)'
+      czynszIncluded: false,
+      floor: ''
     };
 
     if (currentUser?.id) {
@@ -145,18 +182,14 @@ export const ListPage: React.FC<ListPageProps> = ({
       (created as any).ownerEmail = currentUser.email;
     }
 
-    try {
-      const myIds: string[] = JSON.parse(localStorage.getItem('r8_my_listing_ids') || '[]');
-      if (!myIds.includes(created.id)) {
-        localStorage.setItem('r8_my_listing_ids', JSON.stringify([created.id, ...myIds]));
-      }
-    } catch {}
 
     try {
       const published = await onSubmitListing(created);
-      const mine = JSON.parse(localStorage.getItem('r8_my_listing_ids') || '[]');
-      localStorage.setItem('r8_my_listing_ids', JSON.stringify([published.id, ...mine.filter((id: string) => id !== created.id && id !== published.id)]));
+      setPublishedId(published.id);
       setIsSuccess(true);
+      await draftStore('delete',draftKey).catch(()=>{});
+      await draftStore('delete','anonymous').catch(()=>{});
+      try { const mine=JSON.parse(localStorage.getItem('r8_my_listing_ids')||'[]');localStorage.setItem('r8_my_listing_ids',JSON.stringify([published.id,...mine.filter((id:string)=>id!==published.id)])); } catch {}
     } catch (error: any) {
       setPhotoError(error.message || 'Publishing failed. Please try again.');
     } finally { setIsSubmitting(false); }
@@ -188,12 +221,12 @@ export const ListPage: React.FC<ListPageProps> = ({
           </div>
 
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            {locale === 'pl' ? 'Przekaż swój pokój lub mieszkanie innemu najemcy' : 'List Your Room for a Zero-Penalty Lease Takeover'}
+            {locale === 'pl' ? 'Przekaż swój pokój lub mieszkanie innemu najemcy' : 'List your room and find a replacement tenant'}
           </h1>
           <p className="text-xs sm:text-base text-slate-600 leading-relaxed max-w-2xl">
             {locale === 'pl'
-              ? 'Wyprowadzasz się przed końcem umowy najmu? Znajdź godnego zaufania studenta lub ekspata za zgodą właściciela i odzyskaj kaucję bez kar.'
-              : 'Leaving Poland or your lease early? Find a verified replacement tenant to step into your contract, get your deposit back, and pay 0 PLN in landlord penalties.'}
+              ? 'Wyprowadzasz się przed końcem umowy? Znajdź nowego najemcę, uzyskaj zgodę właściciela i ustal rozliczenie kaucji.'
+              : 'Moving out early? Find a replacement tenant, ask your landlord to approve the change, and agree deposit arrangements directly.'}
           </p>
         </div>
 
@@ -216,10 +249,10 @@ export const ListPage: React.FC<ListPageProps> = ({
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+                onClick={() => navigateTo((locale === 'pl' ? '/pl' : '') + '/listing/' + publishedId)}
                 className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                {locale === 'pl' ? 'Przejdź do strony głównej' : 'Browse Marketplace'}
+                {locale === 'pl' ? 'Zobacz ogłoszenie' : 'View listing'}
               </button>
               <button
                 type="button"
@@ -232,8 +265,10 @@ export const ListPage: React.FC<ListPageProps> = ({
           </div>
         ) : (
           /* Stepped Intake Form */
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-8 space-y-6 sm:space-y-8 shadow-xs">
+          <form ref={formRef} onSubmit={handleSubmit} className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-8 space-y-6 sm:space-y-8 shadow-xs">
             
+            <p role="status" className="text-xs text-slate-500">{draftStatus} {locale==='pl'?'Korzystaj z zaufanego urządzenia.':'Use a trusted device.'}</p>
+            {photoError && <p ref={errorRef} tabIndex={-1} role="alert" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 p-3 rounded-xl">{photoError}</p>}
             {/* Step Indicators */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               {[
@@ -245,11 +280,11 @@ export const ListPage: React.FC<ListPageProps> = ({
                 <button
                   key={item.s}
                   type="button"
-                  onClick={() => setStep(item.s)}
+                  onClick={() => goToStep(item.s)}
                   className={`flex items-center gap-2 text-xs font-bold cursor-pointer transition-colors ${
                     step === item.s
                       ? 'text-indigo-600'
-                      : step > item.s
+                      : stepComplete(item.s)
                       ? 'text-slate-700'
                       : 'text-slate-400'
                   }`}
@@ -257,11 +292,11 @@ export const ListPage: React.FC<ListPageProps> = ({
                   <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold ${
                     step === item.s
                       ? 'bg-indigo-600 text-white'
-                      : step > item.s
+                      : stepComplete(item.s)
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-slate-100 text-slate-400'
                   }`}>
-                    {step > item.s ? '✓' : item.s}
+                    {stepComplete(item.s) ? '✓' : item.s}
                   </span>
                   <span className="hidden sm:inline">{item.label}</span>
                 </button>
@@ -283,10 +318,10 @@ export const ListPage: React.FC<ListPageProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-city" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Miasto' : 'City'} *
                     </label>
-                    <select
+                    <select id="listing-city"
                       value={city}
                       onChange={(e) => setCity(e.target.value as any)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
@@ -301,10 +336,10 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-district" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Dzielnica' : 'District'} *
                     </label>
-                    <input
+                    <input id="listing-district"
                       type="text"
                       required
                       value={district}
@@ -315,10 +350,10 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-address" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Dokładny adres' : 'Street address'} *
                     </label>
-                    <input
+                    <input id="listing-address"
                       type="text"
                       required
                       value={address}
@@ -329,10 +364,10 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-distanceToCampus" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Odległość do uczelni / kampusu' : 'Distance to nearest universities'}
                     </label>
-                    <input
+                    <input id="listing-distanceToCampus"
                       type="text"
                       value={distanceToCampus}
                       onChange={(e) => setDistanceToCampus(e.target.value)}
@@ -345,7 +380,7 @@ export const ListPage: React.FC<ListPageProps> = ({
                 <div className="flex justify-end pt-4">
                   <button
                     type="button"
-                    onClick={() => setStep(2)}
+                    onClick={() => goToStep(2)}
                     className="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     {locale === 'pl' ? 'Dalej: Szczegóły lokalu' : 'Next: Room Specs'} &rarr;
@@ -369,10 +404,10 @@ export const ListPage: React.FC<ListPageProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-roomType" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Typ pokoju' : 'Room Type'} *
                     </label>
-                    <select
+                    <select id="listing-roomType"
                       value={roomType}
                       onChange={(e) => setRoomType(e.target.value as any)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
@@ -385,10 +420,10 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-squareMeters" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Powierzchnia (m²)' : 'Area in m²'} *
                     </label>
-                    <input
+                    <input id="listing-squareMeters"
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -402,10 +437,10 @@ export const ListPage: React.FC<ListPageProps> = ({
 
                   {roomType === 'Private room' && (
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      <label htmlFor="listing-flatmatesCount" className="block text-xs font-bold text-slate-700 mb-1.5">
                         {locale === 'pl' ? 'Liczba współlokatorów' : 'Number of flatmates in apartment'}
                       </label>
-                      <input
+                      <input id="listing-flatmatesCount"
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
@@ -434,14 +469,14 @@ export const ListPage: React.FC<ListPageProps> = ({
                 <div className="flex items-center justify-between pt-4">
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => goToStep(1)}
                     className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 text-xs font-semibold cursor-pointer"
                   >
                     &larr; {locale === 'pl' ? 'Wróć' : 'Back'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStep(3)}
+                    onClick={() => goToStep(3)}
                     className="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     {locale === 'pl' ? 'Dalej: Czynsz & Daty' : 'Next: Rent & Dates'} &rarr;
@@ -459,16 +494,16 @@ export const ListPage: React.FC<ListPageProps> = ({
                     <span>{locale === 'pl' ? 'Krok 3: Koszty i terminy najmu' : 'Step 3: Rent, deposit & timeline'}</span>
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {locale === 'pl' ? 'Nowy najemca przejmuje umowę na dokładnie takich samych warunkach finansowych.' : 'The replacement tenant inherits the active lease at the exact existing rental rate.'}
+                    {locale === 'pl' ? 'Podaj rzeczywisty czynsz i dodatkowe opłaty. Potwierdź warunki z właścicielem.' : 'Enter the actual rent and additional charges. Confirm the final terms with the landlord.'}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-monthlyRentPLN" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Czynsz najmu (PLN / miesiąc)' : 'Monthly rent (PLN / month)'} *
                     </label>
-                    <input
+                    <input id="listing-monthlyRentPLN"
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -481,13 +516,14 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                      {locale === 'pl' ? 'Opłaty administracyjne / czynsz adm. (PLN)' : 'Administrative fees (czynsz adm. in PLN)'}
+                    <label htmlFor="listing-czynszAdminPLN" className="block text-xs font-bold text-slate-700 mb-1.5">
+                      {locale === 'pl' ? 'Opłaty administracyjne / czynsz adm. (PLN)' : 'Additional administration (PLN; enter 0 if included)'}
                     </label>
-                    <input
+                    <input id="listing-czynszAdminPLN"
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
+                      required
                       value={czynszAdminPLN}
                       onChange={handleNumericInput(setCzynszAdminPLN)}
                       placeholder={locale === 'pl' ? 'np. 400' : 'e.g. 400'}
@@ -496,10 +532,10 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-depositPLN" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Wysokość kaucji (PLN)' : 'Security deposit (PLN)'} *
                     </label>
-                    <input
+                    <input id="listing-depositPLN"
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
@@ -512,10 +548,10 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-availableDate" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Dostępne od (data wprowadzenia)' : 'Available from (move-in date)'} *
                     </label>
-                    <input
+                    <input id="listing-availableDate"
                       type="date"
                       required
                       value={availableDate}
@@ -525,14 +561,15 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label htmlFor="listing-leaseEndDate" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Koniec obecnej umowy najmu' : 'End date of current active lease'} *
                     </label>
-                    <input
+                    <input id="listing-leaseEndDate"
                       type="date"
                       required
                       value={leaseEndDate}
                       onChange={(e) => setLeaseEndDate(e.target.value)}
+                      min={availableDate || undefined}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
@@ -541,14 +578,14 @@ export const ListPage: React.FC<ListPageProps> = ({
                 <div className="flex items-center justify-between pt-4">
                   <button
                     type="button"
-                    onClick={() => setStep(2)}
+                    onClick={() => goToStep(2)}
                     className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 text-xs font-semibold cursor-pointer"
                   >
                     &larr; {locale === 'pl' ? 'Wróć' : 'Back'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStep(4)}
+                    onClick={() => goToStep(4)}
                     className="px-6 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     {locale === 'pl' ? 'Dalej: Zdjęcia & Zgody' : 'Next: Photos & Landlord'} &rarr;
@@ -566,10 +603,12 @@ export const ListPage: React.FC<ListPageProps> = ({
                     <span>{locale === 'pl' ? 'Krok 4: Zdjęcia i weryfikacja' : 'Step 4: Photos & Landlord Agreement'}</span>
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {locale === 'pl' ? 'Dobre zdjęcia zwiększają liczbę odpowiedzi o 300% w pierwszych 24h.' : 'Clear photos and landlord consent details ensure smooth handover without disputes.'}
+                    {locale === 'pl' ? 'Dodaj aktualne zdjęcia oferowanego lokalu.' : 'Add recent photos of the actual room and landlord contact details.'}
                   </p>
                 </div>
 
+                <label className="block text-xs font-bold text-slate-700 space-y-2">{locale==='pl'?'Email właściciela (prywatny, do zaproszenia) *':'Landlord email (private, for invitation) *'}<input type="email" required value={landlordEmail} onChange={e=>{setLandlordEmail(e.target.value);setReviewed(false);}} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"/></label>
+                <p className="text-xs text-slate-500">{locale==='pl'?'Po publikacji wyślij właścicielowi zaproszenie z My Place. Publikacja nie oznacza zgody właściciela.':'After publishing, invite the landlord from My Place. Publication does not mean landlord approval.'}</p>
                 {/* Photo Upload & Camera Capture Component */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -616,8 +655,8 @@ export const ListPage: React.FC<ListPageProps> = ({
                       />
                       <span className="text-slate-700 font-medium">
                         {locale === 'pl'
-                          ? 'Właściciel mieszkania został poinformowany o zamiarze przekazania pokoju nowemu najemcy.'
-                          : 'The landlord is informed and agrees to hand over the room to an approved replacement tenant.'}
+                          ? 'Omówiłem zmianę najemcy z właścicielem. To moje oświadczenie, nie zweryfikowana zgoda.'
+                          : 'I have discussed a possible replacement with the landlord. This is my statement, not verified approval.'}
                       </span>
                     </label>
 
@@ -637,20 +676,21 @@ export const ListPage: React.FC<ListPageProps> = ({
                   </div>
                 </div>
 
+                {reviewed && <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm space-y-2" role="status"><strong>{locale==='pl'?'Podsumowanie ogłoszenia':'Review your listing'}</strong><p>{roomType} · {district}, {city} · {squareMeters} m²</p><p>{address}</p><p>{availableDate} → {leaseEndDate}</p><p>{formatPLN(Number(monthlyRentPLN)+Number(czynszAdminPLN),locale)} / {locale==='pl'?'miesiąc + media do ustalenia':'month + utilities to confirm'}</p><p>{locale==='pl'?'Kaucja: ':'Deposit: '}{formatPLN(Number(depositPLN),locale)}</p><p>{photos.length} {locale==='pl'?'zdjęć · email właściciela:':'photos · landlord email:'} {landlordEmail}</p><p>{locale==='pl'?'Sprawdź dane. Relok8 nie pobiera płatności ani nie gwarantuje zwrotu kaucji.':'Check the details. Relok8 does not collect payments or guarantee deposit returns.'}</p></div>}
                 <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setStep(3)}
+                    onClick={() => goToStep(3)}
                     className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 text-xs font-semibold cursor-pointer text-center"
                   >
                     &larr; {locale === 'pl' ? 'Wróć' : 'Back'}
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !draftReady}
                     className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50 text-center"
                   >
-                    {isSubmitting ? (locale === 'pl' ? 'Publikowanie...' : 'Publishing...') : (locale === 'pl' ? 'Opublikuj ogłoszenie bez prowizji' : 'Publish Free Listing')}
+                    {isSubmitting ? (locale === 'pl' ? 'Publikowanie...' : 'Publishing...') : (!reviewed ? (locale==='pl'?'Sprawdź przed publikacją':'Review before publishing') : !currentUser ? (locale==='pl'?'Zaloguj się, aby opublikować':'Sign in to publish') : (locale==='pl'?'Opublikuj ogłoszenie':'Publish listing'))}
                   </button>
                 </div>
               </div>

@@ -26,8 +26,7 @@ import {
   onloTranslate,
   getPlaceRoomMessages,
   sendPlaceRoomMessage,
-  startPolling,
-  approveReplacement
+  startPolling
 } from '../lib/api';
 import { OnloAvatar } from '../components/OnloAvatar';
 
@@ -144,6 +143,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   useEffect(() => {
     initData();
   }, []);
+
+  useEffect(()=>{if(initialThreadId){setActiveThreadId(initialThreadId);setActiveTab('prospects');}},[initialThreadId]);
 
   // Poll for new messages every 3 seconds
   useEffect(() => {
@@ -325,16 +326,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   };
 
   // Landlord: Approve as replacement
-  const handleApproveReplacement = async () => {
-    if (!activeThread || !activePlace) return;
-    try {
-      await approveReplacement(activePlace.id, activeThread.prospectId);
-      const updatedThs = await getThreads();
-      setThreads(updatedThs);
-    } catch (e: any) {
-      console.warn('Approval failed:', e);
-    }
-  };
+  const handleApproveReplacement = () => { window.location.assign('/landlord'); };
 
   // Day divider formatting
   const getDayDividerLabel = (timestamp: number): string => {
@@ -688,7 +680,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                         className="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors cursor-pointer flex items-center gap-1"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Approve as replacement</span>
+                        <span>{locale === 'pl' ? 'Sprawdź wnioski' : 'Review requests'}</span>
                       </button>
                     )}
                   </>

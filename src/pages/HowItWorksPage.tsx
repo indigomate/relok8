@@ -51,7 +51,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
               1
             </div>
             <h2 className="text-lg font-bold text-slate-900">
-              Browse Pre-Vetted Rooms
+              {locale === 'pl' ? 'Przeglądaj ogłoszenia pokoi' : 'Browse room listings'}
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
               Explore furnished studios and rooms in Warsaw, Kraków, Wrocław, Gdańsk, and Lublin. Review photos, transit times to universities, exact monthly rent, and deposit amounts.
@@ -76,7 +76,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
               Landlord Approval & Cesja
             </h2>
             <p className="text-xs text-slate-600 leading-relaxed">
-              We generate the standardized bilingual Polish-English assignment contract (Cesja umowy najmu wzór english under Art. 509 KC). The landlord signs pre-approval, eliminating contract break penalties.
+              {locale === 'pl' ? 'Wyślij wniosek o przejęcie najmu. Właściciel ma 7 dni na decyzję. Śledź wniosek w My Place. Zgoda nie potwierdza podpisania dokumentów ani płatności.' : 'Request a takeover. The landlord has 7 days to review it. Track the request in My Place. Approval does not confirm signed paperwork or payment.'}
             </p>
             <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
               <li className="flex items-center gap-1.5">
@@ -85,7 +85,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>No arbitrary rent increases</span>
+                <span>{locale === 'pl' ? 'Potwierdź warunki z właścicielem' : 'Confirm terms with the landlord'}</span>
               </li>
             </ul>
           </div>
@@ -103,11 +103,11 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
             <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Address registration (meldunek) OK</span>
+                <span>{locale === 'pl' ? 'Sprawdź wymogi meldunkowe' : 'Check address registration requirements'}</span>
               </li>
               <li className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Official keys handover</span>
+                <span>{locale === 'pl' ? 'Potwierdzenia uczestników' : 'Participant confirmations'}</span>
               </li>
             </ul>
           </div>
@@ -118,10 +118,10 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
           <div className="flex items-center gap-2 text-indigo-600 font-bold text-base">
             <Shield className="w-5 h-5" />
-            <span>Why is Lease Takeover (Cesja) 100% Legal in Poland?</span>
+            <span>{locale === 'pl' ? 'Co potwierdza Relok8?' : 'What does Relok8 confirm?'}</span>
           </div>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Under Article 509 of the Polish Civil Code (Kodeks Cywilny), a tenant may transfer their contractual rights and claims to a third party with the landlord's consent. This is known legally as <strong className="text-slate-900">cesja praw i obowiązków z umowy najmu</strong>. It ensures that the incoming tenant enters into the existing valid agreement under the exact same financial terms, while releasing the departing tenant from future rent liabilities without penalty.
+            {locale === 'pl' ? 'Relok8 zapisuje wnioski, decyzje i potwierdzenia uczestników. Dane i zdjęcia pochodzą od autorów. Nie weryfikujemy niezależnie lokali, nie obsługujemy płatności i nie gwarantujemy zwrotu kaucji. Sprawdź umowę i w razie potrzeby uzyskaj profesjonalną poradę.' : 'Relok8 records requests, decisions and participant confirmations. Facts and photos come from listing authors. We do not independently verify properties, process payments or guarantee deposit returns. Check your agreement and obtain qualified advice when needed.'}
           </p>
         </div>
 
@@ -146,7 +146,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
           >
             <div>
               <div className="text-base font-bold">Leaving your lease early?</div>
-              <div className="text-xs text-slate-400 mt-1">Transfer your lease & calculate penalty savings</div>
+              <div className="text-xs text-slate-400 mt-1">{locale === 'pl' ? 'Znajdź nowego najemcę za zgodą właściciela' : 'Find a replacement with landlord approval'}</div>
             </div>
             <ArrowRight className="w-5 h-5 text-slate-400" />
           </button>

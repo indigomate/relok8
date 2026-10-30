@@ -29,7 +29,7 @@ export async function requireLandlord(ctx: AuthCtx, record: { landlordContactEma
 }
 export function publicListing<T extends Record<string, any>>(record: T): T {
   const { landlordContactEmail, ownerId, landlordUserId, placeState, lockedByUserId, reservedByName, ...safe } = record;
-  return safe as T;
+  return { ...safe, advertisingPermission: placeState?.advertisingPermission === true } as unknown as T;
 }
 export function validateListing(args: Record<string, any>) {
   if (!args.title?.trim() || args.title.length > 160 || !args.address?.trim() || args.address.length > 500 || !args.city?.trim()) throw new Error("Invalid listing details");

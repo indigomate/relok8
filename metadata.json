@@ -1,6 +1,8 @@
 {
   "name": "Relok8",
-  "description": "Student and expat housing platform in Poland without broker fees. Rooms and flats handed over by departing tenants with landlord pre-approval.",
+  "description": "Find a room or replacement tenant in Poland. Discuss details, ask for landlord approval and coordinate the handover.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

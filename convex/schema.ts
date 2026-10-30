@@ -26,7 +26,7 @@ export default defineSchema({
     deposit: v.number(),
     roomType: v.string(),
     areaM2: v.number(),
-    floor: v.number(),
+    floor: v.optional(v.number()),
     moveInDate: v.string(),
     leaseEndDate: v.string(),
     coordinates: v.optional(

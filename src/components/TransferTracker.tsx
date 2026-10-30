@@ -12,7 +12,7 @@ interface TransferTrackerProps {
 }
 
 export const TransferTracker: React.FC<TransferTrackerProps> = ({
-  currentStepIndex = 2,
+  currentStepIndex = 0,
   locale = 'en',
   className = '',
   showTitle = true
@@ -24,8 +24,8 @@ export const TransferTracker: React.FC<TransferTrackerProps> = ({
     { key: 'matched', label: strings.stepMatched, sub: locale === 'pl' ? 'Kandydat' : 'Candidate' },
     { key: 'approved', label: strings.stepLandlordApproved, sub: locale === 'pl' ? 'Art. 509 KC' : 'Art. 509 KC' },
     { key: 'signed', label: strings.stepContractSigned, sub: locale === 'pl' ? 'PL / EN' : 'PL / EN' },
-    { key: 'deposit', label: strings.stepDepositSettled, sub: locale === 'pl' ? 'P2P Kaucja' : 'P2P Escrow' },
-    { key: 'handed', label: strings.stepHandedOver, sub: locale === 'pl' ? '0 dni pustostanu' : '0-day vacancy' }
+    { key: 'deposit', label: strings.stepDepositSettled, sub: locale === 'pl' ? 'Ustalenia stron' : 'Direct arrangements' },
+    { key: 'handed', label: strings.stepHandedOver, sub: locale === 'pl' ? 'Klucze i odbiór' : 'Keys & inspection' }
   ];
 
   const progressPercentage = (currentStepIndex / (steps.length - 1)) * 100;

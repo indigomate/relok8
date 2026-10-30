@@ -1,3 +1,4 @@
+import {knownMonthlyCost} from './utils/listingFlow';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/react';
 import { 
@@ -56,7 +57,7 @@ import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
 import { t } from './utils/translations';
 import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
 import { deletePlace, uploadListingPhotos } from './lib/api';
-import { ConvexProvider } from './lib/convex/client';
+import { ConvexProvider, mapConvexListingToAppListing } from './lib/convex/client';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
@@ -223,6 +224,7 @@ function Relok8App() {
   // Live Convex reactive subscriptions (chatty-seahorse-914)
   const { isAuthenticated: isBackendAuthenticated } = useConvexAuth();
   const liveConvexLeases = useQuery(api.leases.get, {});
+  const selectedLease = useQuery(api.leases.getById, currentRoute.type === "listing-detail" && currentRoute.listingId ? {id:currentRoute.listingId} : "skip");
   const createConvexLease = useMutation(api.leases?.create);
   const reserveConvexLease = useMutation(api.leases?.reserve);
   const deleteConvexLease = useMutation(api.leases?.deleteLease);
@@ -247,46 +249,46 @@ function Relok8App() {
           type: 'lease_takeover',
           title: l.title || 'Student Room',
           city: l.city || 'Warsaw',
-          district: l.district || 'City Centre',
+          district: l.district || '',
           address: l.address || '',
           roomType: l.roomType || 'Private room',
-          monthlyRentPLN: l.monthlyRentPLN ?? l.monthlyRent ?? 2000,
+          monthlyRentPLN: l.monthlyRentPLN ?? l.monthlyRent,
           czynszAdminPLN: l.czynszAdminPLN ?? l.czynszAdmin ?? 0,
           billsIncluded: Boolean(l.billsIncluded),
-          depositPLN: l.depositPLN ?? l.deposit ?? 2000,
+          depositPLN: l.depositPLN ?? l.deposit,
           availableDate: l.availableDate || l.moveInDate || new Date().toISOString().slice(0, 10),
           leaseEndDate: l.leaseEndDate || '2027-06-30',
-          remainingMonths: l.remainingMonths ?? 9,
-          squareMeters: l.squareMeters ?? l.areaM2 ?? 20,
+          remainingMonths: Math.max(0,Math.round((Date.parse(l.leaseEndDate)-Date.parse(l.moveInDate))/2629800000)),
+          squareMeters: l.squareMeters ?? l.areaM2,
           isFurnished: Boolean(l.isFurnished),
-          flatmatesCount: l.flatmatesCount ?? 1,
-          distanceToCampus: l.distanceToCampus || '15 min transit',
+          flatmatesCount: l.flatmatesCount ?? 0,
+          distanceToCampus: l.distanceToCampus || '',
           meldunekAllowed: Boolean(l.meldunekAllowed),
-          landlordApproved: false,
+          landlordApproved: l.advertisingPermission === true,
           images: l.images || [],
           landlordName: l.landlordName || 'Property owner',
           landlordContactEmail: '',
           currentTenant: l.currentTenant ? {
-            name: l.currentTenant.name || 'Current Student',
-            nationality: l.currentTenant.nationality || 'International',
-            role: l.currentTenant.status || l.currentTenant.role || 'Graduating Student',
+            name: l.currentTenant.name || 'Listing author',
+            nationality: l.currentTenant.nationality || '',
+            role: l.currentTenant.status || l.currentTenant.role || 'Listing author',
             avatar: l.currentTenant.avatar || '',
             verifiedDocs: [],
-            reasonForLeaving: 'Graduation / Relocation',
-            joinedYear: '2025'
+            reasonForLeaving: '',
+            joinedYear: ''
           } : {
-            name: 'Current Student',
-            nationality: 'International',
-            role: 'Graduating Student',
+            name: 'Listing author',
+            nationality: '',
+            role: 'Listing author',
             avatar: '',
             verifiedDocs: [],
-            reasonForLeaving: 'Graduation / Relocation',
-            joinedYear: '2025'
+            reasonForLeaving: '',
+            joinedYear: ''
           },
           amenities: l.amenities || [],
-          universitiesNearby: l.universitiesNearby || ['University Campus'],
+          universitiesNearby: l.universitiesNearby || [],
           description: l.description || '',
-          floor: typeof l.floor === 'string' ? l.floor : (String(l.floor || 2) + 'nd floor'),
+          floor: typeof l.floor === 'string' ? l.floor : (l.floor === undefined ? '' : String(l.floor)),
           lat: l.coordinates?.lat ?? l.lat,
           lng: l.coordinates?.lng ?? l.lng,
         }));
@@ -433,6 +435,8 @@ function Relok8App() {
       metaDesc = 'Sign in to your Relok8 account to manage saved apartments, inquiries, and lease transfers.';
     }
 
+    pageTitle = pageTitle.replace(/Zero-Penalty|Zero Penalties/gi, 'Landlord-approved');
+    metaDesc = locale === 'pl' ? 'Znajdź pokój lub nowego najemcę w Polsce. Ustal szczegóły, uzyskaj zgodę właściciela i koordynuj przekazanie.' : 'Find a room or a replacement tenant in Poland. Discuss details, ask for landlord approval and coordinate the handover.';
     document.title = pageTitle;
 
     // Update canonical link
@@ -533,7 +537,7 @@ function Relok8App() {
           },
           'offers': {
             '@type': 'Offer',
-            'price': found.monthlyRentPLN,
+            'price': knownMonthlyCost(found),
             'priceCurrency': 'PLN',
             'availability': 'https://schema.org/InStock',
             'validFrom': found.availableDate
@@ -557,7 +561,7 @@ function Relok8App() {
             'name': 'Can foreign students and expats register their address (Meldunek) to get a PESEL?',
             'acceptedAnswer': {
               '@type': 'Answer',
-              'text': 'Yes. Every foreign citizen staying in Poland over 30 days can register temporary residence (meldunek czasowy) at the local district office (Urząd Dzielnicy) and receive a PESEL number for free.'
+              'text': 'Registration requirements depend on individual circumstances. Confirm requirements with the relevant office.'
             }
           },
           {
@@ -565,7 +569,7 @@ function Relok8App() {
             'name': 'How is the security deposit settled during a lease transfer?',
             'acceptedAnswer': {
               '@type': 'Answer',
-              'text': 'The incoming tenant reimburses the departing tenant directly upon signing the tripartite handover protocol, avoiding landlord cancellation penalties.'
+              'text': 'Participants agree deposit arrangements directly. Relok8 does not process payments or guarantee refunds.'
             }
           }
         ]
@@ -574,7 +578,7 @@ function Relok8App() {
       schemaGraph.push({
         '@type': 'HowTo',
         'name': 'How to Transfer a Residential Lease in Poland (Art. 509 KC)',
-        'description': 'Step-by-step procedure to legally hand over an active apartment lease in Poland without losing your deposit.',
+        'description': 'Discuss the terms, ask the landlord to approve the replacement and coordinate the handover.',
         'step': [
           {
             '@type': 'HowToStep',
@@ -586,7 +590,7 @@ function Relok8App() {
             '@type': 'HowToStep',
             'position': 2,
             'name': 'List Your Room on Relok8',
-            'text': 'Publish a free room listing to connect with verified students and expats.'
+            'text': 'Publish a free room listing to connect with people looking for a room.'
           },
           {
             '@type': 'HowToStep',
@@ -678,13 +682,13 @@ function Relok8App() {
           deposit: newListing.depositPLN,
           roomType: newListing.roomType,
           areaM2: newListing.squareMeters,
-          floor: parseInt(newListing.floor, 10) || 2,
+          floor: newListing.floor.trim() === '' ? undefined : Number(newListing.floor),
           moveInDate: newListing.availableDate,
           leaseEndDate: newListing.leaseEndDate,
           coordinates: (newListing.lat && newListing.lng) ? { lat: newListing.lat, lng: newListing.lng } : undefined,
           currentTenant: newListing.currentTenant ? {
             name: newListing.currentTenant.name,
-            status: newListing.currentTenant.role || 'Graduating Student',
+            status: newListing.currentTenant.role || 'Listing author',
             avatar: newListing.currentTenant.avatar || '',
           } : undefined,
           amenities: newListing.amenities || [],
@@ -741,7 +745,7 @@ function Relok8App() {
       }
 
       // Max rent
-      if (l.monthlyRentPLN > filterValues.maxRent) return false;
+      if (knownMonthlyCost(l) > filterValues.maxRent) return false;
 
       // Move in date: listing must be available on or before the selected target date
       if (filterValues.moveInDate) {
@@ -772,7 +776,7 @@ function Relok8App() {
     // Sorting: Soonest move-in (default) · Price low to high · Newest
     return list.sort((a, b) => {
       if (filterValues.sortBy === 'price-asc') {
-        return a.monthlyRentPLN - b.monthlyRentPLN;
+        return knownMonthlyCost(a) - knownMonthlyCost(b);
       }
       if (filterValues.sortBy === 'newest') {
         return b.id.localeCompare(a.id);
@@ -834,7 +838,7 @@ function Relok8App() {
       {/* Route Views */}
       {currentRoute.type === 'listing-detail' && currentRoute.listingId ? (
         (() => {
-          const detailListing = listings.find((l) => l.id === currentRoute.listingId);
+          const detailListing = selectedLease ? mapConvexListingToAppListing(selectedLease as any) : listings.find((l) => l.id === currentRoute.listingId);
           if (!detailListing) return <main className="max-w-3xl mx-auto px-6 py-20"><h1 className="text-2xl font-bold">{isLoadingListings ? 'Loading listing…' : 'Listing not found'}</h1><p>{isLoadingListings ? 'Please wait while the listing loads.' : 'This listing may have been removed or the link may be incorrect.'}</p></main>;
           return (
             <ListingDetailPage
@@ -919,7 +923,7 @@ function Relok8App() {
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
       ) : currentRoute.type === 'list' ? (
-        <ListPage
+        <ListPage key={currentUser?.id || "anonymous"} onRequireLogin={() => {setLoginReason(locale === "pl" ? "Zaloguj się, aby opublikować zapisany szkic." : "Sign in to publish your saved draft.");setIsLoginOpen(true);}}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           onSubmitListing={handleAddListing}
           locale={locale}
@@ -939,13 +943,13 @@ function Relok8App() {
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
       ) : currentRoute.type === 'messages' ? (
-        <MessagesPage
+        <MessagesPage initialThreadId={currentRoute.searchParams.get("thread") || undefined}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
           currentUser={currentUser}
         />
       ) : currentRoute.type === 'dashboard' ? (
-        <LandlordDashboard
+        <LandlordDashboard onRequireLogin={()=>{setLoginReason(locale==="pl"?"Zaloguj się adresem odbiorcy zaproszenia.":"Sign in with the invited email.");setIsLoginOpen(true);}}
           locale={locale}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           onNavigateToListing={(id) => {
@@ -955,7 +959,7 @@ function Relok8App() {
           overrideLandlordEmail={currentUser?.email}
         />
       ) : currentRoute.type === 'place' ? (
-        <PlacePage
+        <PlacePage onRequireLogin={()=>{setLoginReason(locale==="pl"?"Zaloguj się, aby kontynuować.":"Sign in to continue.");setIsLoginOpen(true);}}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
           currentUser={currentUser}
@@ -1163,8 +1167,8 @@ function Relok8App() {
                   </h3>
                   <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                     {locale === 'pl'
-                      ? 'Wszystkie dane przykładowe zostały wyczyszczone. Jeśli zwalniasz pokój lub jesteś wynajmującym, dodaj ogłoszenie bezpośrednio i bez prowizji.'
-                      : 'Sample listings have been cleared. If you are a departing tenant or landlord, post your room to connect directly with students.'}
+                      ? 'Nie ma tu jeszcze dostępnych pokoi. Sprawdź inne miasto, wyczyść filtry lub dodaj ogłoszenie, jeśli się wyprowadzasz.'
+                      : 'No rooms are available here yet. Try another city, clear filters or list a room if you are moving out.'}
                   </p>
                   <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                     <button
@@ -1297,7 +1301,7 @@ function Relok8App() {
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
         onOpenReportListing={() => {
-          showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Report listing sent to info@relok8.online');
+          showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Open a listing and choose Report a problem, or email info@relok8.online.');
         }}
         locale={locale}
         theme={theme}

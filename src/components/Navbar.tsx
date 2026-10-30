@@ -330,7 +330,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
                       </div>
                       <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        Verified
+                        {locale === "pl" ? "Zalogowano" : "Signed in"}
                       </span>
                     </div>
 

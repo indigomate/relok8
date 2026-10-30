@@ -1,3 +1,5 @@
+import {TakeoverProgress} from '../components/TakeoverProgress';
+import {navigateTo} from '../utils/router';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, Home, Building2, ShieldCheck, CheckCircle2,
@@ -33,6 +35,7 @@ import {
 import { Listing } from '../types';
 
 interface PlacePageProps {
+  onRequireLogin?: () => void;
   onBack: () => void;
   locale?: SupportedLocale;
   onOpenListing?: (id: string) => void;
@@ -44,6 +47,7 @@ interface PlacePageProps {
 }
 
 export const PlacePage: React.FC<PlacePageProps> = ({
+  onRequireLogin,
   onBack,
   locale = 'en',
   onOpenListing,
@@ -115,13 +119,15 @@ export const PlacePage: React.FC<PlacePageProps> = ({
         setThreads(ths);
       }
     } catch (e) {
-      console.warn('PlacePage load error:', e);
+      setFeedback(locale==='pl'?'Nie udało się wczytać danych. Sprawdź połączenie i odśwież stronę.':'Could not load your places. Check your connection and refresh.');
     }
   };
 
   useEffect(() => {
     loadData();
   }, [selectedPlaceId]);
+
+  useEffect(()=>{const reload=()=>{void loadData();};window.addEventListener('relok8:workflow',reload);return()=>window.removeEventListener('relok8:workflow',reload);},[selectedPlaceId]);
 
   // The server returns only places the verified caller may manage.
   const mergedPlaces = places;
@@ -225,7 +231,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
       setAnnouncement(ann);
 
       if (decision === 'approve') {
-        setFeedback('Takeover approved! Place is now listed as Available for Takeover, WhatsApp announcement created, and saved prospects notified.');
+        setFeedback('Exit request approved. Confirm the applicant separately; share an announcement yourself if needed.');
       } else {
         setFeedback(`Decision recorded: ${decision}.`);
       }
@@ -246,7 +252,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
       });
       setPlaces(prev => prev.map(p => p.id === updated.id ? updated : p));
       if (updated.status === 'handed_over') {
-        setFeedback('All handover steps completed! Status updated to Handed Over. 10 points awarded to tenant.');
+        setFeedback('Handover confirmations saved. No rewards or payments were issued.');
       }
     } catch (e: any) {
       console.warn('Checklist update error:', e);
@@ -299,6 +305,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
   if (!currentPlace) {
     return (
       <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-32 sm:pb-24 font-sans">
+
         <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 pb-3">
           <div className="flex items-center gap-3">
             <button
@@ -321,6 +328,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
             </div>
           </div>
         </header>
+<div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5"><TakeoverProgress locale={locale} onRequireLogin={()=>{if(onRequireLogin)onRequireLogin();else navigateTo(locale==='pl'?'/pl/sign-in':'/sign-in');}}/></div>
 
         {feedback && (
           <div className="max-w-xl mx-auto px-4 mt-2">
@@ -403,6 +411,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-36 sm:pb-24 font-sans">
+
       {/* 1. Header: Compact title row (aligned back button, responsive title) */}
       <header className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 sm:pt-5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -446,6 +455,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
           </div>
         </div>
       </header>
+<div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5"><TakeoverProgress locale={locale} onRequireLogin={()=>{if(onRequireLogin)onRequireLogin();else navigateTo(locale==='pl'?'/pl/sign-in':'/sign-in');}}/></div>
 
       {/* Main Content Layout: Two-column grid (Main column + 300px right rail) */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-2">
@@ -1027,7 +1037,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
             )}
 
             {/* Case D: status === 'reserved' or 'handed_over' -> Checklist as large tickable rows */}
-            {(currentPlace.status === 'reserved' || currentPlace.status === 'handed_over') && currentPlace.handoverChecklist && (
+            {!(currentPlace as any).workflowManaged && (currentPlace.status === 'reserved' || currentPlace.status === 'handed_over') && currentPlace.handoverChecklist && (
               <div className="bg-white rounded-3xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1036,7 +1046,7 @@ export const PlacePage: React.FC<PlacePageProps> = ({
                       <span>Room Handover Checklist</span>
                     </h3>
                     <p className="text-xs text-slate-500">
-                      Both current tenant and landlord can tick steps. When all 4 are checked, status updates to Handed Over.
+                      These are participant-reported notes. Use Takeover requests above for the shared confirmations and final handover status.
                     </p>
                   </div>
 

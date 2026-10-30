@@ -124,7 +124,7 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
     // Format could be rel-waw-01 or rel-waw-01-studio-in-upper-mokotow
     // Look for standard ID pattern or split by first 3 parts (rel-city-num)
     const match = rawIdSegment.match(/^(rel-[a-z]{3}-\d+)(?:-(.*))?$/i);
-    const listingId = match ? match[1] : rawIdSegment.split('-').slice(0, 3).join('-');
+    const listingId = match ? match[1] : rawIdSegment.split('-')[0];
     const listingSlug = match && match[2] ? match[2] : '';
 
     return {

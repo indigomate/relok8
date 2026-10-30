@@ -366,7 +366,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       };
     }
     return {
-      title: locale === 'pl' ? 'Wszystkie 3 kluczowe strefy zweryfikowane!' : 'All 3 essential room areas verified!',
+      title: locale === 'pl' ? 'Dodano zdjęcia 3 stref' : 'Photos added for all 3 room areas',
       tip: locale === 'pl'
         ? 'Świetna robota! Możesz dodać do 10 zdjęć, np. widok z okna lub szafę.'
         : 'Great work! You can add up to 10 photos, such as storage wardrobe or window view.'
@@ -382,10 +382,10 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
             <OnloAvatar size={24} variant="avatar" />
             <div>
               <span className="text-xs font-bold text-slate-900 block leading-tight">
-                {locale === 'pl' ? 'Weryfikacja jakości zdjęć' : 'Photo Quality Check'}
+                {locale === 'pl' ? 'Przesyłanie zdjęć' : 'Photo upload'}
               </span>
               <span className="text-[11px] text-slate-500 font-medium">
-                {locale === 'pl' ? 'Automatyczne wykrywanie stref i odrzucanie selfie' : 'Automatic room inspection & selfie rejection'}
+                {locale === 'pl' ? 'Dodaj aktualne zdjęcia; bez niezależnej weryfikacji' : 'Upload recent photos; not independently verified'}
               </span>
             </div>
           </div>
@@ -481,7 +481,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               <span className="font-bold text-xs">
                 {aiFeedback.isError 
                   ? (locale === 'pl' ? 'Zdjęcie wymaga poprawy' : 'Photo needs adjustment')
-                  : (locale === 'pl' ? 'Kadr zaakceptowany!' : 'Room photo verified!')}
+                  : (locale === 'pl' ? 'Dodano zdjęcie' : 'Photo added')}
               </span>
             </div>
             <button 
@@ -574,8 +574,8 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
           <div className="w-4 h-4 rounded-full border-2 border-indigo-300 border-t-indigo-600 animate-spin shrink-0" />
           <span>
             {locale === 'pl'
-              ? 'Weryfikacja czytelności kadru i wnętrza pokoju...'
-              : 'Verifying room photo clarity and interior...'}
+              ? 'Przygotowywanie zdjęć...'
+              : 'Preparing photos...'}
           </span>
         </div>
       )}
@@ -612,7 +612,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-600 px-0.5">
             <span>
-              {locale === 'pl' ? 'Zweryfikowane zdjęcia:' : 'Verified room photos:'}{' '}
+              {locale === 'pl' ? 'Dodane zdjęcia:' : 'Uploaded room photos:'}{' '}
               <span className="font-bold text-slate-900">{photos.length}</span> / {maxPhotos}
             </span>
             <span className="text-[11px] text-slate-400">
@@ -739,7 +739,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
                     : (locale === 'pl' ? 'Skieruj obiektyw na łazienkę lub kuchnię' : 'Frame bathroom shower or kitchen counter')}
                 </span>
                 <span className="text-[10px] text-emerald-450 text-white/80 bg-black/60 px-2 py-0.5 rounded-md">
-                  {locale === 'pl' ? 'Brak selfie · Czysty kadr' : 'No selfies · Clear room shot'}
+                  {locale === 'pl' ? 'Pokaż pokój; bez dokumentów osobistych' : 'Show the room; avoid personal documents'}
                 </span>
               </div>
             </div>

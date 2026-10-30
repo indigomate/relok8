@@ -1,3 +1,4 @@
+import {knownMonthlyCost} from '../utils/listingFlow';
 import React, { useState, useEffect } from 'react';
 import { 
   ChevronLeft, ChevronRight, Heart, Clock, Calendar, Check, 
@@ -34,7 +35,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   onOpenDepositClearing,
   locale = 'en'
 }) => {
-  const FALLBACK_ROOM_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
+  const FALLBACK_ROOM_IMAGE = '';
 
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [imgSrc, setImgSrc] = useState<string>(() => {
@@ -42,7 +43,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
     return (raw && typeof raw === 'string' && raw.trim().length > 0) ? raw : FALLBACK_ROOM_IMAGE;
   });
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+  const [hasError, setHasError] = useState(!listing.images?.[0]);
 
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const convex = useConvex();
@@ -337,7 +338,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
             )}
             {listing.landlordApproved && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-100">
-                Landlord approved
+                Permission to advertise confirmed
               </span>
             )}
           </div>
@@ -347,7 +348,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         <div className="pt-2.5 mt-1 border-t border-slate-100 flex items-baseline justify-between text-xs">
           <div>
             <span className="text-lg font-bold text-slate-900 tnum">
-              PLN {listing.monthlyRentPLN.toLocaleString()}
+              PLN {knownMonthlyCost(listing).toLocaleString()}
             </span>
             <span className="text-slate-500 font-normal">/mo</span>
           </div>

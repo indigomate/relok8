@@ -1,3 +1,4 @@
+import {navigateTo} from '../utils/router';
 import React, { useState } from 'react';
 import { Bell, CheckCircle2, ArrowRight, Loader2, Sparkles, Mail } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
@@ -25,31 +26,7 @@ export const AlertCaptureCard: React.FC<AlertCaptureCardProps> = ({
   // Convex mutation for 'subscribers' table
   const subscribeConvex = useMutation(api.subscribers?.subscribe);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      setErrorMsg(locale === 'pl' ? 'Proszę podać poprawny adres e-mail.' : 'Please enter a valid email address.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    setErrorMsg(null);
-
-    const targetCity = city || 'Poland';
-
-    try {
-      await subscribeConvex({ email: cleanEmail, city: targetCity });
-      setSubmitted(true);
-      if (onAlertRegistered) {
-        onAlertRegistered(cleanEmail, targetCity);
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Sign in with a verified email to register alerts.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleSubmit = (e:React.FormEvent) => {e.preventDefault();window.location.assign((locale==='pl'?'/pl':'/')+'?city=Anywhere%20in%20Poland');};
 
   return (
     <div className="w-full max-w-xl mx-auto rounded-3xl bg-indigo-50/70 border border-indigo-100 p-6 sm:p-8 text-center my-6 shadow-xs font-sans">
@@ -59,15 +36,14 @@ export const AlertCaptureCard: React.FC<AlertCaptureCardProps> = ({
 
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold uppercase tracking-wider mb-2">
         <Mail className="w-3.5 h-3.5 text-indigo-600" />
-        <span>{locale === 'pl' ? 'Natychmiastowe powiadomienia' : 'Instant Room Alerts'}</span>
+        <span>{locale === 'pl' ? 'Więcej możliwości' : 'More options'}</span>
       </div>
 
       <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1 tracking-tight">
         {strings.getAlertsTitle}
       </h3>
       <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto mb-5 leading-relaxed">
-        {strings.getAlertsDesc}{' '}
-        <strong className="text-slate-900 font-semibold">{city || 'Poland'}</strong>.
+        {strings.getAlertsDesc}
       </p>
 
       {submitted ? (
@@ -85,14 +61,7 @@ export const AlertCaptureCard: React.FC<AlertCaptureCardProps> = ({
       ) : (
         <form onSubmit={handleSubmit} className="space-y-2 max-w-md mx-auto">
           <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={strings.alertEmailPlaceholder}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 shadow-2xs"
-            />
+
             <button
               type="submit"
               disabled={isSubmitting}

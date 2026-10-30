@@ -33,8 +33,8 @@ const FAQS: FAQItem[] = [
       pl: 'Czym jest cesja umowy najmu na gruncie polskiego prawa?'
     },
     answer: {
-      en: 'A Cesja umowy najmu (lease assignment) is a legal agreement pursuant to Article 509 of the Polish Civil Code (Kodeks Cywilny). It transfers the active lease rights and tenant obligations from the departing tenant to a replacement tenant with the landlord’s explicit written consent. The lease continues under the exact same financial terms and deposit amount, eliminating early cancellation penalties.',
-      pl: 'Cesja umowy najmu to prawnie wiążące porozumienie na podstawie art. 509 Kodeksu Cywilnego. Przenosi prawa i obowiązki wynikające z umowy najmu z dotychczasowego najemcy na nowego za pisemną zgodą wynajmującego. Umowa trwa na tych samych warunkach, bez konieczności ponoszenia kar za wcześniejsze rozwiązanie.'
+      en: "A lease takeover lets a new tenant take over under arrangements agreed with the landlord. Confirm the agreement, dates, charges and deposit terms directly. Relok8 records requests and decisions; it does not guarantee legal outcomes.",
+      pl: "Przejęcie najmu pozwala nowemu najemcy wejść na warunkach uzgodnionych z właścicielem. Potwierdź umowę, daty, opłaty i kaucję bezpośrednio. Relok8 zapisuje wnioski i decyzje; nie gwarantuje skutków prawnych."
     },
     relatedLink: {
       text: { en: 'Read full lease handover guide', pl: 'Zobacz przewodnik przekazania najmu' },
@@ -49,8 +49,8 @@ const FAQS: FAQItem[] = [
       pl: 'Czy wynajmujący musi wyrazić zgodę na nowego najemcę?'
     },
     answer: {
-      en: 'Yes. Under Polish Civil Code Art. 509, lease transfers legally require the landlord’s written consent (zgoda wynajmującego). On Relok8, all listings are pre-approved or verified with landlords, and our generated Cesja contract provides dedicated signature lines for all three parties (Departing Tenant, Incoming Tenant, and Landlord).',
-      pl: 'Tak. Zgodnie z art. 509 Kodeksu Cywilnego cesja wymaga zgody wynajmującego w formie pisemnej. Na Relok8 ułatwiamy uzyskanie tej zgody, a nasz wzór porozumienia zawiera miejsce na podpisy wszystkich trzech stron.'
+      en: "Ask the landlord to approve the applicant. Permission to advertise is a separate decision. Listings can be published before the landlord joins and are not automatically verified. Invite the landlord from My Place using their email-bound link.",
+      pl: "Poproś właściciela o zatwierdzenie kandydata. Zgoda na ogłoszenie jest osobna. Ogłoszenie można opublikować przed dołączeniem właściciela; nie jest automatycznie zweryfikowane. Zaproś właściciela z My Place linkiem przypisanym do emaila."
     }
   },
   {
@@ -61,8 +61,8 @@ const FAQS: FAQItem[] = [
       pl: 'Czy obcokrajowcy mogą zameldować się (Meldunek) i otrzymać numer PESEL?'
     },
     answer: {
-      en: 'Yes! Polish law (Ustawa o ewidencji ludności) obligates every foreign citizen staying in Poland over 30 days to register their temporary residence (meldunek czasowy). Registration is completely free at your local Urząd Dzielnicy or Urząd Miasta and automatically assigns you a PESEL number. Every listing on Relok8 confirms landlord consent for Meldunek.',
-      pl: 'Tak! Zgodnie z Ustawą o ewidencji ludności każdy cudzoziemiec przebywający w Polsce ponad 30 dni ma prawny obowiązek zameldowania się. Meldunek w urzędzie dzielnicy lub miasta jest bezpłatny i automatycznie nadaje numer PESEL. Na Relok8 wymagamy deklaracji właściciela w tej kwestii.'
+      en: "Registration requirements depend on your circumstances and documents. A listing is not proof of eligibility or landlord consent. Confirm the requirements with the relevant office and discuss documents with the landlord.",
+      pl: "Wymogi meldunkowe zależą od Twojej sytuacji i dokumentów. Ogłoszenie nie potwierdza uprawnień ani zgody właściciela. Sprawdź wymagania we właściwym urzędzie i ustal dokumenty z właścicielem."
     },
     relatedLink: {
       text: { en: 'Step-by-step Meldunek & PESEL registration guide', pl: 'Instrukcja meldunku i PESEL krok po kroku' },
@@ -77,8 +77,8 @@ const FAQS: FAQItem[] = [
       pl: 'Jak rozliczana jest kaucja podczas cesji umowy najmu?'
     },
     answer: {
-      en: 'In a standard peer-to-peer lease handover, the incoming tenant reimburses the outgoing tenant for the security deposit upon signing the tripartite handover protocol (protokół zdawczo-odbiorczy). The landlord retains the original deposit held in their escrow/bank account until the natural end of the assigned lease term, ensuring zero disruption or double fees.',
-      pl: 'W standardowej cesji nowy najemca zwraca kaucję dotychczasowemu najemcy w momencie podpisania protokołu zdawczo-odbiorczego lokalu. Właściciel zachowuje pierwotną kaucję na swoim koncie aż do zakończenia okresu najmu, eliminując zbędne opłaty i prowizje.'
+      en: "Agree the deposit amount, recipient, timing, deductions and return directly. Relok8 does not collect or hold money. Handover checkmarks are participant reports, not independent verification of payment.",
+      pl: "Ustalcie bezpośrednio kwotę kaucji, odbiorcę, termin, potrącenia i zwrot. Relok8 nie pobiera ani nie przechowuje pieniędzy. Potwierdzenia przekazania są oświadczeniami uczestników, nie niezależną weryfikacją płatności."
     }
   },
   {
@@ -105,8 +105,8 @@ const FAQS: FAQItem[] = [
       pl: 'Jak szybko znajdę kogoś na przejęcie mojego pokoju?'
     },
     answer: {
-      en: 'Most rooms in major university hubs like Warsaw, Kraków, and Wrocław receive multiple inquiries within 48 to 72 hours, especially near universities (UW, SGH, PW, UJ, PWr). Listing takes under 2 minutes and is completely free of charge.',
-      pl: 'Większość pokoi w głównych miastach akademickich (Warszawa, Kraków, Wrocław) znajduje zainteresowanych w ciągu 48-72 godzin, szczególnie w pobliżu uczelni. Dodanie oferty zajmuje 2 minuty i jest w 100% bezpłatne.'
+      en: "Response times depend on demand and your listing. We cannot promise a match or response time. Complete the four-step form and review your details before publishing. Drafts are saved in this browser on this device, including photos.",
+      pl: "Czas odpowiedzi zależy od popytu i ogłoszenia. Nie obiecujemy dopasowania ani czasu odpowiedzi. Uzupełnij cztery etapy i sprawdź dane przed publikacją. Szkic wraz ze zdjęciami zapisuje się w tej przeglądarce na tym urządzeniu."
     },
     relatedLink: {
       text: { en: 'List your room for lease transfer', pl: 'Dodaj swój pokój do bazy' },
@@ -121,8 +121,8 @@ const FAQS: FAQItem[] = [
       pl: 'Czy wynajmujący może naliczyć karę za wcześniejszą wyprowadzkę?'
     },
     answer: {
-      en: 'Fixed-term leases (umowa najmu na czas oznaczony) in Poland cannot be terminated early by the tenant without a specific contractual clause or legal grounds. Simply breaking the lease often causes forfeiture of the entire security deposit plus liability for remaining months. By executing a Cesja (lease transfer), the landlord incurs zero vacancy, and you walk away with your deposit intact and 0 PLN in penalties.',
-      pl: 'Umowy najmu na czas oznaczony w Polsce nie mogą być wypowiedziane bez wyraźnego postanowienia w umowie. Zerwanie umowy grozi utratą kaucji i roszczeniami o czynsz. Cesja pozwala wprowadzić nowego najemcę bez jakichkolwiek kar.'
+      en: "Charges and deposit return depend on your agreement and circumstances. Discuss an early exit with your landlord and seek qualified advice where needed. A Relok8 approval is not a signed agreement or a guarantee of a refund.",
+      pl: "Opłaty i zwrot kaucji zależą od umowy i okoliczności. Ustal wcześniejszą wyprowadzkę z właścicielem i w razie potrzeby skorzystaj z profesjonalnej porady. Akceptacja w Relok8 nie jest podpisaną umową ani gwarancją zwrotu."
     },
     relatedLink: {
       text: { en: 'Calculate your avoided penalties with our calculator', pl: 'Oblicz oszczędności w kalkulatorze kar' },
@@ -193,7 +193,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
         'content',
         locale === 'pl'
           ? 'Odpowiedzi na najczęstsze pytania o cesję umowy najmu w Polsce (Art. 509 KC), rozliczanie kaucji, meldunek dla obcokrajowców oraz uniknięcie kar za wcześniejsze rozwiązanie umowy.'
-          : 'Answers to frequently asked questions about lease transfers in Poland (Art. 509 KC), security deposit settlement, address registration (meldunek), and zero-penalty early exits.'
+          : 'Answers to frequently asked questions about lease transfers in Poland (Art. 509 KC), security deposit settlement, address registration (meldunek), and planning an early exit.'
       );
     }
   }, [locale]);
