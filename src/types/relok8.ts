@@ -33,6 +33,8 @@ export interface Place {
   flatmates: number;
   furnished: boolean;
   billsIncluded: boolean;
+  billsMode?: "included" | "fixed" | "usage";
+  fixedBillsPLN?: number;
   meldunekOk: boolean;
   commuteNote: string; // e.g. '12 min tram to UMCS, checked on Google Maps'
   commuteMinutes?: number;

@@ -1,3 +1,4 @@
+import { billsLabel } from '../utils/listingFlow';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft, Send, Sparkles, ShieldCheck, Clock,
@@ -986,7 +987,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Utilities / czynsz</span>
                 <span className="font-semibold text-slate-700">
-                  {activePlace?.billsIncluded ? 'Bills included' : '+ utilities & czynsz'}
+                  {billsLabel(activePlace?.billsMode || (activePlace?.billsIncluded ? 'included' : undefined), activePlace?.fixedBillsPLN, locale)}
                 </span>
               </div>
               <div className="flex items-center justify-between">

@@ -28,7 +28,7 @@ export async function requireLandlord(ctx: AuthCtx, record: { landlordContactEma
   return identity;
 }
 export function publicListing<T extends Record<string, any>>(record: T): T {
-  const { landlordContactEmail, ownerId, landlordUserId, placeState, lockedByUserId, reservedByName, ...safe } = record;
+  const { landlordContactPhone, landlordContactEmail, ownerId, landlordUserId, placeState, lockedByUserId, reservedByName, ...safe } = record;
   return { ...safe, advertisingPermission: placeState?.advertisingPermission === true } as unknown as T;
 }
 export function validateListing(args: Record<string, any>) {

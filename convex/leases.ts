@@ -90,12 +90,15 @@ export const create = mutation({
     images: v.optional(v.array(v.string())),
     czynszAdmin: v.optional(v.number()),
     billsIncluded: v.optional(v.boolean()),
+    billsMode: v.optional(v.union(v.literal("included"), v.literal("fixed"), v.literal("usage"))),
+    fixedBillsPLN: v.optional(v.number()),
     isFurnished: v.optional(v.boolean()),
     flatmatesCount: v.optional(v.number()),
     distanceToCampus: v.optional(v.string()),
     meldunekAllowed: v.optional(v.boolean()),
     landlordName: v.optional(v.string()),
     landlordContactEmail: v.optional(v.string()),
+    landlordContactPhone: v.optional(v.string()),
     universitiesNearby: v.optional(v.array(v.string())),
     transitNearby: v.optional(v.string()),
   },
@@ -103,6 +106,8 @@ export const create = mutation({
     const identity = await requireIdentity(ctx);
     await consume(ctx, identity, "listing-create", 5);
     validateListing(args);
+    if (args.landlordContactPhone !== undefined && !/^\+[1-9]\d{7,14}$/.test(args.landlordContactPhone)) throw new Error("Invalid landlord phone number");
+    if (args.billsMode === "fixed" ? !Number.isFinite(args.fixedBillsPLN) || !(args.fixedBillsPLN! > 0) : args.fixedBillsPLN !== undefined) throw new Error("Invalid fixed monthly bills");
     for (const url of args.images || []) {
       const upload = await ctx.db.query('uploads').withIndex('by_url', q => q.eq('url', url)).unique();
       if (!upload || upload.ownerId !== identity.subject) throw new Error('Use your own uploaded photos');

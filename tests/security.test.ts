@@ -34,9 +34,9 @@ describe('authentication and ownership', () => {
   });
   test('public catalog redacts private contact, ownership and workflow fields', async () => {
     const { t, owner } = setup(); const id = await owner.mutation(api.leases.create, listing);
-    await t.run(async ctx => { await ctx.db.patch(id, { placeState: { exitNotes: 'private' } }); });
+    await t.run(async ctx => { await ctx.db.patch(id, { landlordContactPhone: '+48123456789', placeState: { exitNotes: 'private' } }); });
     const doc = await t.query(api.leases.getById, { id });
-    expect(doc).not.toHaveProperty('ownerId'); expect(doc).not.toHaveProperty('landlordContactEmail'); expect(doc).not.toHaveProperty('placeState');
+    expect(doc).not.toHaveProperty('landlordContactPhone'); expect(doc).not.toHaveProperty('ownerId'); expect(doc).not.toHaveProperty('landlordContactEmail'); expect(doc).not.toHaveProperty('placeState');
   });
   test('an arbitrary email cannot read landlord inventory', async () => {
     const { owner, a } = setup(); await owner.mutation(api.leases.create, listing);

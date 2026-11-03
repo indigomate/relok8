@@ -1,3 +1,4 @@
+import { billsLabel } from '../utils/listingFlow';
 import {TakeoverProgress} from '../components/TakeoverProgress';
 import {navigateTo} from '../utils/router';
 import React, { useState, useEffect, useMemo } from 'react';
@@ -531,9 +532,9 @@ export const PlacePage: React.FC<PlacePageProps> = ({
                       </div>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="text-[10px] font-semibold text-slate-500 uppercase">Czynsz</div>
+                      <div className="text-[10px] font-semibold text-slate-500 uppercase">{locale === "pl" ? "Administracja i media" : "Administration and utilities"}</div>
                       <div className="text-xs font-bold text-slate-900 mt-0.5">
-                        {currentPlace.billsIncluded ? 'Included' : formatPLN(currentPlace.czynszPLN, locale)}
+                        {formatPLN(currentPlace.czynszPLN, locale)} · {billsLabel(currentPlace.billsMode || (currentPlace.billsIncluded ? 'included' : undefined), currentPlace.fixedBillsPLN, locale)}
                       </div>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">

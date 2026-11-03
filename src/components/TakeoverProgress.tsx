@@ -240,6 +240,7 @@ export function TakeoverProgress({
                   )}
             </button>
           )}
+          {p.owner && p.landlordPhone && <p className="text-xs text-slate-600">{say("Private landlord contact", "Prywatny kontakt do właściciela")} · <a href={`tel:${p.landlordPhone}`}>{p.landlordPhone}</a></p>}
           {p.owner && (
             <div className="flex flex-wrap gap-3">
               <button

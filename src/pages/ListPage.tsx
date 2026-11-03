@@ -1,4 +1,4 @@
-import {invalidListingStep, draftStore} from '../utils/listingFlow';
+import {invalidListingStep, draftStore, normalizeLandlordPhone, knownMonthlyCost, billsLabel} from '../utils/listingFlow';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, CheckCircle2, UploadCloud, ImagePlus, Trash2, 
@@ -55,8 +55,9 @@ export const ListPage: React.FC<ListPageProps> = ({
 
   const [availableDate, setAvailableDate] = useState('');
   const [leaseEndDate, setLeaseEndDate] = useState('');
-  const [landlordEmail, setLandlordEmail] = useState('');
-  const [billsIncluded, setBillsIncluded] = useState(false);
+  const [landlordPhone, setLandlordPhone] = useState('');
+  const [billsMode, setBillsMode] = useState<NonNullable<Listing["billsMode"]> | "">("");
+  const [fixedBillsPLN, setFixedBillsPLN] = useState("");
   const [reviewed, setReviewed] = useState(false);
   const [publishedId, setPublishedId] = useState('');
   const [landlordName, setLandlordName] = useState('');
@@ -84,7 +85,7 @@ export const ListPage: React.FC<ListPageProps> = ({
   const [draftStatus,setDraftStatus] = useState('');
   const formRef=useRef<HTMLFormElement>(null);
   const errorRef=useRef<HTMLParagraphElement>(null);
-  const draft = {title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordEmail,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsIncluded,photos};
+  const draft = {title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordPhone,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsMode,fixedBillsPLN,photos};
   useEffect(()=>{let active=true;(async()=>{try{const saved=await draftStore('read',draftKey)||(draftKey!=='anonymous'?await draftStore('read','anonymous'):undefined);if(active&&saved){if(typeof saved.title === typeof title) setTitle(saved.title);
 if(typeof saved.city === typeof city) setCity(saved.city);
 if(typeof saved.district === typeof district) setDistrict(saved.district);
@@ -97,7 +98,7 @@ if(typeof saved.depositPLN === typeof depositPLN) setDepositPLN(saved.depositPLN
 if(typeof saved.availableDate === typeof availableDate) setAvailableDate(saved.availableDate);
 if(typeof saved.leaseEndDate === typeof leaseEndDate) setLeaseEndDate(saved.leaseEndDate);
 if(typeof saved.landlordName === typeof landlordName) setLandlordName(saved.landlordName);
-if(typeof saved.landlordEmail === typeof landlordEmail) setLandlordEmail(saved.landlordEmail);
+if(typeof saved.landlordPhone === typeof landlordPhone) setLandlordPhone(saved.landlordPhone);
 if(typeof saved.tenantName === typeof tenantName) setTenantName(saved.tenantName);
 if(typeof saved.tenantEmail === typeof tenantEmail) setTenantEmail(saved.tenantEmail);
 if(typeof saved.reasonForLeaving === typeof reasonForLeaving) setReasonForLeaving(saved.reasonForLeaving);
@@ -106,16 +107,17 @@ if(typeof saved.flatmatesCount === typeof flatmatesCount) setFlatmatesCount(save
 if(typeof saved.isFurnished === typeof isFurnished) setIsFurnished(saved.isFurnished);
 if(typeof saved.meldunekAllowed === typeof meldunekAllowed) setMeldunekAllowed(saved.meldunekAllowed);
 if(typeof saved.landlordApproved === typeof landlordApproved) setLandlordApproved(saved.landlordApproved);
-if(typeof saved.billsIncluded === typeof billsIncluded) setBillsIncluded(saved.billsIncluded);
+if (["included", "fixed", "usage"].includes(saved.billsMode)) setBillsMode(saved.billsMode);
+if (typeof saved.fixedBillsPLN === "string") setFixedBillsPLN(saved.fixedBillsPLN);
 if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(active)setDraftStatus(locale==='pl'?'Zapis szkicu jest niedostępny. Nie zamykaj strony.':'Draft storage unavailable. Keep this page open.');}finally{if(active)setDraftReady(true);}})();return()=>{active=false;};},[]);
-  useEffect(()=>{if(!draftReady||isSuccess)return;draftStore('write',draftKey,draft).then(()=>setDraftStatus(locale==='pl'?'Szkic zapisany na tym urządzeniu.':'Draft saved on this device.')).catch(()=>setDraftStatus(locale==='pl'?'Nie zapisano szkicu. Nie zamykaj strony.':'Could not save draft. Keep this page open.'));},[draftReady,isSuccess,title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordEmail,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsIncluded,photos]);
+  useEffect(()=>{if(!draftReady||isSuccess)return;draftStore('write',draftKey,draft).then(()=>setDraftStatus(locale==='pl'?'Szkic zapisany na tym urządzeniu.':'Draft saved on this device.')).catch(()=>setDraftStatus(locale==='pl'?'Nie zapisano szkicu. Nie zamykaj strony.':'Could not save draft. Keep this page open.'));},[draftReady,isSuccess,title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordPhone,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsMode,fixedBillsPLN,photos]);
   const goToStep=(next:number)=>{setReviewed(false);const invalid=invalidListingStep(draft);if(next>step&&invalid!==null&&invalid<next){setPhotoError(locale==='pl'?'Uzupełnij wymagane pola przed przejściem dalej.':'Complete the required fields before continuing.');setStep(invalid);requestAnimationFrame(()=>{errorRef.current?.focus();formRef.current?.reportValidity();});return;}setPhotoError(null);setStep(next);};
   const stepComplete=(n:number)=>{const invalid=invalidListingStep(draft);return invalid===null||n<invalid;};
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
     const invalid=invalidListingStep(draft);
-    if(invalid){setStep(invalid);setPhotoError(locale==='pl'?'Sprawdź wymagane pola, kwoty, daty i email właściciela.':'Check required fields, amounts, dates and the landlord email.');requestAnimationFrame(()=>errorRef.current?.focus());return;}
+    if(invalid){setStep(invalid);setPhotoError(locale==='pl'?'Sprawdź wymagane pola, kwoty, daty i numer telefonu właściciela.':'Check required fields, amounts, dates and the landlord phone number.');requestAnimationFrame(()=>errorRef.current?.focus());return;}
     if(!reviewed){setReviewed(true);return;}
     if(!currentUser){onRequireLogin?.();return;}
     if (photos.length === 0) {
@@ -142,7 +144,9 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
       roomType,
       monthlyRentPLN: Number(monthlyRentPLN),
       czynszAdminPLN: Number(czynszAdminPLN),
-      billsIncluded,
+      billsIncluded: billsMode === "included",
+      billsMode: billsMode || undefined,
+      fixedBillsPLN: billsMode === "fixed" ? Number(fixedBillsPLN) : undefined,
       depositPLN: Number(depositPLN),
       availableDate,
       leaseEndDate,
@@ -155,7 +159,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
       meldunekAllowed,
       landlordApproved: false,
       landlordName,
-      landlordContactEmail: landlordEmail.trim().toLowerCase(),
+      landlordContactPhone: normalizeLandlordPhone(landlordPhone),
       likesCount: 0,
       currentTenant: {
         name: tenantName || currentUser?.name || 'Departing Tenant',
@@ -531,6 +535,19 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                     />
                   </div>
 
+                  <label className="block text-xs font-bold text-slate-700">
+                    {locale === 'pl' ? 'Media (opcjonalnie)' : 'Utility bills (optional)'}
+                    <select value={billsMode} onChange={e => setBillsMode(e.target.value as typeof billsMode)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5">
+                      <option value="">{locale === 'pl' ? 'Do ustalenia' : 'Not specified'}</option>
+                      <option value="included">{billsLabel('included', undefined, locale)}</option>
+                      <option value="fixed">{locale === 'pl' ? 'Stała kwota miesięczna' : 'Fixed monthly amount'}</option>
+                      <option value="usage">{billsLabel('usage', undefined, locale)}</option>
+                    </select>
+                  </label>
+                  {billsMode === 'fixed' && <label className="block text-xs font-bold text-slate-700">
+                    {locale === 'pl' ? 'Miesięczny koszt mediów (PLN)' : 'Monthly utility bills (PLN)'}
+                    <input type="number" min="0.01" step="0.01" required value={fixedBillsPLN} onChange={e => setFixedBillsPLN(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 px-3 py-2.5" />
+                  </label>}
                   <div>
                     <label htmlFor="listing-depositPLN" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Wysokość kaucji (PLN)' : 'Security deposit (PLN)'} *
@@ -607,7 +624,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                   </p>
                 </div>
 
-                <label className="block text-xs font-bold text-slate-700 space-y-2">{locale==='pl'?'Email właściciela (prywatny, do zaproszenia) *':'Landlord email (private, for invitation) *'}<input type="email" required value={landlordEmail} onChange={e=>{setLandlordEmail(e.target.value);setReviewed(false);}} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"/></label>
+                <label className="block text-xs font-bold text-slate-700 space-y-2">{locale==='pl'?'Prywatny numer telefonu właściciela *':'Private landlord phone number *'}<input type="tel" placeholder="+48 123 456 789" required value={landlordPhone} onChange={e=>{setLandlordPhone(e.target.value);setReviewed(false);}} className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"/></label>
                 <p className="text-xs text-slate-500">{locale==='pl'?'Po publikacji wyślij właścicielowi zaproszenie z My Place. Publikacja nie oznacza zgody właściciela.':'After publishing, invite the landlord from My Place. Publication does not mean landlord approval.'}</p>
                 {/* Photo Upload & Camera Capture Component */}
                 <div className="space-y-3">
@@ -676,7 +693,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                   </div>
                 </div>
 
-                {reviewed && <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm space-y-2" role="status"><strong>{locale==='pl'?'Podsumowanie ogłoszenia':'Review your listing'}</strong><p>{roomType} · {district}, {city} · {squareMeters} m²</p><p>{address}</p><p>{availableDate} → {leaseEndDate}</p><p>{formatPLN(Number(monthlyRentPLN)+Number(czynszAdminPLN),locale)} / {locale==='pl'?'miesiąc + media do ustalenia':'month + utilities to confirm'}</p><p>{locale==='pl'?'Kaucja: ':'Deposit: '}{formatPLN(Number(depositPLN),locale)}</p><p>{photos.length} {locale==='pl'?'zdjęć · email właściciela:':'photos · landlord email:'} {landlordEmail}</p><p>{locale==='pl'?'Sprawdź dane. Relok8 nie pobiera płatności ani nie gwarantuje zwrotu kaucji.':'Check the details. Relok8 does not collect payments or guarantee deposit returns.'}</p></div>}
+                {reviewed && <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm space-y-2" role="status"><strong>{locale==='pl'?'Podsumowanie ogłoszenia':'Review your listing'}</strong><p>{roomType} · {district}, {city} · {squareMeters} m²</p><p>{address}</p><p>{availableDate} → {leaseEndDate}</p><p>{formatPLN(knownMonthlyCost({monthlyRentPLN:Number(monthlyRentPLN),czynszAdminPLN:Number(czynszAdminPLN),billsMode,fixedBillsPLN:Number(fixedBillsPLN)}),locale)} / {locale==='pl'?'miesiąc':'month'} · {billsLabel(billsMode, Number(fixedBillsPLN), locale)}</p><p>{locale==='pl'?'Kaucja: ':'Deposit: '}{formatPLN(Number(depositPLN),locale)}</p><p>{photos.length} {locale==='pl'?'zdjęć · numer telefonu właściciela:':'photos · landlord phone number:'} {landlordPhone}</p><p>{locale==='pl'?'Sprawdź dane. Relok8 nie pobiera płatności ani nie gwarantuje zwrotu kaucji.':'Check the details. Relok8 does not collect payments or guarantee deposit returns.'}</p></div>}
                 <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4">
                   <button
                     type="button"

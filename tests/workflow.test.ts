@@ -230,7 +230,7 @@ describe("listing form and links", () => {
       availableDate: "",
       leaseEndDate: "",
       photos: [],
-      landlordEmail: "",
+      landlordPhone: "",
     };
     expect(invalidListingStep(d)).toBe(1);
     Object.assign(d, { district: "Centre", address: "Test Street" });
@@ -247,7 +247,7 @@ describe("listing form and links", () => {
     expect(invalidListingStep(d)).toBe(4);
     Object.assign(d, {
       photos: ["photo"],
-      landlordEmail: "landlord@example.test",
+      landlordPhone: "+48 123 456 789",
     });
     expect(invalidListingStep(d)).toBeNull();
     d.leaseEndDate = "2026-01-01";
@@ -257,6 +257,7 @@ describe("listing form and links", () => {
     expect(
       knownMonthlyCost({ monthlyRentPLN: 2000, czynszAdminPLN: 350 }),
     ).toBe(2350);
+    expect(knownMonthlyCost({ monthlyRentPLN: 2000, czynszAdminPLN: 350, billsMode: "fixed", fixedBillsPLN: 120 })).toBe(2470);
   });
   test("Convex listing IDs survive title slugs and Polish routes", () => {
     expect(

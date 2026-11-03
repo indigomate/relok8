@@ -46,6 +46,8 @@ export interface Listing {
   czynszAdminPLN: number;
   utilities?: Money;
   billsIncluded: boolean;
+  billsMode?: "included" | "fixed" | "usage";
+  fixedBillsPLN?: number;
   czynszIncluded?: boolean;
   depositPLN: number;
   deposit?: Money;
@@ -66,7 +68,8 @@ export interface Listing {
   images: string[];
   statusBadge?: string;
   landlordName: string;
-  landlordContactEmail: string;
+  landlordContactEmail?: string;
+  landlordContactPhone?: string;
   currentTenant: CurrentTenant;
   departingTenant?: CurrentTenant;
   amenities: string[];

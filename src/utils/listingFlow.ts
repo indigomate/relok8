@@ -1,8 +1,21 @@
 export function knownMonthlyCost(l: {
   monthlyRentPLN: number;
   czynszAdminPLN?: number;
+  billsMode?: string;
+  fixedBillsPLN?: number;
 }) {
-  return l.monthlyRentPLN + (l.czynszAdminPLN || 0);
+  return l.monthlyRentPLN + (l.czynszAdminPLN || 0) + (l.billsMode === "fixed" ? l.fixedBillsPLN || 0 : 0);
+}
+export function normalizeLandlordPhone(value: string = "") {
+  const digits = value.trim().replace(/[()\s-]/g, "").replace(/^00/, "+");
+  return /^\d{9}$/.test(digits) ? "+48" + digits : digits;
+}
+export function billsLabel(mode: string | undefined, fixed: number | undefined, locale: string) {
+  const pl = locale === "pl";
+  if (mode === "included") return pl ? "Media w cenie" : "Bills included";
+  if (mode === "usage") return pl ? "Media według zużycia" : "Bills charged by usage";
+  if (mode === "fixed") return pl ? `Media: ${fixed} PLN miesięcznie` : `Bills: PLN ${fixed} per month`;
+  return pl ? "Media do ustalenia" : "Bills to confirm";
 }
 export function invalidListingStep(d: any): number | null {
   if (!d.district?.trim() || !d.address?.trim()) return 1;
@@ -19,6 +32,7 @@ export function invalidListingStep(d: any): number | null {
     d.czynszAdminPLN === "" ||
     !Number.isFinite(Number(d.czynszAdminPLN)) ||
     Number(d.czynszAdminPLN) < 0 ||
+    (d.billsMode === "fixed" && (!Number.isFinite(Number(d.fixedBillsPLN)) || Number(d.fixedBillsPLN) <= 0)) ||
     d.depositPLN === "" ||
     Number(d.depositPLN) < 0 ||
     Number(d.depositPLN) > 1000000 ||
@@ -29,7 +43,7 @@ export function invalidListingStep(d: any): number | null {
     d.leaseEndDate < d.availableDate
   )
     return 3;
-  if (!d.photos?.length || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.landlordEmail))
+  if (!d.photos?.length || !/^\+[1-9]\d{7,14}$/.test(normalizeLandlordPhone(d.landlordPhone)))
     return 4;
   return null;
 }

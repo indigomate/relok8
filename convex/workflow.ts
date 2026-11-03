@@ -90,6 +90,7 @@ export const activity = query({
           permission: (l.placeState as any)?.advertisingPermission === true,
           owner,
           landlord,
+          landlordPhone: owner ? l.landlordContactPhone : undefined,
           landlordEmail: owner ? l.landlordContactEmail : undefined,
           applications: apps.map((r: any) => ({
             id: r._id,

@@ -1,3 +1,4 @@
+import { billsLabel } from '../utils/listingFlow';
 import {ReportListing} from '../components/ReportListing';
 import {knownMonthlyCost} from '../utils/listingFlow';
 import {navigateTo} from '../utils/router';
@@ -328,7 +329,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           </span>
         </div>
 
-        <p className="text-xs text-slate-500">{locale==='pl'?'Czynsz + opłaty administracyjne.':'Rent + administration.'} {listing.billsIncluded?(locale==='pl'?'Media wliczone według autora.':'Utilities included according to the author.'):(locale==='pl'?'Media dodatkowo — potwierdź kwotę.':'Utilities extra — confirm the amount.')}</p>
+        <p className="text-xs text-slate-500">{locale==='pl'?'Czynsz + opłaty administracyjne.':'Rent + administration.'} {billsLabel(listing.billsMode || (listing.billsIncluded ? 'included' : undefined), listing.fixedBillsPLN, locale)}</p>
         {/* Lease Takeover Action Hub */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-slate-50 border border-indigo-100 shadow-xs space-y-3.5 my-2">
           <div className="flex items-center justify-between">

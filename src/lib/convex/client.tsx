@@ -39,6 +39,8 @@ export interface ConvexListingDoc {
   landlordName?: string;
   czynszAdmin?: number;
   billsIncluded?: boolean;
+  billsMode?: "included" | "fixed" | "usage";
+  fixedBillsPLN?: number;
   isFurnished?: boolean;
   flatmatesCount?: number;
   distanceToCampus?: string;
@@ -89,7 +91,7 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
     roomType: doc.roomType,
     monthlyRentPLN: doc.monthlyRent,
     czynszAdminPLN: doc.czynszAdmin || 0,
-    billsIncluded: !!doc.billsIncluded,
+    billsIncluded: !!doc.billsIncluded, billsMode: doc.billsMode, fixedBillsPLN: doc.fixedBillsPLN,
     czynszIncluded: true,
     depositPLN: doc.deposit,
     availableDate: doc.moveInDate,
