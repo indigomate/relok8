@@ -264,10 +264,10 @@ export function navigateToCity(citySlug: string, locale?: string, searchParams?:
   navigateTo(`${prefix}/${slug}/rooms`, searchParams);
 }
 
-export function navigateToListing(listingId: string, title?: string, locale?: string) {
+export function navigateToListing(listingId: string, title?: string, locale?: string, query?: Record<string, string>) {
   const prefix = locale === 'pl' ? '/pl' : '';
   const slugPart = title ? `-${slugify(title)}` : '';
-  navigateTo(`${prefix}/listing/${listingId}${slugPart}`);
+  navigateTo(`${prefix}/listing/${listingId}${slugPart}`, query);
 }
 
 export function switchLocale(newLocale: 'en' | 'pl', currentRoute: ParsedRoute) {

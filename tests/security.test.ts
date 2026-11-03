@@ -49,6 +49,8 @@ describe('private messaging and invitations', () => {
     const { owner, a, b } = setup(); const placeId = await owner.mutation(api.leases.create, listing);
     const thread = await write(a, 'createThread', { placeId });
     await write(a, 'sendMessage', { threadId: thread.id, body: 'Can I view the room?' });
+    expect(await read(owner, 'threads')).toEqual([expect.objectContaining({ id: thread.id, unreadFor: ['owner'] })]);
+    expect(await read(b, 'threads')).toEqual([]);
     expect((await read(owner, 'messages', { threadId: thread.id }))[0].body).toBe('Can I view the room?');
     await expect(read(b, 'messages', { threadId: thread.id })).rejects.toThrow('Forbidden');
     await expect(write(b, 'sendMessage', { threadId: thread.id, body: 'Spoof' })).rejects.toThrow('Forbidden');

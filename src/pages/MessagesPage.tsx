@@ -1,3 +1,4 @@
+import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -81,6 +82,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   initialThreadId,
   initialPlaceId,
 }) => {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const [inboxError, setInboxError] = useState('');
   const [devUser, setDevUser] = useState<Relok8User | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
@@ -99,7 +102,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const [isHelperLoading, setIsHelperLoading] = useState(false);
 
   // Mobile responsive pane state ('list' vs 'chat')
-  const [mobilePane, setMobilePane] = useState<'list' | 'chat'>('list');
+  const [mobilePane, setMobilePane] = useState<'list' | 'chat'>(initialThreadId ? 'chat' : 'list');
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -122,67 +125,47 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     });
   };
 
-  // Load user & places
-  const initData = async () => {
-    try {
-      const [u, p] = await Promise.all([
-        getCurrentDevUser(),
-        getPlaces({ includeProspects: true })
-      ]);
-      setDevUser(u);
-      setPlaces(p);
-      const ths = await getThreads();
-      setThreads(ths);
-      if (ths.length > 0 && !activeThreadId) {
-        setActiveThreadId(ths[0].id);
-      }
-    } catch (e) {
-      console.warn('Error loading initial message data:', e);
+  useEffect(() => {
+    if (initialThreadId) {
+      setActiveThreadId(initialThreadId);
+      setActiveTab('prospects');
+      setMobilePane('chat');
     }
-  };
+  }, [initialThreadId]);
+
+  const activeThread = threads.find(t => t.id === activeThreadId);
+  const activePlace = places.find(p => p.id === (activeThread?.placeId || initialPlaceId)) || places[0];
 
   useEffect(() => {
-    initData();
-  }, []);
-
-  useEffect(()=>{if(initialThreadId){setActiveThreadId(initialThreadId);setActiveTab('prospects');}},[initialThreadId]);
-
-  // Poll for new messages every 3 seconds
-  useEffect(() => {
-    const cancel = startPolling(async () => {
+    if (!isAuthenticated) return;
+    let current = true;
+    const refresh = async () => {
       try {
-        const ths = await getThreads();
-        setThreads(ths);
-        if (activeThreadId && activeTab === 'prospects') {
-          const msgs = await getThreadMessages(activeThreadId);
-          setMessages(msgs);
-        } else if (activeTab === 'place_room' && activePlace) {
-          const prMsgs = await getPlaceRoomMessages(activePlace.id);
-          setMessages(prMsgs);
+        const [user, listings, conversations] = await Promise.all([
+          getCurrentDevUser(), getPlaces({ includeProspects: true }), getThreads()
+        ]);
+        if (!current) return;
+        setDevUser(user);
+        setPlaces(listings);
+        setThreads(conversations);
+        setActiveThreadId(id => conversations.some(t => t.id === id) ? id : conversations[0]?.id || null);
+        const selected = activeTab === 'prospects' && activeThreadId
+          ? conversations.find(t => t.id === activeThreadId)
+          : undefined;
+        if (selected || (activeTab === 'place_room' && activePlace)) {
+          const history = selected ? await getThreadMessages(selected.id) : await getPlaceRoomMessages(activePlace!.id);
+          if (current) setMessages(history);
         }
-      } catch (e) {}
-    }, 3000);
-
-    return cancel;
-  }, [activeThreadId, activeTab]);
-
-  // Load messages when thread or tab changes
-  useEffect(() => {
-    const loadMsgs = async () => {
-      if (activeTab === 'prospects' && activeThreadId) {
-        try {
-          const msgs = await getThreadMessages(activeThreadId);
-          setMessages(msgs);
-        } catch (e) {}
-      } else if (activeTab === 'place_room' && activePlace) {
-        try {
-          const msgs = await getPlaceRoomMessages(activePlace.id);
-          setMessages(msgs);
-        } catch (e) {}
+        if (current) setInboxError('');
+      } catch {
+        if (current) setInboxError(locale === 'pl' ? 'Nie udało się wczytać wiadomości. Ponawiamy próbę.' : 'Could not load messages. Retrying…');
       }
     };
-    loadMsgs();
-  }, [activeThreadId, activeTab]);
+    setMessages([]);
+    void refresh();
+    const cancel = startPolling(refresh, 3000);
+    return () => { current = false; cancel(); };
+  }, [isAuthenticated, activeThreadId, activeTab, activePlace?.id, locale]);
 
   // Scoped scrolling: Only scroll when user changes thread/tab, or when new message arrives and user is at bottom
   useEffect(() => {
@@ -209,8 +192,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     }
   }, [messages, isHelperLoading, activeThreadId, activeTab]);
 
-  const activeThread = threads.find((t) => t.id === activeThreadId) || threads[0];
-  const activePlace = places.find((p) => p.id === (activeThread?.placeId || initialPlaceId)) || places[0];
   const isLandlord = Boolean(devUser && activePlace?.landlordId === devUser.id);
   const isTenant = Boolean(devUser && activePlace?.tenantId === devUser.id);
 
@@ -262,7 +243,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
         scrollToBottom('smooth');
       }
     } catch (err: any) {
-      console.warn('Failed to send message:', err);
+      setInputText(text);
+      window.alert(locale === 'pl' ? 'Nie wysłano wiadomości. Spróbuj ponownie.' : 'Your message was not sent. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -432,6 +414,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       </header>
 
       {/* 2. Main Rounded-3xl Card (holds the 3 panes and fills viewport height) */}
+      {(!isAuthenticated || inboxError) && <p role="status" className="px-6 py-2 text-sm">{inboxError || (isLoading ? 'Loading inbox…' : 'Sign in to see your messages.')}</p>}
       <main className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden min-h-0">
         <div className="h-full bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row">
           

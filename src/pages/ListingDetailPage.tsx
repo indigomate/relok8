@@ -20,6 +20,7 @@ import { OnloAvatar } from '../components/OnloAvatar';
 import { useConvex } from '../lib/convex/client';
 
 interface ListingDetailPageProps {
+  openComposer?: boolean;
   listing: Listing;
   onBack: () => void;
   isSaved: boolean;
@@ -34,6 +35,7 @@ interface ListingDetailPageProps {
 
 export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   listing,
+  openComposer = false,
   onBack,
   isSaved,
   onToggleSave,
@@ -61,9 +63,8 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isEarlyLockOpen, setIsEarlyLockOpen] = useState(false);
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(openComposer);
   const [inquiryText, setInquiryText] = useState('');
-  const [inquirySent, setInquirySent] = useState(false);
   const [inquiryPending,setInquiryPending]=useState(false);
 
   const convex = useConvex();
@@ -105,15 +106,6 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       window.alert(error.message || 'Could not send your inquiry. Please try again.');
       return;
     }
-    setInquirySent(true);
-    setTimeout(() => {
-      setIsContactModalOpen(false);
-      setInquirySent(false);
-      const target = locale === 'pl' ? '/pl/messages' : '/messages';
-      window.history.pushState({}, '', target);
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }, 800);
-
   };
 
   const handleMessageClick = () => {
@@ -567,7 +559,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                   type="submit" disabled={inquiryPending}
                   className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
                 >
-                  {inquirySent ? 'Sent!' : 'Send Message'}
+                  {inquiryPending ? 'Sending…' : 'Send Message'}
                 </button>
               </div>
             </form>
