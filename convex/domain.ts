@@ -1,5 +1,5 @@
 import { query, mutation, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireIdentity } from "./lib/auth";
 import { DEFAULT_REWARD_CONFIG, DEFAULT_INSURANCE_CONFIG } from "../src/types/relok8";
 
@@ -122,7 +122,7 @@ export const write = mutation({
     const now = Date.now();
     if (operation === 'createThread') {
       const lease = await leaseFor(ctx, text(input.placeId, 100));
-      if (owns(lease, identity) || landlord(lease, identity)) throw new Error('Use your place room to contact the other participant');
+      if (owns(lease, identity) || landlord(lease, identity)) throw new ConvexError('You are signed in as this listing’s owner or landlord. Open Messages to reply to enquiries. To test an enquiry, use a separate account.');
       const key = `${lease._id}:${uid}`;
       const existing = await record(ctx, 'thread', key);
       if (existing) return existing.data;

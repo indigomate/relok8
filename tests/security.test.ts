@@ -45,6 +45,14 @@ describe('authentication and ownership', () => {
 });
 
 describe('private messaging and invitations', () => {
+  test('listing participants receive an actionable self-message error', async () => {
+    const { owner, landlord } = setup();
+    const placeId = await owner.mutation(api.leases.create, listing);
+    for (const participant of [owner, landlord]) {
+      await expect(write(participant, 'createThread', { placeId })).rejects.toThrow('separate account');
+    }
+  });
+
   test('prospect and owner can message; an unrelated user cannot read or send', async () => {
     const { owner, a, b } = setup(); const placeId = await owner.mutation(api.leases.create, listing);
     const thread = await write(a, 'createThread', { placeId });

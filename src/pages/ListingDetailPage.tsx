@@ -103,7 +103,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       return;
     } catch (error: any) {
       setInquiryPending(false);
-      window.alert(error.message || 'Could not send your inquiry. Please try again.');
+      window.alert(typeof error.data === 'string' ? error.data : 'Could not send your message. Please try again.');
       return;
     }
   };
