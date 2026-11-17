@@ -28,6 +28,8 @@ export interface Place {
   rentPLN: number;
   czynszPLN: number;
   depositPLN: number;
+  occupancyStatus?: 'occupied' | 'vacant';
+  leaseEndDate?: string;
   availableFrom: string;
   roomType: string;
   flatmates: number;

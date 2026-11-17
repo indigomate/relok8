@@ -1,3 +1,4 @@
+import { validLeaseDates, leaseHasEnded } from './leaseTiming';
 export function knownMonthlyCost(l: {
   monthlyRentPLN: number;
   czynszAdminPLN?: number;
@@ -38,6 +39,9 @@ export function invalidListingStep(d: any): number | null {
     d.depositPLN === "" ||
     Number(d.depositPLN) < 0 ||
     Number(d.depositPLN) > 1000000 ||
+    !['occupied','vacant'].includes(d.occupancyStatus) ||
+    !validLeaseDates(d.availableDate, d.leaseEndDate) ||
+    leaseHasEnded(d.leaseEndDate) ||
     !/^\d{4}-\d{2}-\d{2}$/.test(d.availableDate) ||
     !/^\d{4}-\d{2}-\d{2}$/.test(d.leaseEndDate) ||
     !Number.isFinite(Date.parse(d.availableDate)) ||

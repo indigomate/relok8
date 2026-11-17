@@ -1,3 +1,5 @@
+import { AvailabilityBanner } from './AvailabilityBanner';
+import { timingLabels } from '../utils/leaseTiming';
 import {knownMonthlyCost} from '../utils/listingFlow';
 import React, { useState, useEffect } from 'react';
 import { 
@@ -222,7 +224,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         )}
 
         {/* Top-left: Takeover / Lock Pill or Available status or Example listing */}
-        <div className="absolute top-3 left-3 z-10 pointer-events-none select-none flex items-center gap-1.5">
+        <div className="absolute top-3 left-3 right-14 z-10 pointer-events-none select-none flex items-center gap-1.5">
           {isLocked ? (
             <span className="px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500 text-white shadow-sm border border-amber-600 flex items-center gap-1.5 animate-pulse">
               <Clock className="w-3.5 h-3.5 text-white" />
@@ -235,9 +237,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               Example listing
             </span>
           ) : (
-            <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 backdrop-blur-xs">
-              {listing.statusBadge || 'Available for Takeover'}
-            </span>
+            <AvailabilityBanner listing={listing} locale={locale} compact />
           )}
         </div>
 
@@ -302,7 +302,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium pt-0.5">
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span>
-              {locale === 'pl' ? 'Od' : 'From'} {moveInDateFormatted} · {locale === 'pl' ? 'umowa do' : 'lease to'} {leaseEndDateFormatted}
+              {timingLabels(listing.occupancyStatus, locale).end}: {leaseEndDateFormatted}
             </span>
           </div>
 

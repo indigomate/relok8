@@ -238,6 +238,7 @@ describe("listing form and links", () => {
     d.squareMeters = "25";
     expect(invalidListingStep(d)).toBe(3);
     Object.assign(d, {
+      occupancyStatus: "occupied",
       monthlyRentPLN: "2000",
       czynszAdminPLN: "0",
       depositPLN: "0",

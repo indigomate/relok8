@@ -1,3 +1,4 @@
+import { validLeaseDates } from '../../src/utils/leaseTiming';
 import type { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";
 
 type AuthCtx = Pick<QueryCtx | MutationCtx | ActionCtx, "auth">;
@@ -46,8 +47,7 @@ export function validateListing(args: Record<string, any>) {
   if (args.czynszAdmin !== undefined) validateMoney(args.czynszAdmin);
   if (args.fixedBillsPLN !== undefined) validateMoney(args.fixedBillsPLN, true);
   if (!Number.isFinite(args.areaM2) || args.areaM2 <= 0) throw new Error("Invalid listing area");
-  for (const field of ["moveInDate", "leaseEndDate"]) if (!/^\d{4}-\d{2}-\d{2}$/.test(args[field]) || Number.isNaN(Date.parse(args[field]))) throw new Error("Invalid date");
-  if (args.leaseEndDate < args.moveInDate) throw new Error("Lease ends before move-in");
+  if (!validLeaseDates(args.moveInDate, args.leaseEndDate)) throw new Error("Lease end must be after the proposed takeover date; use valid calendar dates");
   if ((args.images?.length || 0) > 12 || (args.description?.length || 0) > 10000) throw new Error("Listing too large");
   for (const image of args.images || []) if (typeof image !== "string" || image.length > 2000000 || !/^(https:\/\/|data:image\/(jpeg|png|webp);base64,)/.test(image)) throw new Error("Invalid image");
 }

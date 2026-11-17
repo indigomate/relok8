@@ -1,3 +1,4 @@
+import { timingLabels, isDateOnly } from '../utils/leaseTiming';
 import {invalidListingStep, draftStore, normalizeLandlordPhone, knownMonthlyCost, billsLabel} from '../utils/listingFlow';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
@@ -53,6 +54,8 @@ export const ListPage: React.FC<ListPageProps> = ({
     return `${targetYear}-06-30`;
   };
 
+  const [occupancyStatus, setOccupancyStatus] = useState<'' | 'occupied' | 'vacant'>('');
+  const timing = timingLabels(occupancyStatus || undefined, locale);
   const [availableDate, setAvailableDate] = useState('');
   const [leaseEndDate, setLeaseEndDate] = useState('');
   const [landlordPhone, setLandlordPhone] = useState('');
@@ -85,7 +88,7 @@ export const ListPage: React.FC<ListPageProps> = ({
   const [draftStatus,setDraftStatus] = useState('');
   const formRef=useRef<HTMLFormElement>(null);
   const errorRef=useRef<HTMLParagraphElement>(null);
-  const draft = {title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordPhone,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsMode,fixedBillsPLN,photos};
+  const draft = {occupancyStatus,title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordPhone,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsMode,fixedBillsPLN,photos};
   useEffect(()=>{let active=true;(async()=>{try{const saved=await draftStore('read',draftKey)||(draftKey!=='anonymous'?await draftStore('read','anonymous'):undefined);if(active&&saved){if(typeof saved.title === typeof title) setTitle(saved.title);
 if(typeof saved.city === typeof city) setCity(saved.city);
 if(typeof saved.district === typeof district) setDistrict(saved.district);
@@ -95,6 +98,7 @@ if(typeof saved.squareMeters === typeof squareMeters) setSquareMeters(saved.squa
 if(typeof saved.monthlyRentPLN === typeof monthlyRentPLN) setMonthlyRentPLN(saved.monthlyRentPLN);
 if(typeof saved.czynszAdminPLN === typeof czynszAdminPLN) setCzynszAdminPLN(saved.czynszAdminPLN);
 if(typeof saved.depositPLN === typeof depositPLN) setDepositPLN(saved.depositPLN);
+if(['occupied','vacant'].includes(saved.occupancyStatus)) setOccupancyStatus(saved.occupancyStatus);
 if(typeof saved.availableDate === typeof availableDate) setAvailableDate(saved.availableDate);
 if(typeof saved.leaseEndDate === typeof leaseEndDate) setLeaseEndDate(saved.leaseEndDate);
 if(typeof saved.landlordName === typeof landlordName) setLandlordName(saved.landlordName);
@@ -110,7 +114,7 @@ if(typeof saved.landlordApproved === typeof landlordApproved) setLandlordApprove
 if (["included", "fixed", "usage"].includes(saved.billsMode)) setBillsMode(saved.billsMode);
 if (typeof saved.fixedBillsPLN === "string") setFixedBillsPLN(saved.fixedBillsPLN);
 if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(active)setDraftStatus(locale==='pl'?'Zapis szkicu jest niedostępny. Nie zamykaj strony.':'Draft storage unavailable. Keep this page open.');}finally{if(active)setDraftReady(true);}})();return()=>{active=false;};},[]);
-  useEffect(()=>{if(!draftReady||isSuccess)return;draftStore('write',draftKey,draft).then(()=>setDraftStatus(locale==='pl'?'Szkic zapisany na tym urządzeniu.':'Draft saved on this device.')).catch(()=>setDraftStatus(locale==='pl'?'Nie zapisano szkicu. Nie zamykaj strony.':'Could not save draft. Keep this page open.'));},[draftReady,isSuccess,title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordPhone,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsMode,fixedBillsPLN,photos]);
+  useEffect(()=>{if(!draftReady||isSuccess)return;draftStore('write',draftKey,draft).then(()=>setDraftStatus(locale==='pl'?'Szkic zapisany na tym urządzeniu.':'Draft saved on this device.')).catch(()=>setDraftStatus(locale==='pl'?'Nie zapisano szkicu. Nie zamykaj strony.':'Could not save draft. Keep this page open.'));},[draftReady,isSuccess,occupancyStatus,title,city,district,address,roomType,squareMeters,monthlyRentPLN,czynszAdminPLN,depositPLN,availableDate,leaseEndDate,landlordName,landlordPhone,tenantName,tenantEmail,reasonForLeaving,distanceToCampus,flatmatesCount,isFurnished,meldunekAllowed,landlordApproved,billsMode,fixedBillsPLN,photos]);
   const goToStep=(next:number)=>{setReviewed(false);const invalid=invalidListingStep(draft);if(next>step&&invalid!==null&&invalid<next){setPhotoError(locale==='pl'?'Uzupełnij wymagane pola przed przejściem dalej.':'Complete the required fields before continuing.');setStep(invalid);requestAnimationFrame(()=>{errorRef.current?.focus();formRef.current?.reportValidity();});return;}setPhotoError(null);setStep(next);};
   const stepComplete=(n:number)=>{const invalid=invalidListingStep(draft);return invalid===null||n<invalid;};
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +152,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
       billsMode: billsMode || undefined,
       fixedBillsPLN: billsMode === "fixed" ? Number(fixedBillsPLN) : undefined,
       depositPLN: Number(depositPLN),
+      occupancyStatus: occupancyStatus || undefined,
       availableDate,
       leaseEndDate,
       remainingMonths: Math.max(0,Math.round((Date.parse(leaseEndDate)-Date.parse(availableDate))/2629800000)),
@@ -564,9 +569,19 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                     />
                   </div>
 
+                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                    <label className="grid gap-2 text-sm font-semibold">{locale === 'pl' ? 'Czy ktoś teraz mieszka w lokalu?' : 'Is someone living here now?'} *
+                      <select required value={occupancyStatus} onChange={e => setOccupancyStatus(e.target.value as typeof occupancyStatus)} className="w-full rounded-lg border border-slate-300 bg-white p-3 text-sm">
+                        <option value="">{locale === 'pl' ? 'Wybierz stan zamieszkania' : 'Choose occupancy'}</option>
+                        <option value="occupied">{locale === 'pl' ? 'Tak — mieszkam tu i szukam następcy' : 'Occupied — I live here and want a replacement'}</option>
+                        <option value="vacant">{locale === 'pl' ? 'Nie — lokal jest już wolny' : 'Vacant — nobody lives here now'}</option>
+                      </select>
+                    </label>
+                    <p className="text-xs text-slate-600">{locale === 'pl' ? 'Publikacja oznacza przyjmowanie zapytań, a nie potwierdzenie wolnego lokalu. Nie wpisuj daty rozpoczęcia swojej obecnej umowy.' : 'Publishing means you are accepting enquiries, not confirming a vacant home. Do not enter the date your own lease originally started.'}</p>
+                  </div>
                   <div>
                     <label htmlFor="listing-availableDate" className="block text-xs font-bold text-slate-700 mb-1.5">
-                      {locale === 'pl' ? 'Dostępne od (data wprowadzenia)' : 'Available from (move-in date)'} *
+                      {timing.date} *
                     </label>
                     <input id="listing-availableDate"
                       type="date"
@@ -579,14 +594,14 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
 
                   <div className="sm:col-span-2">
                     <label htmlFor="listing-leaseEndDate" className="block text-xs font-bold text-slate-700 mb-1.5">
-                      {locale === 'pl' ? 'Koniec obecnej umowy najmu' : 'End date of current active lease'} *
+                      {timing.end} *
                     </label>
                     <input id="listing-leaseEndDate"
                       type="date"
                       required
                       value={leaseEndDate}
                       onChange={(e) => setLeaseEndDate(e.target.value)}
-                      min={availableDate || undefined}
+                      min={isDateOnly(availableDate) ? new Date(Date.parse(availableDate + 'T00:00:00Z') + 86400000).toISOString().slice(0,10) : undefined}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
                   </div>
@@ -693,7 +708,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                   </div>
                 </div>
 
-                {reviewed && <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm space-y-2" role="status"><strong>{locale==='pl'?'Podsumowanie ogłoszenia':'Review your listing'}</strong><p>{roomType} · {district}, {city} · {squareMeters} m²</p><p>{address}</p><p>{availableDate} → {leaseEndDate}</p><p>{formatPLN(knownMonthlyCost({monthlyRentPLN:Number(monthlyRentPLN),czynszAdminPLN:Number(czynszAdminPLN),billsMode,fixedBillsPLN:Number(fixedBillsPLN)}),locale)} / {locale==='pl'?'miesiąc':'month'} · {billsLabel(billsMode, Number(fixedBillsPLN), locale)}</p><p>{locale==='pl'?'Kaucja: ':'Deposit: '}{formatPLN(Number(depositPLN),locale)}</p><p>{photos.length} {locale==='pl'?'zdjęć · numer telefonu właściciela:':'photos · landlord phone number:'} {landlordPhone}</p><p>{locale==='pl'?'Sprawdź dane. Relok8 nie pobiera płatności ani nie gwarantuje zwrotu kaucji.':'Check the details. Relok8 does not collect payments or guarantee deposit returns.'}</p></div>}
+                {reviewed && <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-sm space-y-2" role="status"><strong>{locale==='pl'?'Podsumowanie ogłoszenia':'Review your listing'}</strong><p>{roomType} · {district}, {city} · {squareMeters} m²</p><p>{address}</p><p>{timing.occupancy}</p><p>{timing.date}: {availableDate} · {timing.end}: {leaseEndDate}</p><p>{timing.notice}</p><p>{formatPLN(knownMonthlyCost({monthlyRentPLN:Number(monthlyRentPLN),czynszAdminPLN:Number(czynszAdminPLN),billsMode,fixedBillsPLN:Number(fixedBillsPLN)}),locale)} / {locale==='pl'?'miesiąc':'month'} · {billsLabel(billsMode, Number(fixedBillsPLN), locale)}</p><p>{locale==='pl'?'Kaucja: ':'Deposit: '}{formatPLN(Number(depositPLN),locale)}</p><p>{photos.length} {locale==='pl'?'zdjęć · numer telefonu właściciela:':'photos · landlord phone number:'} {landlordPhone}</p><p>{locale==='pl'?'Sprawdź dane. Relok8 nie pobiera płatności ani nie gwarantuje zwrotu kaucji.':'Check the details. Relok8 does not collect payments or guarantee deposit returns.'}</p></div>}
                 <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4">
                   <button
                     type="button"

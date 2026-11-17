@@ -51,6 +51,8 @@ export interface Listing {
   czynszIncluded?: boolean;
   depositPLN: number;
   deposit?: Money;
+  occupancyStatus?: 'occupied' | 'vacant';
+  publicationStatus?: string;
   availableDate: string;
   leaseEndDate: string;
   remainingMonths: number;

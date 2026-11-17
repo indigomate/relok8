@@ -1,3 +1,4 @@
+import { validLeaseDates, leaseHasEnded } from '../src/utils/leaseTiming';
 import { query, mutation, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
@@ -32,7 +33,7 @@ async function put(ctx: any, kind: string, key: string, ownerId: string, data: a
 }
 function toPlace(lease: any, identity: any) {
   const state = lease.placeState || {};
-  return { ...(owns(lease, identity) || landlord(lease, identity) ? state : {}), id: lease._id, tenantId: lease.ownerId || '', landlordId: landlord(lease, identity) ? identity.subject : lease.landlordUserId || '', title: lease.title, city: lease.city, district: lease.district || '', address: lease.address, rentPLN: lease.monthlyRent, czynszPLN: lease.czynszAdmin || 0, depositPLN: lease.deposit, availableFrom: lease.moveInDate, roomType: lease.roomType, flatmates: lease.flatmatesCount || 0, furnished: !!lease.isFurnished, billsIncluded: !!lease.billsIncluded, billsMode: lease.billsMode, fixedBillsPLN: lease.fixedBillsPLN, meldunekOk: !!lease.meldunekAllowed, commuteNote: lease.distanceToCampus || '', nearInstitutions: lease.universitiesNearby || [], photos: lease.images || [], rules: lease.description || '', status: state.status || 'available_for_takeover' };
+  return { ...(owns(lease, identity) || landlord(lease, identity) ? state : {}), id: lease._id, occupancyStatus: lease.occupancyStatus, leaseEndDate: lease.leaseEndDate, tenantId: lease.ownerId || '', landlordId: landlord(lease, identity) ? identity.subject : lease.landlordUserId || '', title: lease.title, city: lease.city, district: lease.district || '', address: lease.address, rentPLN: lease.monthlyRent, czynszPLN: lease.czynszAdmin || 0, depositPLN: lease.deposit, availableFrom: lease.moveInDate, roomType: lease.roomType, flatmates: lease.flatmatesCount || 0, furnished: !!lease.isFurnished, billsIncluded: !!lease.billsIncluded, billsMode: lease.billsMode, fixedBillsPLN: lease.fixedBillsPLN, meldunekOk: !!lease.meldunekAllowed, commuteNote: lease.distanceToCampus || '', nearInstitutions: lease.universitiesNearby || [], photos: lease.images || [], rules: lease.description || '', status: state.status || 'available_for_takeover' };
 }
 async function notify(ctx: any, recipient: string | undefined, placeId: string, body: string) {
   if (!recipient) return;
@@ -206,9 +207,17 @@ export const write = mutation({
     else if (operation === 'updatePlace') {
       allow(lease, identity, 'tenant'); const data = input.updates;
       const patch: any = {};
-      const mapping: any = { title: 'title', address: 'address', district: 'district', city: 'city', rules: 'description', roomType: 'roomType', commuteNote: 'distanceToCampus', availableFrom: 'moveInDate' };
+      const mapping: any = { title: 'title', address: 'address', district: 'district', city: 'city', rules: 'description', roomType: 'roomType', commuteNote: 'distanceToCampus', availableFrom: 'moveInDate', leaseEndDate: 'leaseEndDate' };
       for (const [source, target] of Object.entries(mapping)) if (source in data) patch[target as string] = source === 'rules' && data[source] === '' ? '' : text(data[source], source === 'rules' ? 10000 : 500);
       for (const [source, target] of Object.entries({ rentPLN: 'monthlyRent', czynszPLN: 'czynszAdmin', depositPLN: 'deposit' })) if (source in data) { validateMoney(data[source], source === 'rentPLN', source === 'rentPLN' ? 100000 : 1000000); patch[target] = data[source]; }
+      if ('occupancyStatus' in data) {
+        if (!['occupied', 'vacant'].includes(data.occupancyStatus)) throw new Error('Choose occupied or vacant');
+        patch.occupancyStatus = data.occupancyStatus;
+      }
+      if (patch.moveInDate !== undefined && patch.moveInDate !== lease.moveInDate || patch.leaseEndDate !== undefined && patch.leaseEndDate !== lease.leaseEndDate) {
+        if (['APPROVED', 'LEASED', 'TRANSFERRED'].includes(lease.status)) throw new Error('Resolve the active handover before changing its dates');
+        if (!validLeaseDates(patch.moveInDate ?? lease.moveInDate, patch.leaseEndDate ?? lease.leaseEndDate) || leaseHasEnded(patch.leaseEndDate ?? lease.leaseEndDate)) throw new Error('Lease end must be after the proposed takeover date and must not have passed');
+      }
       await ctx.db.patch(lease._id, patch);
       return toPlace(await ctx.db.get(lease._id), identity);
     }

@@ -1,3 +1,5 @@
+import { AvailabilityBanner } from '../components/AvailabilityBanner';
+import { timingLabels, availabilityState } from '../utils/leaseTiming';
 import { billsLabel } from '../utils/listingFlow';
 import {ReportListing} from '../components/ReportListing';
 import {knownMonthlyCost} from '../utils/listingFlow';
@@ -95,7 +97,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
     }
     if(inquiryPending)return;
     setInquiryPending(true);
-    const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in taking over your lease on ${listing.address} from ${formatDate(listing.availableDate, locale)}. Could we schedule a viewing?`;
+    const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in your listing on ${listing.address}. Could we confirm the occupancy, proposed takeover date (${formatDate(listing.availableDate, locale)}) and arrange a viewing?`;
     try {
       const thread = await createOrGetThread(listing.id);
       await sendThreadMessage(thread.id, finalMessage);
@@ -198,7 +200,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               </span>
             ) : (
               <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 backdrop-blur-xs">
-                {listing.statusBadge || 'Available for Takeover'}
+                {availabilityState(listing, locale).title}
               </span>
             )}
           </div>
@@ -286,6 +288,8 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             </div>
           )}
         </div>
+
+        <AvailabilityBanner listing={listing} locale={locale} />
 
         {/* 4-Box Quick Specs Grid (Screenshot 8: Room type, Size, Floor, Furnished) */}
         <div className="grid grid-cols-2 rounded-2xl border border-slate-200/90 divide-x divide-y divide-slate-200/90 overflow-hidden bg-white text-xs">
@@ -466,7 +470,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             {formatPLN(knownMonthlyCost(listing), locale)}<span className="text-xs font-normal text-slate-500">/mo</span>
           </div>
           <div className="text-[11px] text-slate-500 font-medium">
-            From {moveInDateFormatted}
+            {timingLabels(listing.occupancyStatus, locale).date}: {moveInDateFormatted}
           </div>
         </div>
 

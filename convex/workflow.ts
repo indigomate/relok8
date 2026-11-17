@@ -1,3 +1,4 @@
+import { validLeaseDates, leaseHasEnded } from '../src/utils/leaseTiming';
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import {
@@ -79,6 +80,9 @@ export const activity = query({
         );
         return {
           id: l._id,
+          occupancyStatus: l.occupancyStatus,
+          moveInDate: l.moveInDate,
+          leaseEndDate: l.leaseEndDate,
           title: l.title,
           city: l.city,
           status: l.status,
@@ -104,6 +108,7 @@ export const request = mutation({
     const u = await requireIdentity(ctx);
     await consume(ctx, u, "application", 10);
     const l = await lease(ctx, a.listingId);
+    if (!validLeaseDates(l.moveInDate, l.leaseEndDate) || leaseHasEnded(l.leaseEndDate)) throw new Error("Current lease has ended or its dates need updating");
     if (l.ownerId === u.subject || isLandlord(l, u))
       throw new Error("You cannot apply to your own listing");
     if (!["AVAILABLE", "PENDING_HOLD", "RESERVED_PENDING"].includes(l.status))
@@ -197,6 +202,7 @@ export const decide = mutation({
     if (a.decision !== "approved" && !a.reason.trim())
       throw new Error("Please explain the decision");
     if (a.decision === "approved") {
+      if (!validLeaseDates(l.moveInDate, l.leaseEndDate) || leaseHasEnded(l.leaseEndDate)) throw new Error("Update the lease dates before approving a takeover");
       if (l.status === "APPROVED" || l.status === "TRANSFERRED")
         throw new Error("Another request has already been approved");
       await ctx.db.patch(l._id, {
@@ -359,6 +365,7 @@ export const publication = mutation({
       throw new Error(
         "Resolve the active handover before changing publication",
       );
+    if (a.published && (!validLeaseDates(l.moveInDate, l.leaseEndDate) || leaseHasEnded(l.leaseEndDate))) throw new Error("Update the lease dates before publishing");
     await ctx.db.patch(l._id, { status: a.published ? "AVAILABLE" : "PAUSED" });
     await event(
       ctx,

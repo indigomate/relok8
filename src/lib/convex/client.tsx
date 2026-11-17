@@ -1,3 +1,4 @@
+import { leaseHasEnded } from '../../utils/leaseTiming';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useConvex as useRemoteConvex, useQuery as useRemoteQuery, useConvexAuth } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -22,6 +23,7 @@ export interface ConvexListingDoc {
   roomType: string;
   areaM2: number;
   floor: number;
+  occupancyStatus?: 'occupied' | 'vacant';
   moveInDate: string;
   leaseEndDate: string;
   coordinates: { lat: number; lng: number };
@@ -95,6 +97,8 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
     billsIncluded: !!doc.billsIncluded, billsMode: doc.billsMode, fixedBillsPLN: doc.fixedBillsPLN,
     czynszIncluded: true,
     depositPLN: doc.deposit,
+    occupancyStatus: doc.occupancyStatus,
+    publicationStatus: doc.status,
     availableDate: doc.moveInDate,
     leaseEndDate: doc.leaseEndDate,
     remainingMonths: Math.max(0,Math.round((Date.parse(doc.leaseEndDate)-Date.parse(doc.moveInDate))/2629800000)),
@@ -122,7 +126,7 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
     floor: doc.floor === undefined ? '' : String(doc.floor),
     lat: doc.coordinates?.lat,
     lng: doc.coordinates?.lng,
-    statusBadge: doc.status === 'PAUSED' ? 'Listing paused' : doc.status === 'TRANSFERRED' ? 'Handover complete' : ['APPROVED', 'LEASED'].includes(doc.status || '') ? 'Handover in progress' : doc.isLocked ? 'Temporarily reserved' : 'Available for takeover',
+    statusBadge: leaseHasEnded(doc.leaseEndDate) ? 'Current lease ended' : doc.status === 'PAUSED' ? 'Listing paused' : doc.status === 'TRANSFERRED' ? 'Handover complete' : ['APPROVED', 'LEASED'].includes(doc.status || '') ? 'Handover in progress' : doc.isLocked ? 'Temporarily reserved' : 'Accepting takeover enquiries',
   };
 }
 

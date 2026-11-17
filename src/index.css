@@ -457,3 +457,7 @@ textarea:focus-visible {
 .r8-place summary:focus-visible,
 .r8-place a:focus-visible { outline: 2px solid var(--color-indigo-600, #4f46e5); outline-offset: 3px; }
 .r8-place summary { list-style-position: inside; }
+
+/* Keep the photo status readable without covering the Save control. */
+.r8-availability-compact p { font-size: 0.75rem; line-height: 1.4; }
+.r8-availability-compact strong { font-size: 1rem; line-height: 1.3; }

@@ -1,3 +1,4 @@
+import { leaseHasEnded, validLeaseDates } from '../src/utils/leaseTiming';
 import { consume, removeLease } from "./domain";
 import { requireIdentity, requireSelf, isLandlord, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
@@ -36,7 +37,7 @@ export const get = query({
       );
     }
 
-    return leases.filter(l => !["PAUSED","TRANSFERRED","APPROVED","LEASED"].includes(l.status)).map(publicListing);
+    return leases.filter(l => validLeaseDates(l.moveInDate, l.leaseEndDate) && !leaseHasEnded(l.leaseEndDate) && !["PAUSED","TRANSFERRED","APPROVED","LEASED"].includes(l.status)).map(publicListing);
   },
 });
 
@@ -70,6 +71,7 @@ export const create = mutation({
     roomType: v.string(),
     areaM2: v.number(),
     floor: v.optional(v.number()),
+    occupancyStatus: v.optional(v.union(v.literal("occupied"), v.literal("vacant"))),
     moveInDate: v.string(),
     leaseEndDate: v.string(),
     coordinates: v.optional(
@@ -106,6 +108,7 @@ export const create = mutation({
     const identity = await requireIdentity(ctx);
     await consume(ctx, identity, "listing-create", 5);
     validateListing(args);
+    if (leaseHasEnded(args.leaseEndDate)) throw new Error("Current lease has ended. Update the dates before publishing.");
     if (args.landlordContactPhone !== undefined && !/^\+[1-9]\d{7,14}$/.test(args.landlordContactPhone)) throw new Error("Invalid landlord phone number");
     if (args.billsMode === "fixed" ? !Number.isFinite(args.fixedBillsPLN) || !(args.fixedBillsPLN! > 0) : args.fixedBillsPLN !== undefined) throw new Error("Invalid fixed monthly bills");
     for (const url of args.images || []) {
@@ -144,6 +147,7 @@ export const reserve = mutation({
       throw new Error(`Lease ${args.leaseId} not found`);
     }
 
+    if (!validLeaseDates(lease.moveInDate, lease.leaseEndDate) || leaseHasEnded(lease.leaseEndDate)) throw new Error("Current lease has ended or its dates need updating");
     if (!["AVAILABLE", "PENDING_HOLD", "RESERVED_PENDING"].includes(lease.status || "")) throw new Error("Listing unavailable");
     if (lease.ownerId === identity.subject || isLandlord(lease, identity)) throw new Error("You cannot reserve your own listing");
     const now = Date.now();
@@ -260,6 +264,7 @@ export const approveTakeover = mutation({
     }
 
     await requireLandlord(ctx, lease);
+    if (!validLeaseDates(lease.moveInDate, lease.leaseEndDate) || leaseHasEnded(lease.leaseEndDate)) throw new Error("Update the lease dates before approving a takeover");
     if (lease.status !== "PENDING_HOLD" && lease.status !== "RESERVED_PENDING") throw new Error("No pending takeover");
     if (!lease.lockedUntil || lease.lockedUntil <= Date.now()) throw new Error("Takeover request expired");
     await ctx.db.patch(lease._id, {

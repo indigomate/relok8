@@ -1,3 +1,4 @@
+import { timingLabels } from '../utils/leaseTiming';
 import React, { useState, useEffect } from 'react';
 import { 
   X, Heart, Check, Calendar, MapPin, Building,
@@ -174,13 +175,13 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)]">
             <div>
               <div className="text-[11px] font-semibold text-[var(--r8-text-3)] uppercase tracking-wider">
-                {strings.availableFrom}
+                {timingLabels(listing.occupancyStatus, locale).date}
               </div>
               <div className="text-sm font-semibold text-[var(--r8-text)] mt-0.5 tnum">
                 {formatDate(listing.availableDate, locale)}
               </div>
               <div className="text-[11px] text-[var(--r8-text-3)]">
-                {listing.remainingMonths} {locale === 'pl' ? 'mies. do końca' : 'months left'}
+                {listing.remainingMonths} {locale === 'pl' ? 'mies. w przybliżeniu' : 'months approximately'}
               </div>
             </div>
 
@@ -192,7 +193,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 {formatDate(listing.leaseEndDate, locale)}
               </div>
               <div className="text-[11px] text-[var(--r8-text-3)]">
-                {locale === 'pl' ? 'Koniec umowy' : 'Original end date'}
+                {timingLabels(listing.occupancyStatus, locale).end}
               </div>
             </div>
 

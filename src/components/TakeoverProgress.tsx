@@ -1,3 +1,5 @@
+import { timingLabels, leaseHasEnded } from '../utils/leaseTiming';
+import { formatDate } from '../utils/formatters';
 import React, { useState } from "react";
 import { ApplicationDecision } from "./ApplicationDecision";
 import { PropertySettings } from "./PropertySettings";
@@ -206,7 +208,7 @@ export function TakeoverProgress({
               <h2 className="text-xl font-bold break-words">{p.title}</h2>
               <p>
                 {p.city} ·{" "}
-                {p.status === "AVAILABLE"
+                {p.leaseEndDate && leaseHasEnded(p.leaseEndDate) ? say("Current lease ended · update dates", "Obecna umowa zakończona · zaktualizuj daty") : p.status === "AVAILABLE"
                   ? say("Published", "Opublikowane")
                   : p.status === "PAUSED"
                     ? say("Paused", "Wstrzymane")
@@ -214,6 +216,7 @@ export function TakeoverProgress({
                       ? say("Handover complete", "Przekazanie zakończone")
                       : say("Handover in progress", "Przekazanie w toku")}
               </p>
+              {p.moveInDate && p.leaseEndDate && <p className="text-xs text-slate-600 mt-2">{timingLabels(p.occupancyStatus, locale).date}: {formatDate(p.moveInDate, locale)} · {timingLabels(p.occupancyStatus, locale).end}: {formatDate(p.leaseEndDate, locale)}</p>}
             </div>
             <button
               className="text-indigo-600 hover:text-indigo-800 text-xs font-semibold cursor-pointer"

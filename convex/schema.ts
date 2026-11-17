@@ -15,6 +15,7 @@ export default defineSchema({
 
   // Relok8 Leases table (for live lease takeover listings)
   leases: defineTable({
+    occupancyStatus: v.optional(v.union(v.literal("occupied"), v.literal("vacant"))),
     landlordUserId: v.optional(v.string()),
     placeState: v.optional(v.any()),
     ownerId: v.optional(v.string()),

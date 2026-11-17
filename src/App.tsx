@@ -1,3 +1,4 @@
+import { matchesMoveInDate, leaseHasEnded, todayInPoland } from './utils/leaseTiming';
 import { authReturnPath } from './utils/authFlow';
 import {knownMonthlyCost} from './utils/listingFlow';
 import React, { useState, useMemo, useEffect } from 'react';
@@ -21,7 +22,6 @@ import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 
 // Modals & Pages
-import { IntakeModal } from './components/IntakeModal';
 import { CesjaGeneratorModal } from './components/CesjaGeneratorModal';
 import { DepositClearingModal } from './components/DepositClearingModal';
 import { LeaveYourLeaseModal } from './components/LeaveYourLeaseModal';
@@ -63,6 +63,8 @@ import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
 function Relok8App() {
+  const [listingToday, setListingToday] = useState(todayInPoland);
+  useEffect(() => {const timer = window.setInterval(() => setListingToday(todayInPoland()), 60000); return () => window.clearInterval(timer);}, []);
   // Theme State: Default light
   const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
@@ -211,7 +213,6 @@ function Relok8App() {
   const [isFiltering, setIsFiltering] = useState(false);
 
   // Modals state
-  const [isIntakeOpen, setIsIntakeOpen] = useState(false);
   const [isLeaveLeaseOpen, setIsLeaveLeaseOpen] = useState(false);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isCesjaOpen, setIsCesjaOpen] = useState(false);
@@ -491,8 +492,9 @@ function Relok8App() {
             '@type': 'Offer',
             'price': knownMonthlyCost(found),
             'priceCurrency': 'PLN',
-            'availability': 'https://schema.org/InStock',
-            'validFrom': found.availableDate
+            'availability': found.occupancyStatus === 'vacant' && found.availableDate <= listingToday ? 'https://schema.org/InStock' : 'https://schema.org/PreOrder',
+            'availabilityStarts': found.availableDate,
+            'availabilityEnds': found.leaseEndDate
           }
         });
       }
@@ -571,7 +573,7 @@ function Relok8App() {
       '@context': 'https://schema.org',
       '@graph': schemaGraph
     });
-  }, [currentRoute, listings, locale]);
+  }, [currentRoute, listings, locale, listingToday]);
 
 // Convex is the only data backend.
   const [isLoadingListings, setIsLoadingListings] = useState(true);
@@ -636,6 +638,7 @@ function Relok8App() {
           roomType: newListing.roomType,
           areaM2: newListing.squareMeters,
           floor: newListing.floor.trim() === '' ? undefined : Number(newListing.floor),
+          occupancyStatus: newListing.occupancyStatus,
           moveInDate: newListing.availableDate,
           leaseEndDate: newListing.leaseEndDate,
           coordinates: (newListing.lat && newListing.lng) ? { lat: newListing.lat, lng: newListing.lng } : undefined,
@@ -684,6 +687,7 @@ function Relok8App() {
   // Filter & Sort Listings
   const filteredListings = useMemo(() => {
     const list = listings.filter((l) => {
+      if (leaseHasEnded(l.leaseEndDate, listingToday)) return false;
       // City check
       if (activeCityConfig) {
         if (l.city.toLowerCase() !== activeCityConfig.name.toLowerCase() && l.city.toLowerCase() !== activeCityConfig.slug.toLowerCase()) {
@@ -703,7 +707,7 @@ function Relok8App() {
 
       // Move in date: listing must be available on or before the selected target date
       if (filterValues.moveInDate) {
-        if (new Date(l.availableDate) > new Date(filterValues.moveInDate)) return false;
+        if (!matchesMoveInDate(l.availableDate, l.leaseEndDate, filterValues.moveInDate)) return false;
       }
 
       // Furnished
@@ -738,7 +742,7 @@ function Relok8App() {
       // default: soonest move-in date
       return new Date(a.availableDate).getTime() - new Date(b.availableDate).getTime();
     });
-  }, [listings, activeCityConfig, searchState.city, filterValues]);
+  }, [listings, activeCityConfig, searchState.city, filterValues, listingToday]);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
@@ -1289,20 +1293,12 @@ function Relok8App() {
       )}
 
       {/* Modals */}
-      <IntakeModal
-        isOpen={isIntakeOpen}
-        onClose={() => setIsIntakeOpen(false)}
-        onSubmitListing={handleAddListing}
-        locale={locale}
-        currentUser={currentUser}
-      />
-
       <LeaveYourLeaseModal
         isOpen={isLeaveLeaseOpen}
         onClose={() => setIsLeaveLeaseOpen(false)}
         onOpenIntake={() => {
           setIsLeaveLeaseOpen(false);
-          setIsIntakeOpen(true);
+          navigateTo(locale === 'pl' ? '/pl/list' : '/list');
         }}
         onOpenCesja={() => {
           setIsLeaveLeaseOpen(false);
@@ -1337,7 +1333,7 @@ function Relok8App() {
         onClose={() => setIsCalculatorOpen(false)}
         onOpenIntake={() => {
           setIsCalculatorOpen(false);
-          setIsIntakeOpen(true);
+          navigateTo(locale === 'pl' ? '/pl/list' : '/list');
         }}
         locale={locale}
       />
