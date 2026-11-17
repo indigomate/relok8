@@ -448,3 +448,12 @@ textarea:focus-visible {
   display: none !important;
 }
 
+
+/* My Place keeps property names subordinate to the page title. */
+.r8-place h1 { font-size: 2rem; line-height: 1.2; }
+.r8-place h2 { font-size: 1.25rem; line-height: 1.4; overflow-wrap: anywhere; }
+.r8-place h3 { font-size: 1rem; line-height: 1.5; }
+.r8-place button:focus-visible,
+.r8-place summary:focus-visible,
+.r8-place a:focus-visible { outline: 2px solid var(--color-indigo-600, #4f46e5); outline-offset: 3px; }
+.r8-place summary { list-style-position: inside; }

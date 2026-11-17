@@ -82,3 +82,11 @@ Completion means every participant confirmed every stage; the backend marks the 
 - Before release, test a guest, listing author, invited landlord and applicant with isolated accounts: draft → publish → invite → message → request → decision → all handover confirmations. Test wrong-email/expired invitations, rejected requests and mobile keyboard navigation.
 
 Automated checks do not establish that live Clerk configuration, deployed Convex settings or browser journeys work. No production deployment is included in this implementation.
+
+## My Place consolidation
+
+Implemented the first follow-up slice: My Place and existing landlord URLs now share one canonical workflow. A compact selector displays one property at a time; each application opens independently. Property settings, landlord invitations, owner edits, early-exit controls, private property conversation, reports and deletion sit behind disclosure controls. Applicant decisions use inline confirmation/reason forms. The obsolete duplicate five-stage dashboard and its separate handover checklist have been removed from the page; the three-party documents/deposit/keys sequence remains authoritative.
+
+Property editing and deletion are offered only to the listing owner, matching backend authorization. Landlords manage advertising permission and applicant decisions. Applicants receive application and conversation actions. A failed data load offers a refresh action. No backend schema or authorization changes are part of this consolidation.
+
+Verification: rendering regressions cover single-property presentation, collapsed sections, role controls, loading/empty/sign-in states and shared landlord routes. Isolated Chromium checks cover property switching, cancellation before deletion, decline reasons, applicant withdrawal, handover locks, English/Polish states and no horizontal overflow at 320, 768, 1024 and 1440 pixels. These browser fixtures use simulated query responses and do not establish live authenticated connectivity.

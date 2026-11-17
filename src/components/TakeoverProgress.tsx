@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { ApplicationDecision } from "./ApplicationDecision";
+import { PropertySettings } from "./PropertySettings";
 import { handoverProgress } from "../utils/handover";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -8,9 +10,11 @@ import { SupportedLocale } from "../utils/formatters";
 export function TakeoverProgress({
   locale = "en",
   onRequireLogin,
+  onDeleteListing,
 }: {
   locale?: SupportedLocale;
   onRequireLogin: () => void;
+  onDeleteListing?: (id: string) => Promise<boolean | void> | void;
 }) {
   const pl = locale === "pl",
     say = (en: string, po: string) => (pl ? po : en),
@@ -31,6 +35,8 @@ export function TakeoverProgress({
     [inviteUrl, setInviteUrl] = useState(""),
     [inviteEmail, setInviteEmail] = useState(""),
     [invitePlace, setInvitePlace] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const selectedPlace = places?.find(p => p.id === selectedId) || places?.[0];
   const token = new URLSearchParams(window.location.search).get("invite");
   const invitation = useQuery(
     api.workflow.invitationPreview,
@@ -87,9 +93,9 @@ export function TakeoverProgress({
   if (!isAuthenticated)
     return (
       <section className=" space-y-5">
-        <h1 className="text-base font-bold">
-          {say("My Place", "Moje miejsce")}
-        </h1>
+        <h2 className="text-base font-bold">
+          {say("Sign in to manage your housing", "Zaloguj się, aby zarządzać najmem")}
+        </h2>
         <p>
           {say(
             "Manage your listings, applications and landlord decisions in one place. If you received an invitation, sign in with the email it was addressed to.",
@@ -106,9 +112,7 @@ export function TakeoverProgress({
     );
   return (
     <section className="space-y-5 text-sm">
-      <h2 className="text-lg font-bold text-slate-900">
-        {say("Takeover requests and next steps", "Wnioski i kolejne kroki")}
-      </h2>
+
       {error && (
         <p role="alert" className="bg-red-50 text-red-700 p-4 rounded-xl">
           {error}
@@ -176,10 +180,19 @@ export function TakeoverProgress({
           </button>
         </section>
       )}
-      {places?.map((p: any) => (
+      {!!places?.length && <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
+        <label className="grid gap-2 text-xs font-semibold text-slate-600 min-w-0 w-full sm:w-auto">
+          {say("Select a home", "Wybierz lokal")} · {places.length}
+          <select value={selectedPlace?.id || ""} disabled={busy} onChange={e => {setSelectedId(e.target.value); setInvitePlace(""); setInviteUrl(""); setError(""); setNotice("");}} className="w-full sm:max-w-sm min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900">
+            {places.map(p => <option key={p.id} value={p.id}>{p.title} · {p.city}</option>)}
+          </select>
+        </label>
+        <a className="inline-flex min-h-11 items-center text-sm font-semibold text-indigo-700" href={prefix + '/messages'}>{say("Open Messages", "Otwórz Wiadomości")} →</a>
+      </div>}
+      {(selectedPlace ? [selectedPlace] : []).map((p: any) => (
         <section
           key={p.id}
-          className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4"
+          className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-7 space-y-6 min-w-0"
         >
           <div className="flex flex-wrap justify-between gap-3">
             <div>
@@ -190,7 +203,7 @@ export function TakeoverProgress({
                     ? say("Landlord", "Właściciel")
                     : say("Your application", "Twój wniosek")}
               </p>
-              <h2 className="text-base font-bold">{p.title}</h2>
+              <h2 className="text-xl font-bold break-words">{p.title}</h2>
               <p>
                 {p.city} ·{" "}
                 {p.status === "AVAILABLE"
@@ -209,6 +222,9 @@ export function TakeoverProgress({
               {say("View listing", "Zobacz ogłoszenie")}
             </button>
           </div>
+          {(p.owner || p.landlord) && <details className="border-y border-slate-100 py-4">
+          <summary className="cursor-pointer min-h-11 py-3 font-semibold text-slate-700">{say("Listing settings & landlord", "Ustawienia ogłoszenia i właściciel")}</summary>
+          <div className="pt-3 space-y-4">
           <p>
             {p.permission
               ? say(
@@ -315,6 +331,7 @@ export function TakeoverProgress({
               >
                 {say("Create invitation link", "Utwórz link zaproszenia")}
               </button>
+              <button type="button" disabled={busy} className="min-h-11 px-4 text-sm font-semibold text-slate-600" onClick={() => setInvitePlace("")}>{say("Close", "Zamknij")}</button>
               {inviteUrl && (
                 <div className="space-y-2">
                   <p>
@@ -323,6 +340,7 @@ export function TakeoverProgress({
                       "Wyślij link właścicielowi. Relok8 nie wysłał emaila. Link wygasa po 7 dniach.",
                     )}
                   </p>
+                  <button type="button" className="min-h-11 px-4 border rounded-xl text-sm font-semibold" onClick={async () => {try {await navigator.clipboard.writeText(inviteUrl); setNotice(say("Invitation link copied.", "Skopiowano link zaproszenia."));} catch {setError(say("Could not copy. Select and copy the link below.", "Nie udało się skopiować. Zaznacz i skopiuj link poniżej."));}}}>{say("Copy invitation link", "Kopiuj link zaproszenia")}</button>
                   <input
                     aria-label={say("Invitation link", "Link zaproszenia")}
                     readOnly
@@ -334,6 +352,10 @@ export function TakeoverProgress({
               )}
             </form>
           )}
+          {(p.owner || p.landlord) && <PropertySettings key={p.id} listingId={p.id} owner={p.owner} landlord={p.landlord} locale={locale} onDeleteListing={onDeleteListing} />}
+          </div>
+          </details>}
+          <div className="space-y-2"><h3 className="text-base font-bold">{say("Takeover applications", "Wnioski o przejęcie najmu")} <span className="font-normal text-slate-500">({p.applications.length})</span></h3><p className="text-xs text-slate-500">{say("Open an application to review it, message the applicant or follow the handover.", "Otwórz wniosek, aby go rozpatrzyć, napisać do kandydata lub śledzić przekazanie.")}</p></div>
           {p.applications.length === 0 && (
             <p className="text-slate-600">
               {say(
@@ -350,10 +372,13 @@ export function TakeoverProgress({
                 : "applicant";
             const progress = handoverProgress(a.confirmations, role);
             return (
-              <article key={a.id} className="border-t pt-4 space-y-3">
-                <h3 className="font-bold">
-                  {a.name} · {status(a.status)}
-                </h3>
+              <details key={a.id} className="group rounded-xl border border-slate-200">
+                <summary className="cursor-pointer p-4 min-h-14 break-words">
+                  <span className="font-semibold">{a.name || say("Applicant", "Kandydat")}</span>
+                  <span className="ml-3 text-xs text-slate-600">{status(a.status)}</span>
+                  <span className="block mt-2 text-xs font-semibold text-indigo-700">{say("Review application & next steps", "Zobacz wniosek i kolejne kroki")}</span>
+                </summary>
+                <div className="border-t border-slate-100 p-4 sm:p-5 space-y-4">
                 <p className="whitespace-pre-wrap">{a.message}</p><button type="button" className="text-xs font-semibold text-indigo-600" onClick={()=>navigateTo(prefix+'/messages',{thread:a.threadId || p.id+':'+a.applicantId})}>{say('Open conversation','Otwórz rozmowę')}</button>
                 <p className="text-sm">
                   {say("Updated: ", "Aktualizacja: ")}
@@ -369,98 +394,10 @@ export function TakeoverProgress({
                     {new Date(a.expiresAt).toLocaleDateString()}
                   </p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {p.landlord && a.status === "requested" && (
-                    <>
-                      <button
-                        disabled={busy}
-                        className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50"
-                        onClick={() =>
-                          run(() =>
-                            decide({
-                              applicationId: a.id,
-                              decision: "approved",
-                              reason: "",
-                            }),
-                          )
-                        }
-                      >
-                        {say("Approve applicant", "Zatwierdź kandydata")}
-                      </button>
-                      <button
-                        disabled={busy}
-                        className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold disabled:opacity-50"
-                        onClick={() => {
-                          const reason = prompt(
-                            say("Reason for declining", "Powód odmowy"),
-                          );
-                          if (reason)
-                            run(() =>
-                              decide({
-                                applicationId: a.id,
-                                decision: "declined",
-                                reason,
-                              }),
-                            );
-                        }}
-                      >
-                        {say("Decline", "Odrzuć")}
-                      </button>
-                    </>
-                  )}
-                  {!p.owner &&
-                    !p.landlord &&
-                    ["requested", "approved"].includes(a.status) && (
-                      <button
-                        disabled={busy}
-                        className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold disabled:opacity-50"
-                        onClick={() => {
-                          const reason = prompt(
-                            say("Reason for withdrawing", "Powód wycofania"),
-                          );
-                          if (reason)
-                            run(() =>
-                              decide({
-                                applicationId: a.id,
-                                decision: "withdrawn",
-                                reason,
-                              }),
-                            );
-                        }}
-                      >
-                        {say("Withdraw request", "Wycofaj wniosek")}
-                      </button>
-                    )}
-                  {p.landlord && a.status === "approved" && (
-                    <button
-                      disabled={busy}
-                      className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold disabled:opacity-50"
-                      onClick={() => {
-                        const reason = prompt(
-                          say("Reason for cancelling", "Powód anulowania"),
-                        );
-                        if (reason)
-                          run(() =>
-                            decide({
-                              applicationId: a.id,
-                              decision: "cancelled",
-                              reason,
-                            }),
-                          );
-                      }}
-                    >
-                      {say("Cancel approval", "Anuluj zgodę")}
-                    </button>
-                  )}
-                </div>
+                <ApplicationDecision key={a.id + a.status} landlord={p.landlord} applicant={!p.owner && !p.landlord} status={a.status} busy={busy} locale={locale} onDecide={(decision, reason) => run(() => decide({applicationId: a.id, decision, reason}))} />
                 {["approved", "completed"].includes(a.status) && (
                   <div className="bg-slate-50 p-4 rounded-xl space-y-4">
-                    <p>
-                      {say(
-                        "Arrange these steps directly. Each participant confirms their own experience. These are participant reports, not independently verified documents or payments.",
-                        "Ustalcie te kroki bezpośrednio. Każda strona potwierdza własne ustalenia. Są to oświadczenia uczestników, a nie niezależna weryfikacja dokumentów lub płatności.",
-                      )}
-                    </p>
+                    <p className="text-xs text-slate-600">{say("All three participants confirm each stage. Arrange documents and payments directly; these updates are participant reports.", "Wszystkie trzy strony potwierdzają każdy etap. Dokumenty i płatności ustalacie bezpośrednio; aktualizacje są oświadczeniami uczestników.")}</p>
                     <p className="font-semibold text-indigo-800" role="status">
                       {!progress.currentStep
                         ? say("All handover stages confirmed by all three participants.", "Wszystkie trzy strony potwierdziły każdy etap przekazania.")
@@ -530,16 +467,15 @@ export function TakeoverProgress({
                     ))}
                   </div>
                 )}
-              </article>
+                </div>
+              </details>
             );
           })}
         </section>
       ))}
       {!!reports?.length && (
-        <section className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
-          <h2 className="text-base font-bold">
-            {say("Your reports", "Twoje zgłoszenia")}
-          </h2>
+        <details className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+          <summary className="cursor-pointer font-semibold min-h-11">{say("Your reports", "Twoje zgłoszenia")} ({reports.length})</summary>
           {reports.map((r: any) => (
             <div key={r.id} className="mt-4">
               <p>
@@ -555,9 +491,9 @@ export function TakeoverProgress({
               {r.resolution && <p>{r.resolution}</p>}
             </div>
           ))}
-        </section>
+        </details>
       )}
-      <p className="text-sm">
+      <p className="text-xs text-slate-500">
         {say(
           "Need a correction or help with a dispute? Include the listing or report reference when contacting ",
           "Potrzebujesz poprawki lub pomocy w sporze? Podaj identyfikator ogłoszenia lub zgłoszenia, pisząc do ",

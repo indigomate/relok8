@@ -11,3 +11,5 @@ coverage/
 data/*.json
 data/*.sqlite*
 .env.local
+
+work/
