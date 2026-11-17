@@ -40,7 +40,7 @@ Listing detail: repeat the same derived status near the photo and show a full ti
 6. Legacy lease-exit/calculator shortcuts now open this same wizard instead of a separate modal with default dates.
 7. Publish as accepting enquiries; never automatically label an occupied home vacant as time passes.
 
-Existing listings have optional occupancy data for compatibility. They receive a confirm-timing label until an owner explicitly updates occupancy. No existing home is automatically classified as vacant.
+Existing listings have optional occupancy data for compatibility. Legacy date-order mistakes with a future lease end remain visible with a confirm-timing state; they cannot accept applications until corrected. They receive a confirm-timing label until an owner explicitly updates occupancy. No existing home is automatically classified as vacant.
 
 ## Data and validation
 
@@ -55,3 +55,5 @@ Date-only strings display without timezone shifts. Expiry uses Poland's calendar
 Tests cover occupied/vacant/unknown wording, paused/taken/expired overrides, impossible and reversed dates, search boundaries, date updates across public/private reads, rejecting expired applications and Poland's timezone boundary. Browser checks cover card layouts at 320/768/1440, the occupancy-dependent listing labels and a browser in a US timezone.
 
 Future measurement: compare qualified enquiries per listing view and signup completion across these labels. Do not promise traffic increases without measurement, invent scarcity, or show misleading inventory counts.
+
+Release checks passed with 80 tests, type checking, configured frontend build, responsive browser fixtures and production Convex schema validation. A readonly production check found no current lease records; no sample listings were created to populate the live catalog.

@@ -37,7 +37,7 @@ export const get = query({
       );
     }
 
-    return leases.filter(l => validLeaseDates(l.moveInDate, l.leaseEndDate) && !leaseHasEnded(l.leaseEndDate) && !["PAUSED","TRANSFERRED","APPROVED","LEASED"].includes(l.status)).map(publicListing);
+    return leases.filter(l => !leaseHasEnded(l.leaseEndDate) && !["PAUSED","TRANSFERRED","APPROVED","LEASED"].includes(l.status)).map(publicListing);
   },
 });
 

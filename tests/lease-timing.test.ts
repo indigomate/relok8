@@ -68,3 +68,11 @@ test('approved handover dates cannot be silently changed by a listing edit',asyn
  await expect(owner.mutation(api.domain.write,{operation:'updatePlace',input:{placeId:id,updates:{availableFrom:'2027-02-01'}}})).rejects.toThrow('Resolve the active handover');
  expect((await t.query(api.leases.getById,{id}))?.moveInDate).toBe('2027-01-01');
 });
+
+test('legacy date-order mistakes stay visible for confirmation without accepting applications',async()=>{
+ const t=convexTest(schema,modules);const owner=t.withIdentity(identity('owner'));const id=await owner.mutation(api.leases.create,listing);
+ await t.run(async ctx=>{await ctx.db.patch(id,{moveInDate:'2027-09-01',leaseEndDate:'2027-06-30'});});
+ const docs=await t.query(api.leases.get,{});expect(docs).toHaveLength(1);
+ expect(availabilityState(mapConvexListingToAppListing(docs[0] as any),'en','2026-11-17').kind).toBe('confirm');
+ await expect(t.withIdentity(identity('applicant')).mutation(api.workflow.request,{listingId:id,message:'Viewing?'})).rejects.toThrow('dates need updating');
+});
