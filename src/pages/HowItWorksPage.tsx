@@ -1,6 +1,7 @@
-import React from 'react';
-import { ArrowLeft, CheckCircle2, Shield, ShieldCheck, FileCheck, Key, HelpCircle, ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
+import { navigateTo } from '../utils/router';
 
 interface HowItWorksPageProps {
   onBack: () => void;
@@ -9,150 +10,78 @@ interface HowItWorksPageProps {
   locale?: SupportedLocale;
 }
 
-export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({
-  onBack,
-  onOpenLeaveYourLease,
-  onOpenBrowse,
-  locale = 'en'
-}) => {
+export const HowItWorksPage = ({ onBack, onOpenLeaveYourLease, onOpenBrowse, locale = 'en' }: HowItWorksPageProps) => {
+  const [path, setPath] = useState<'find' | 'leave' | 'landlord'>('find');
+  const pl = locale === 'pl';
+  const say = (en: string, po: string) => pl ? po : en;
+  const journeys = {
+    find: {
+      label: say('Find a home', 'Znajdź mieszkanie'),
+      intro: say('From your first search to collecting the keys.', 'Od pierwszego wyszukiwania do odbioru kluczy.'),
+      action: say('Explore available homes', 'Przeglądaj dostępne lokale'),
+      run: onOpenBrowse,
+      steps: [
+        [say('Explore and compare', 'Przeglądaj i porównuj'), say('Choose your city, budget and dates. Check rent, bills, deposit and registration information on each listing.', 'Wybierz miasto, budżet i daty. Sprawdź czynsz, opłaty, kaucję i informacje o meldunku.')],
+        [say('Talk to the departing tenant', 'Porozmawiaj z dotychczasowym najemcą'), say('Sign in to save homes or send a message. Arrange a viewing and discuss dates and terms in Messages.', 'Zaloguj się, aby zapisywać lokale i wysyłać wiadomości. W Wiadomościach ustal oglądanie, daty i warunki.')],
+        [say('Request landlord approval', 'Poproś właściciela o zgodę'), say('Apply from the listing. Follow the decision in My Place. Requests expire after seven days; they do not reserve a room or charge money.', 'Złóż wniosek z ogłoszenia. Śledź decyzję w Moim miejscu. Wniosek wygasa po siedmiu dniach; nie rezerwuje lokalu ani nie pobiera pieniędzy.')],
+        [say('Complete the handover together', 'Wspólnie zakończcie przekazanie'), say('After approval, all three people confirm documents, deposit arrangements, then inspection and keys in My Place.', 'Po akceptacji wszystkie trzy strony potwierdzają w Moim miejscu dokumenty, rozliczenie kaucji, a następnie odbiór lokalu i kluczy.')],
+      ],
+    },
+    leave: {
+      label: say('Leave my lease', 'Przekaż mój najem'),
+      intro: say('Find a replacement and coordinate a clear handover.', 'Znajdź następcę i sprawnie ustal przekazanie.'),
+      action: say('Start my listing', 'Utwórz ogłoszenie'),
+      run: onOpenLeaveYourLease,
+      steps: [
+        [say('Prepare your listing', 'Przygotuj ogłoszenie'), say('Add location, room details, costs and dates, then photos and consent details. Your draft stays on this device.', 'Dodaj lokalizację, szczegóły lokalu, koszty i daty, a następnie zdjęcia i informacje o zgodach. Szkic pozostaje na tym urządzeniu.')],
+        [say('Review, sign in and publish', 'Sprawdź, zaloguj się i opublikuj'), say('Check your details before publishing. A published listing does not mean the landlord has approved it or a replacement.', 'Sprawdź dane przed publikacją. Publikacja nie oznacza zgody właściciela na ogłoszenie ani na następcę.')],
+        [say('Invite your landlord', 'Zaproś właściciela'), say('Create an invitation in My Place using their email. Copy and send the link yourself. They must accept using that verified email within seven days.', 'Utwórz zaproszenie w Moim miejscu, podając email właściciela. Samodzielnie wyślij link. Właściciel musi go przyjąć ze zweryfikowanym emailem w ciągu siedmiu dni.')],
+        [say('Coordinate the replacement', 'Ustal przekazanie następcy'), say('Answer Messages while the landlord reviews applications. After approval, all three participants confirm documents, deposit arrangements and keys in order.', 'Odpowiadaj na Wiadomości, gdy właściciel rozpatruje wnioski. Po akceptacji wszystkie strony kolejno potwierdzają dokumenty, rozliczenie kaucji i klucze.')],
+      ],
+    },
+    landlord: {
+      label: say('Review as a landlord', 'Sprawdź jako właściciel'),
+      intro: say('Join through your invitation and manage decisions for your property.', 'Dołącz przez zaproszenie i zarządzaj decyzjami dotyczącymi swojego lokalu.'),
+      action: say('Open My Place', 'Otwórz Moje miejsce'),
+      run: () => navigateTo(pl ? '/pl/place' : '/place'),
+      steps: [
+        [say('Accept your invitation', 'Przyjmij zaproszenie'), say('Open the link from the listing author and sign in with the intended verified email. Ask for a new link if yours has expired.', 'Otwórz link od autora ogłoszenia i zaloguj się właściwym zweryfikowanym emailem. Jeśli link wygasł, poproś o nowy.')],
+        [say('Confirm advertising permission', 'Potwierdź zgodę na ogłoszenie'), say('Review the property in My Place. Permission to advertise is separate from accepting an applicant.', 'Sprawdź lokal w Moim miejscu. Zgoda na ogłoszenie jest niezależna od akceptacji kandydata.')],
+        [say('Review the applicant', 'Rozpatrz wniosek kandydata'), say('Approve or decline the takeover request. Approval starts coordination; it does not confirm a signed agreement or payment.', 'Zatwierdź lub odrzuć wniosek. Akceptacja rozpoczyna ustalenia; nie potwierdza podpisania umowy ani płatności.')],
+        [say('Confirm the handover', 'Potwierdź przekazanie'), say('Alongside both tenants, confirm documents, deposit arrangements and inspection with keys. My Place shows who still needs to act.', 'Wraz z oboma najemcami potwierdź dokumenty, rozliczenie kaucji i odbiór lokalu z kluczami. Moje miejsce pokazuje, kto powinien działać.')],
+      ],
+    },
+  };
+  const journey = journeys[path];
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
-        
-        {/* Back navigation */}
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer p-1 -ml-1 rounded-md hover:bg-indigo-50"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{locale === 'pl' ? 'Wróć do ogłoszeń' : 'Back to marketplace'}</span>
-        </button>
-
-        {/* Hero Section */}
-        <div className="space-y-2.5 sm:space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-100/70 text-indigo-800 text-xs font-bold uppercase tracking-wider">
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Official Guide · Art. 509 KC</span>
-          </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            How Lease Takeover Poland Works on Relok8
-          </h1>
-          <p className="text-xs sm:text-base text-slate-600 leading-relaxed">
-            Take over an active rental contract directly from outgoing international students and expats with formal landlord approval, zero broker commissions, and clear address registration status (Meldunek).
-          </p>
-        </div>
-
-        {/* 3 Step Deep Dive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 font-extrabold flex items-center justify-center border border-indigo-100">
-              1
-            </div>
-            <h2 className="text-lg font-bold text-slate-900">
-              {locale === 'pl' ? 'Przeglądaj ogłoszenia pokoi' : 'Browse room listings'}
-            </h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Explore furnished studios and rooms in Warsaw, Kraków, Wrocław, Gdańsk, and Lublin. Review photos, transit times to universities, exact monthly rent, and deposit amounts.
-            </p>
-            <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>0 PLN agency fees</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Direct peer-to-peer contact</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 font-extrabold flex items-center justify-center border border-indigo-100">
-              2
-            </div>
-            <h2 className="text-lg font-bold text-slate-900">
-              Landlord Approval & Cesja
-            </h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              {locale === 'pl' ? 'Wyślij wniosek o przejęcie najmu. Właściciel ma 7 dni na decyzję. Śledź wniosek w My Place. Zgoda nie potwierdza podpisania dokumentów ani płatności.' : 'Request a takeover. The landlord has 7 days to review it. Track the request in My Place. Approval does not confirm signed paperwork or payment.'}
-            </p>
-            <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Civil Code tenant rights (Art. 509 KC)</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{locale === 'pl' ? 'Potwierdź warunki z właścicielem' : 'Confirm terms with the landlord'}</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 font-extrabold flex items-center justify-center border border-indigo-100">
-              3
-            </div>
-            <h2 className="text-lg font-bold text-slate-900">
-              Handover & Address Registration
-            </h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Complete the inspection protocol (protokół zdawczo-odbiorczy), settle the deposit directly peer-to-peer with the departing tenant or landlord, collect the keys, and register your residency (Meldunek) for your PESEL or Karta Pobytu.
-            </p>
-            <ul className="text-xs text-slate-500 space-y-1.5 pt-2 border-t border-slate-100">
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{locale === 'pl' ? 'Sprawdź wymogi meldunkowe' : 'Check address registration requirements'}</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{locale === 'pl' ? 'Potwierdzenia uczestników' : 'Participant confirmations'}</span>
-              </li>
-            </ul>
-          </div>
-
-        </div>
-
-        {/* Legal Protections Card */}
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
-          <div className="flex items-center gap-2 text-indigo-600 font-bold text-base">
-            <Shield className="w-5 h-5" />
-            <span>{locale === 'pl' ? 'Co potwierdza Relok8?' : 'What does Relok8 confirm?'}</span>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            {locale === 'pl' ? 'Relok8 zapisuje wnioski, decyzje i potwierdzenia uczestników. Dane i zdjęcia pochodzą od autorów. Nie weryfikujemy niezależnie lokali, nie obsługujemy płatności i nie gwarantujemy zwrotu kaucji. Sprawdź umowę i w razie potrzeby uzyskaj profesjonalną poradę.' : 'Relok8 records requests, decisions and participant confirmations. Facts and photos come from listing authors. We do not independently verify properties, process payments or guarantee deposit returns. Check your agreement and obtain qualified advice when needed.'}
-          </p>
-        </div>
-
-        {/* Dual CTA */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={onOpenBrowse}
-            className="p-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-left transition-colors flex items-center justify-between cursor-pointer"
-          >
-            <div>
-              <div className="text-base font-bold">Find a room now</div>
-              <div className="text-xs text-indigo-200 mt-1">Browse Warsaw, Kraków, Wrocław, Gdańsk, Lublin</div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-indigo-200" />
-          </button>
-
-          <button
-            type="button"
-            onClick={onOpenLeaveYourLease}
-            className="p-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-left transition-colors flex items-center justify-between cursor-pointer"
-          >
-            <div>
-              <div className="text-base font-bold">Leaving your lease early?</div>
-              <div className="text-xs text-slate-400 mt-1">{locale === 'pl' ? 'Znajdź nowego najemcę za zgodą właściciela' : 'Find a replacement with landlord approval'}</div>
-            </div>
-            <ArrowRight className="w-5 h-5 text-slate-400" />
-          </button>
-        </div>
-
+    <main className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-2 min-h-11 text-sm font-semibold text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-4"><ArrowLeft size={16} aria-hidden="true" />{say('Back to listings', 'Wróć do ogłoszeń')}</button>
+        <header className="space-y-3">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{say('Your housing journey, step by step', 'Twoja droga do mieszkania, krok po kroku')}</h1>
+          <p className="text-slate-600">{say('Choose what you want to do. Follow your listings, requests and handover in My Place.', 'Wybierz swój cel. Śledź ogłoszenia, wnioski i przekazanie w Moim miejscu.')}</p>
+        </header>
+        <fieldset className="space-y-3">
+          <legend className="font-semibold mb-3">{say('What brings you here?', 'Co chcesz zrobić?')}</legend>
+          <div className="flex flex-wrap gap-3">{(Object.keys(journeys) as Array<keyof typeof journeys>).map(key => (
+            <label key={key} className={`flex items-center gap-2 p-3 rounded-xl border cursor-pointer ${path === key ? 'border-indigo-600 bg-indigo-50 text-indigo-900' : 'border-slate-200 bg-white'}`}>
+              <input type="radio" name="housing-journey" value={key} checked={path === key} onChange={() => setPath(key)} className="accent-indigo-600" />{journeys[key].label}
+            </label>
+          ))}</div>
+        </fieldset>
+        <section aria-labelledby="journey-heading" className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-8 space-y-6">
+          <div><h2 id="journey-heading" className="text-xl font-bold">{journey.label}</h2><p className="text-slate-600 mt-2">{journey.intro}</p></div>
+          <ol className="space-y-6">{journey.steps.map(([title, body], index) => (
+            <li key={title} className="flex gap-4"><span aria-hidden="true" className="shrink-0 w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">{index + 1}</span><div><h3 className="font-semibold">{title}</h3><p className="text-sm text-slate-600 leading-relaxed mt-1">{body}</p></div></li>
+          ))}</ol>
+          <button type="button" onClick={journey.run} className="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-indigo-600 text-white font-semibold focus-visible:outline-2 focus-visible:outline-offset-4">{journey.action}<ArrowRight size={16} aria-hidden="true" /></button>
+        </section>
+        <aside className="text-sm text-slate-600 space-y-2">
+          <h2 className="font-semibold text-slate-900">{say('What each confirmation means', 'Co oznaczają potwierdzenia')}</h2>
+          <p>{say('Published → visible listing. Advertising permission → landlord agrees to advertise. Applicant approved → landlord accepts that candidate. Handover complete → all three participants reported every stage complete.', 'Opublikowane → widoczne ogłoszenie. Zgoda na ogłoszenie → właściciel zezwala na publikację. Kandydat zatwierdzony → właściciel akceptuje kandydata. Przekazanie zakończone → wszystkie trzy strony zgłosiły zakończenie każdego etapu.')}</p>
+          <p>{say('Relok8 records your updates. Agreements and payments are arranged directly between participants. Relok8 does not collect money, hold escrow or independently verify documents and payments.', 'Relok8 zapisuje aktualizacje. Umowy i płatności ustalacie bezpośrednio. Relok8 nie pobiera pieniędzy, nie prowadzi escrow ani nie weryfikuje niezależnie dokumentów i płatności.')}</p>
+        </aside>
       </div>
-    </div>
+    </main>
   );
 };

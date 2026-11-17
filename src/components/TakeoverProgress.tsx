@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { handoverProgress } from "../utils/handover";
 import { useQuery, useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { backend } from "../lib/backend";
@@ -347,6 +348,7 @@ export function TakeoverProgress({
               : p.owner
                 ? "tenant"
                 : "applicant";
+            const progress = handoverProgress(a.confirmations, role);
             return (
               <article key={a.id} className="border-t pt-4 space-y-3">
                 <h3 className="font-bold">
@@ -459,13 +461,23 @@ export function TakeoverProgress({
                         "Ustalcie te kroki bezpośrednio. Każda strona potwierdza własne ustalenia. Są to oświadczenia uczestników, a nie niezależna weryfikacja dokumentów lub płatności.",
                       )}
                     </p>
-                    {(["documents", "deposit", "keys"] as const).map((s, i) => (
+                    <p className="font-semibold text-indigo-800" role="status">
+                      {!progress.currentStep
+                        ? say("All handover stages confirmed by all three participants.", "Wszystkie trzy strony potwierdziły każdy etap przekazania.")
+                        : progress.waitingForOthers
+                          ? say("You have confirmed the current step. Waiting for the other participants below.", "Potwierdzono bieżący etap. Oczekujemy na pozostałych uczestników wskazanych poniżej.")
+                          : say("Your next step: ", "Twój kolejny krok: ") + ({documents: say("confirm the signed agreement", "potwierdź podpisaną umowę"), deposit: say("confirm deposit arrangements", "potwierdź rozliczenie kaucji"), keys: say("confirm inspection and keys", "potwierdź odbiór lokalu i kluczy")})[progress.currentStep]}
+                    </p>
+                    {progress.steps.map(({step: s, locked}, i) => (
                       <div key={s}>
+                        {locked && a.status !== "completed" && <p className="text-xs text-slate-600 mb-2">{a.confirmations?.[s]?.[role]?.confirmed
+                          ? say("To correct this step, remove later confirmations first.", "Aby poprawić ten etap, najpierw usuń późniejsze potwierdzenia.")
+                          : say("Available after all three participants confirm the earlier stages.", "Dostępne po potwierdzeniu wcześniejszych etapów przez wszystkie trzy strony.")}</p>}
                         <label className="flex gap-3 items-start">
                           <input
                             className="mt-1"
                             type="checkbox"
-                            disabled={busy || a.status === "completed"}
+                            disabled={busy || a.status === "completed" || locked}
                             checked={!!a.confirmations?.[s]?.[role]?.confirmed}
                             onChange={(e) =>
                               run(() =>

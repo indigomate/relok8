@@ -877,7 +877,7 @@ function Relok8App() {
       ) : currentRoute.type === 'how-it-works' ? (
         <HowItWorksPage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
-          onOpenLeaveYourLease={() => setIsLeaveLeaseOpen(true)}
+          onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
           onOpenBrowse={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
@@ -921,7 +921,7 @@ function Relok8App() {
         <HelpPage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
-          onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
+          onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
       ) : currentRoute.type === 'list' ? (
@@ -1025,6 +1025,10 @@ function Relok8App() {
         /* HOME & CITY PAGE TEMPLATE */
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12 text-left">
           
+          <a href={locale === 'pl' ? '/pl/how-it-works' : '/how-it-works'} className="inline-flex items-center min-h-11 text-sm font-semibold text-indigo-700 underline underline-offset-4">
+            {locale === 'pl' ? 'Pierwszy raz w Relok8? Zobacz przewodnik krok po kroku' : 'New to Relok8? Follow the step-by-step housing guide'}
+          </a>
+
           {/* City Landing Template Header if on a city route */}
           {activeCityConfig ? (
             <CityLandingHeader
@@ -1299,7 +1303,7 @@ function Relok8App() {
 
       {/* Footer (§4.6) */}
       <Footer
-        onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
+        onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
         onOpenReportListing={() => {
