@@ -1,3 +1,4 @@
+import { knownMonthlyCost } from '../utils/listingFlow';
 import React from 'react';
 import { Bookmark, ArrowLeft, Trash2, MapPin, Building } from 'lucide-react';
 import { Listing } from '../types';
@@ -137,7 +138,7 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
                   <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                     <div>
                       <span className="text-base font-extrabold text-slate-900 font-mono">
-                        {formatPLN(listing.monthlyRentPLN, locale)}
+                        {formatPLN(knownMonthlyCost(listing), locale)}
                       </span>
                       <span className="text-xs text-slate-500"> /mo</span>
                     </div>

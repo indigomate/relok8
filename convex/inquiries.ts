@@ -1,11 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { requireIdentity, requireSelf } from "./lib/auth";
+import { requireIdentity, requireSelf, isLandlord } from "./lib/auth";
 async function canRead(ctx: any, identity: any, inquiry: any) {
   if (inquiry.userId === identity.subject) return true;
   const id = ctx.db.normalizeId("leases", inquiry.listingId);
   const lease = id ? await ctx.db.get(id) : null;
-  return lease?.ownerId === identity.subject || (identity.emailVerified === true && identity.email && lease?.landlordContactEmail?.toLowerCase() === identity.email.toLowerCase());
+  return lease?.ownerId === identity.subject || isLandlord(lease, identity);
 }
 export const getInquiries = query({
   args: { listingId: v.optional(v.string()), userId: v.optional(v.string()) },

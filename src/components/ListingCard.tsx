@@ -348,7 +348,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
         <div className="pt-2.5 mt-1 border-t border-slate-100 flex items-baseline justify-between text-xs">
           <div>
             <span className="text-lg font-bold text-slate-900 tnum">
-              PLN {knownMonthlyCost(listing).toLocaleString()}
+              {formatPLN(knownMonthlyCost(listing), locale)}
             </span>
             <span className="text-slate-500 font-normal">/mo</span>
           </div>

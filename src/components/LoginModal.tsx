@@ -1,3 +1,5 @@
+import { authReturnPath } from '../utils/authFlow';
+import { useDialogFocus } from '../utils/useDialogFocus';
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
@@ -47,6 +49,8 @@ export const LoginModal: React.FC<LoginModalProps> = React.memo(({
   });
 
   const prevIsOpenRef = useRef(false);
+  const dialogRef = useDialogFocus(isOpen, onClose);
+  const returnTo = authReturnPath(window.location.pathname, window.location.search);
 
   // Sync mode ONLY when modal transitions from closed to open.
   // Never reset or overwrite mode while user is actively filling in credentials.
@@ -150,7 +154,6 @@ export const LoginModal: React.FC<LoginModalProps> = React.memo(({
         university
       };
       onLoginSuccess(profile);
-      handleDismiss();
     }
   }, [isOpen, isLoaded, isSignedIn, user, onLoginSuccess]);
 
@@ -166,7 +169,7 @@ export const LoginModal: React.FC<LoginModalProps> = React.memo(({
         }
       }}
     >
-      <div className="relative my-8 animate-in zoom-in-95 duration-150 max-w-md w-full">
+      <section ref={dialogRef} role="dialog" aria-modal="true" aria-label={locale === 'pl' ? 'Zaloguj się lub utwórz konto' : 'Sign in or create an account'} className="relative my-8 animate-in zoom-in-95 duration-150 max-w-md w-full">
         {/* Floating close button */}
         <button
           type="button"
@@ -215,15 +218,19 @@ export const LoginModal: React.FC<LoginModalProps> = React.memo(({
             <SignUp 
               routing="hash"
               signInUrl="#/sign-in"
+              forceRedirectUrl={returnTo}
+              signInForceRedirectUrl={returnTo}
             />
           ) : (
             <SignIn 
               routing="hash"
               signUpUrl="#/sign-up"
+              forceRedirectUrl={returnTo}
+              signUpForceRedirectUrl={returnTo}
             />
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 });

@@ -109,7 +109,6 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   };
 
   const handleMessageClick = () => {
-    setIsContactModalOpen(true);
     if (!currentUser) {
       if (onRequireLogin) {
         onRequireLogin(`Sign in to message ${tenant.name} directly.`);
@@ -312,12 +311,12 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         <div className="flex items-baseline justify-between pt-1">
           <div>
             <span className="text-2xl font-black text-slate-900 tnum">
-              PLN {knownMonthlyCost(listing).toLocaleString()}
+              {formatPLN(knownMonthlyCost(listing), locale)}
             </span>
             <span className="text-slate-500 text-sm font-normal">/mo</span>
           </div>
           <span className="text-slate-500 text-xs font-medium">
-            Deposit PLN {listing.depositPLN.toLocaleString()}
+            {locale === 'pl' ? 'Kaucja' : 'Deposit'} {formatPLN(listing.depositPLN, locale)}
           </span>
         </div>
 
@@ -464,7 +463,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 sm:px-4 py-3 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="text-left shrink-0">
           <div className="text-base sm:text-lg font-black text-slate-900 tnum leading-tight">
-            PLN {knownMonthlyCost(listing).toLocaleString()}<span className="text-xs font-normal text-slate-500">/mo</span>
+            {formatPLN(knownMonthlyCost(listing), locale)}<span className="text-xs font-normal text-slate-500">/mo</span>
           </div>
           <div className="text-[11px] text-slate-500 font-medium">
             From {moveInDateFormatted}

@@ -60,6 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const clerk = useClerk();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
@@ -491,6 +492,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
 
 
+                {logoutError && <p role="alert" className="p-3 text-xs text-rose-700">{logoutError}</p>}
                 {/* Logout (§4.1) */}
                 {currentUser && onLogout && (
                   <div className="p-2 space-y-1">
@@ -500,7 +502,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsDropdownOpen(false);
                         try {
                           await clerk.signOut();
-                        } catch (e) {}
+                        } catch {
+                          setLogoutError(locale === 'pl' ? 'Nie udało się wylogować. Spróbuj ponownie.' : 'Could not sign out. Please try again.');
+                          setIsDropdownOpen(true);
+                          return;
+                        }
+                        setLogoutError('');
                         onLogout();
                       }}
                       className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"

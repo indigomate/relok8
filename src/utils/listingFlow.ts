@@ -4,7 +4,9 @@ export function knownMonthlyCost(l: {
   billsMode?: string;
   fixedBillsPLN?: number;
 }) {
-  return l.monthlyRentPLN + (l.czynszAdminPLN || 0) + (l.billsMode === "fixed" ? l.fixedBillsPLN || 0 : 0);
+  // Add integer grosze rather than binary floating-point currency values.
+  const grosze = (amount: number) => Math.round(amount * 100);
+  return (grosze(l.monthlyRentPLN) + grosze(l.czynszAdminPLN ?? 0) + (l.billsMode === "fixed" ? grosze(l.fixedBillsPLN ?? 0) : 0)) / 100;
 }
 export function normalizeLandlordPhone(value: string = "") {
   const digits = value.trim().replace(/[()\s-]/g, "").replace(/^00/, "+");

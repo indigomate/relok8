@@ -22,18 +22,30 @@ export async function requireOwner(ctx: AuthCtx, record: { ownerId?: string } | 
   if (!record || record.ownerId !== identity.subject) throw new Error("Forbidden");
   return identity;
 }
-export async function requireLandlord(ctx: AuthCtx, record: { landlordContactEmail?: string } | null) {
+export function isLandlord(record: { landlordUserId?: string; landlordContactEmail?: string } | null | undefined, identity: { subject: string; email?: string; emailVerified?: boolean }) {
+  if (!record) return false;
+  if (record.landlordUserId) return record.landlordUserId === identity.subject;
+  return identity.emailVerified === true && !!identity.email && record.landlordContactEmail?.trim().toLowerCase() === identity.email.trim().toLowerCase();
+}
+export async function requireLandlord(ctx: AuthCtx, record: { landlordUserId?: string; landlordContactEmail?: string } | null) {
   const identity = await requireIdentity(ctx);
-  if (!record || !(record as any).landlordUserId && (identity.emailVerified !== true || !identity.email || record.landlordContactEmail?.trim().toLowerCase() !== identity.email.toLowerCase()) || ((record as any)?.landlordUserId && (record as any).landlordUserId !== identity.subject)) throw new Error("Forbidden");
+  if (!isLandlord(record, identity)) throw new Error("Forbidden");
   return identity;
 }
 export function publicListing<T extends Record<string, any>>(record: T): T {
   const { landlordContactPhone, landlordContactEmail, ownerId, landlordUserId, placeState, lockedByUserId, reservedByName, ...safe } = record;
   return { ...safe, advertisingPermission: placeState?.advertisingPermission === true } as unknown as T;
 }
+export function validateMoney(value: unknown, positive = false, maximum = 1000000) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (positive && value <= 0) || value > maximum || Math.abs(value * 100 - Math.round(value * 100)) > 0.000001) throw new Error('Invalid amount');
+}
 export function validateListing(args: Record<string, any>) {
   if (!args.title?.trim() || args.title.length > 160 || !args.address?.trim() || args.address.length > 500 || !args.city?.trim()) throw new Error("Invalid listing details");
-  if (!Number.isFinite(args.monthlyRent) || args.monthlyRent <= 0 || args.monthlyRent > 100000 || !Number.isFinite(args.deposit) || args.deposit < 0 || args.deposit > 1000000 || args.areaM2 <= 0) throw new Error("Invalid listing amounts");
+  validateMoney(args.monthlyRent, true, 100000);
+  validateMoney(args.deposit);
+  if (args.czynszAdmin !== undefined) validateMoney(args.czynszAdmin);
+  if (args.fixedBillsPLN !== undefined) validateMoney(args.fixedBillsPLN, true);
+  if (!Number.isFinite(args.areaM2) || args.areaM2 <= 0) throw new Error("Invalid listing area");
   for (const field of ["moveInDate", "leaseEndDate"]) if (!/^\d{4}-\d{2}-\d{2}$/.test(args[field]) || Number.isNaN(Date.parse(args[field]))) throw new Error("Invalid date");
   if (args.leaseEndDate < args.moveInDate) throw new Error("Lease ends before move-in");
   if ((args.images?.length || 0) > 12 || (args.description?.length || 0) > 10000) throw new Error("Listing too large");

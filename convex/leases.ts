@@ -1,5 +1,5 @@
 import { consume, removeLease } from "./domain";
-import { requireIdentity, requireSelf, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing } from "./lib/auth";
+import { requireIdentity, requireSelf, isLandlord, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -144,7 +144,8 @@ export const reserve = mutation({
       throw new Error(`Lease ${args.leaseId} not found`);
     }
 
-    if (["APPROVED", "TRANSFERRED", "LEASED"].includes(lease.status || "")) throw new Error("Listing unavailable");
+    if (!["AVAILABLE", "PENDING_HOLD", "RESERVED_PENDING"].includes(lease.status || "")) throw new Error("Listing unavailable");
+    if (lease.ownerId === identity.subject || isLandlord(lease, identity)) throw new Error("You cannot reserve your own listing");
     const now = Date.now();
     if (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now) {
       if (lease.lockedByUserId !== args.userId) {
@@ -235,7 +236,7 @@ export const getByLandlordEmail = query({
     const targetEmail = args.email.toLowerCase().trim();
     const leases = await ctx.db.query("leases").collect();
     return leases.filter(
-      (l) => l.landlordContactEmail && l.landlordContactEmail.toLowerCase().trim() === targetEmail
+      (l) => isLandlord(l, identity)
     );
   },
 });

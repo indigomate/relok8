@@ -43,12 +43,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
 
-  // Security / Password update state
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [securityMsg, setSecurityMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-
   // Account deletion state
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -121,48 +115,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
       );
     } finally {
       setIsSavingProfile(false);
-    }
-  };
-
-  // Handle password update
-  const handlePasswordUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 6) {
-      setSecurityMsg({
-        type: 'error',
-        text: locale === 'pl' ? 'Hasło musi zawierać co najmniej 6 znaków.' : 'Password must be at least 6 characters long.'
-      });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setSecurityMsg({
-        type: 'error',
-        text: locale === 'pl' ? 'Podane hasła nie są identyczne.' : 'Passwords do not match.'
-      });
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    setSecurityMsg(null);
-
-    try {
-      if (clerkUser && typeof (clerkUser as any).updatePassword === 'function') {
-        await (clerkUser as any).updatePassword({ newPassword });
-      } else { throw new Error('Sign in with Clerk to change your password.'); }
-
-      setSecurityMsg({
-        type: 'success',
-        text: locale === 'pl' ? 'Twoje hasło zostało zaktualizowane.' : 'Your password has been updated successfully.'
-      });
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch (err: any) {
-      setSecurityMsg({
-        type: 'error',
-        text: err?.message || (locale === 'pl' ? 'Nie udało się zmienić hasła.' : 'Failed to update password.')
-      });
-    } finally {
-      setIsUpdatingPassword(false);
     }
   };
 
@@ -521,66 +473,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({
             </p>
           </div>
 
-          {/* Password Update Form */}
-          <form onSubmit={handlePasswordUpdate} className="space-y-4">
-            {securityMsg && (
-              <div className={`p-3.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
-                securityMsg.type === 'success'
-                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                  : 'bg-rose-50 border border-rose-200 text-rose-800'
-              }`}>
-                {securityMsg.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                )}
-                <span>{securityMsg.text}</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {locale === 'pl' ? 'Nowe hasło' : 'New password'}
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {locale === 'pl' ? 'Potwierdź nowe hasło' : 'Confirm new password'}
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-[11px] text-slate-500">
-                {locale === 'pl' ? 'Minimum 6 znaków' : 'Minimum 6 characters'}
-              </span>
-              <button
-                type="submit"
-                disabled={isUpdatingPassword || !newPassword}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-40"
-              >
-                {isUpdatingPassword
-                  ? (locale === 'pl' ? 'Zmienianie...' : 'Updating...')
-                  : (locale === 'pl' ? 'Zmień hasło' : 'Update password')}
-              </button>
-            </div>
-          </form>
+          <p className="text-sm text-slate-600">{locale === 'pl' ? 'Zarządzaj zweryfikowanymi adresami email, hasłem, połączonymi kontami i sesjami w bezpiecznych ustawieniach konta.' : 'Manage verified email addresses, your password, connected accounts and sessions in secure account settings.'}</p>
+          <button type="button" onClick={() => clerk.openUserProfile()} className="min-h-11 rounded-xl bg-slate-900 text-white px-5 py-3 text-sm font-semibold">{locale === 'pl' ? 'Otwórz ustawienia bezpieczeństwa' : 'Manage sign-in & security'}</button>
 
           {/* Manage Passkeys / Devices via Clerk if available */}
           {clerkUser && (

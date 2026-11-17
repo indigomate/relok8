@@ -15,7 +15,8 @@ export function formatPLN(amount: number, locale: SupportedLocale = 'en'): strin
   return new Intl.NumberFormat(localeMap[locale] || 'en-US', {
     style: 'currency',
     currency: 'PLN',
-    maximumFractionDigits: 0
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2
   }).format(amount);
 }
 

@@ -1,3 +1,5 @@
+import { formatPLN } from '../utils/formatters';
+import { knownMonthlyCost, billsLabel } from '../utils/listingFlow';
 import { useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -29,11 +31,13 @@ export function PropertySettings({ listingId, owner, landlord, locale, onDeleteL
   return <div className="space-y-4">
     {error && <p role="alert" className="text-sm text-rose-700">{error}</p>}
     {notice && <p role="status" className="text-sm text-emerald-700">{notice}</p>}
+    <p className="text-sm text-slate-600">{say('Current known monthly total: ', 'Aktualna znana suma miesięczna: ')}<strong>{formatPLN(knownMonthlyCost({monthlyRentPLN: place.rentPLN, czynszAdminPLN: place.czynszPLN, billsMode: place.billsMode, fixedBillsPLN: place.fixedBillsPLN}), locale)}</strong> · {billsLabel(place.billsMode, place.fixedBillsPLN, locale)}. {say('Usage-based and unconfirmed bills are not included in this total; fixed bills are included. Deposit is separate.', 'Opłaty według zużycia i nieustalone nie są wliczone w sumę; stałe media są wliczone. Kaucja jest osobno.')}</p>
     {owner && <details className="border-t border-slate-100 pt-3">
       <summary className="cursor-pointer min-h-11 py-2 font-semibold">{say('Edit property details', 'Edytuj dane lokalu')}</summary>
-      <form className="grid gap-4 pt-3" onSubmit={e => {e.preventDefault(); const form = new FormData(e.currentTarget); void run(() => mutate('updatePlace', { updates: { rules: form.get('rules'), rentPLN: Number(form.get('rent')), czynszPLN: Number(form.get('admin')) } }));}}>
-        <label className="grid gap-2 text-sm">{say('Monthly rent (PLN)', 'Miesięczny czynsz (PLN)')}<input className="border rounded-lg p-3 w-full" name="rent" type="number" min="0" max="1000000" step="0.01" defaultValue={place.rentPLN} required /></label>
+      <form className="grid gap-4 pt-3" onSubmit={e => {e.preventDefault(); const form = new FormData(e.currentTarget); void run(() => mutate('updatePlace', { updates: { rules: form.get('rules'), rentPLN: Number(form.get('rent')), czynszPLN: Number(form.get('admin')), depositPLN: Number(form.get('deposit')) } }));}}>
+        <label className="grid gap-2 text-sm">{say('Monthly rent (PLN)', 'Miesięczny czynsz (PLN)')}<input className="border rounded-lg p-3 w-full" name="rent" type="number" min="0.01" max="100000" step="0.01" defaultValue={place.rentPLN} required /></label>
         <label className="grid gap-2 text-sm">{say('Administration fee (PLN)', 'Czynsz administracyjny (PLN)')}<input className="border rounded-lg p-3 w-full" name="admin" type="number" min="0" max="1000000" step="0.01" defaultValue={place.czynszPLN} required /></label>
+        <label className="grid gap-2 text-sm">{say('Deposit (PLN, separate from monthly costs)', 'Kaucja (PLN, osobno od opłat miesięcznych)')}<input className="border rounded-lg p-3 w-full" name="deposit" type="number" min="0" max="1000000" step="0.01" defaultValue={place.depositPLN} required /></label>
         <label className="grid gap-2 text-sm">{say('Description and house rules', 'Opis i zasady lokalu')}<textarea className="border rounded-lg p-3 w-full" name="rules" maxLength={10000} rows={3} defaultValue={place.rules} /></label>
         <button disabled={busy} className="justify-self-start min-h-11 rounded-lg bg-indigo-600 px-4 text-white font-semibold disabled:opacity-50">{say('Save details', 'Zapisz dane')}</button>
       </form>

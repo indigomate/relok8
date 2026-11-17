@@ -1,3 +1,4 @@
+import { authReturnPath } from './utils/authFlow';
 import {knownMonthlyCost} from './utils/listingFlow';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/react';
@@ -244,54 +245,7 @@ function Relok8App() {
           localStorage.removeItem('r8_listings');
         } catch {}
       } else {
-        const mapped: Listing[] = liveConvexLeases.map((l: any) => ({
-          id: l._id || l.id,
-          type: 'lease_takeover',
-          title: l.title || 'Student Room',
-          city: l.city || 'Warsaw',
-          district: l.district || '',
-          address: l.address || '',
-          roomType: l.roomType || 'Private room',
-          monthlyRentPLN: l.monthlyRentPLN ?? l.monthlyRent,
-          czynszAdminPLN: l.czynszAdminPLN ?? l.czynszAdmin ?? 0,
-          billsIncluded: Boolean(l.billsIncluded), billsMode: l.billsMode, fixedBillsPLN: l.fixedBillsPLN,
-          depositPLN: l.depositPLN ?? l.deposit,
-          availableDate: l.availableDate || l.moveInDate || new Date().toISOString().slice(0, 10),
-          leaseEndDate: l.leaseEndDate || '2027-06-30',
-          remainingMonths: Math.max(0,Math.round((Date.parse(l.leaseEndDate)-Date.parse(l.moveInDate))/2629800000)),
-          squareMeters: l.squareMeters ?? l.areaM2,
-          isFurnished: Boolean(l.isFurnished),
-          flatmatesCount: l.flatmatesCount ?? 0,
-          distanceToCampus: l.distanceToCampus || '',
-          meldunekAllowed: Boolean(l.meldunekAllowed),
-          landlordApproved: l.advertisingPermission === true,
-          images: l.images || [],
-          landlordName: l.landlordName || 'Property owner',
-          landlordContactEmail: '',
-          currentTenant: l.currentTenant ? {
-            name: l.currentTenant.name || 'Listing author',
-            nationality: l.currentTenant.nationality || '',
-            role: l.currentTenant.status || l.currentTenant.role || 'Listing author',
-            avatar: l.currentTenant.avatar || '',
-            verifiedDocs: [],
-            reasonForLeaving: '',
-            joinedYear: ''
-          } : {
-            name: 'Listing author',
-            nationality: '',
-            role: 'Listing author',
-            avatar: '',
-            verifiedDocs: [],
-            reasonForLeaving: '',
-            joinedYear: ''
-          },
-          amenities: l.amenities || [],
-          universitiesNearby: l.universitiesNearby || [],
-          description: l.description || '',
-          floor: typeof l.floor === 'string' ? l.floor : (l.floor === undefined ? '' : String(l.floor)),
-          lat: l.coordinates?.lat ?? l.lat,
-          lng: l.coordinates?.lng ?? l.lng,
-        }));
+        const mapped: Listing[] = liveConvexLeases.map((l: any) => mapConvexListingToAppListing(l));
         const cleanMapped = mapped.filter((l: any) => l && l.id && !l.id.startsWith('cx_list_') && !l.id.startsWith('place-'));
         setListings(cleanMapped);
         try {
@@ -315,11 +269,9 @@ function Relok8App() {
       // Ensure that after a successful sign-in, the application gracefully routes back
       // to the intended page or closes the modal without triggering a loop.
       if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
-        const redirectUrl = currentRoute.searchParams.get('redirect_url') || 
-                            currentRoute.searchParams.get('return_to') || 
-                            (locale === 'pl' ? '/pl' : '/');
+        const redirectUrl = authReturnPath(window.location.pathname, window.location.search);
         window.history.replaceState({}, '', redirectUrl);
-        setCurrentRoute(parseRoute(redirectUrl, '', ''));
+        setCurrentRoute(parseRoute(window.location.pathname, window.location.hash, window.location.search));
       }
     }
   }, [isAuthLoaded, isClerkSignedIn, isLoginOpen, currentRoute.type, currentRoute.searchParams, locale]);
@@ -661,7 +613,8 @@ function Relok8App() {
 // Convex is the only data backend.
   const handleToggleSave = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation(); e?.preventDefault();
-    if (!currentUser || !isBackendAuthenticated) { showToast('Sign in to save rooms across devices.'); return; }
+    if (!currentUser) { handleOpenLogin('signup', locale === 'pl' ? 'Utwórz konto, aby zapisać ten lokal. Po zalogowaniu wybierz Zapisz ponownie.' : 'Create an account to save this home. After signing in, select Save again.'); return; }
+    if (!isBackendAuthenticated) { showToast(locale === 'pl' ? 'Łączenie z kontem. Spróbuj ponownie za chwilę.' : 'Connecting your account. Please try again shortly.'); return; }
     try {
       if (savedIds.includes(id)) await removeRemote({ listingId: id, userId: currentUser.id });
       else await saveRemote({ listingId: id, userId: currentUser.id });
@@ -944,6 +897,8 @@ function Relok8App() {
           locale={locale}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
+      ) : currentRoute.type === 'messages' && !isClerkSignedIn ? (
+        <main className="max-w-lg mx-auto px-6 py-16 space-y-4"><h1 className="text-2xl font-bold">{locale === 'pl' ? 'Twoje Wiadomości' : 'Your Messages'}</h1><p>{locale === 'pl' ? 'Zaloguj się, aby rozmawiać o oglądaniu lokalu i przejęciu najmu.' : 'Sign in to discuss viewings and lease takeovers.'}</p><button type="button" onClick={() => handleOpenLogin('signin', locale === 'pl' ? 'Zaloguj się, aby otworzyć skrzynkę.' : 'Sign in to open your inbox.')} className="min-h-11 rounded-xl bg-indigo-600 text-white px-5 font-semibold">{locale === 'pl' ? 'Zaloguj się' : 'Sign in to Messages'}</button></main>
       ) : currentRoute.type === 'messages' ? (
         <MessagesPage key={currentUser?.id || "guest"} initialThreadId={currentRoute.searchParams.get("thread") || undefined}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
@@ -1393,9 +1348,9 @@ function Relok8App() {
           onClose={() => {
             setIsLoginOpen(false);
             if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
-              const returnPath = currentRoute.searchParams.get('redirect_url') || (locale === 'pl' ? '/pl' : '/');
+              const returnPath = authReturnPath(window.location.pathname, window.location.search);
               window.history.replaceState({}, '', returnPath);
-              setCurrentRoute(parseRoute(returnPath, '', ''));
+              setCurrentRoute(parseRoute(window.location.pathname, window.location.hash, window.location.search));
             }
           }}
           initialMode={loginMode}
@@ -1404,11 +1359,9 @@ function Relok8App() {
             localStorage.setItem('r8_user', JSON.stringify(user));
             setIsLoginOpen(false);
             if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
-              const redirectUrl = currentRoute.searchParams.get('redirect_url') || 
-                                  currentRoute.searchParams.get('return_to') || 
-                                  (locale === 'pl' ? '/pl' : '/');
+              const redirectUrl = authReturnPath(window.location.pathname, window.location.search);
               window.history.replaceState({}, '', redirectUrl);
-              setCurrentRoute(parseRoute(redirectUrl, '', ''));
+              setCurrentRoute(parseRoute(window.location.pathname, window.location.hash, window.location.search));
             }
             showToast(locale === 'pl' ? `Witaj, ${user.name}!` : `Welcome back, ${user.name}!`);
           }}

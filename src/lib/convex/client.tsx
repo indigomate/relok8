@@ -30,6 +30,7 @@ export interface ConvexListingDoc {
   lockedUntil?: number;
   amenities: string[];
   district?: string;
+  universitiesNearby?: string[];
   description?: string;
   images?: string[];
   lockedByUserId?: string;
@@ -112,16 +113,16 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
       role: doc.currentTenant?.status || 'Tenant',
       avatar: doc.currentTenant?.avatar || '',
       verifiedDocs: [],
-      reasonForLeaving: doc.currentTenant?.status || 'Tenant',
+      reasonForLeaving: '',
       joinedYear: '',
     },
     amenities: doc.amenities,
-    universitiesNearby: [],
+    universitiesNearby: doc.universitiesNearby || [],
     description: doc.description || '',
     floor: doc.floor === undefined ? '' : String(doc.floor),
     lat: doc.coordinates?.lat,
     lng: doc.coordinates?.lng,
-    statusBadge: doc.isLocked ? 'Temporarily Reserved (EarlyLock)' : 'Available for Takeover',
+    statusBadge: doc.status === 'PAUSED' ? 'Listing paused' : doc.status === 'TRANSFERRED' ? 'Handover complete' : ['APPROVED', 'LEASED'].includes(doc.status || '') ? 'Handover in progress' : doc.isLocked ? 'Temporarily reserved' : 'Available for takeover',
   };
 }
 

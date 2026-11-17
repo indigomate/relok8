@@ -2,17 +2,12 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import {
   requireIdentity,
+  isLandlord,
   requireOwner,
   requireLandlord,
   requireAdmin,
 } from "./lib/auth";
 import { consume } from "./domain";
-const isLandlord = (l: any, u: any) =>
-  l.landlordUserId
-    ? l.landlordUserId === u.subject
-    : u.emailVerified === true &&
-      !!u.email &&
-      l.landlordContactEmail?.toLowerCase() === u.email.toLowerCase();
 const expired = (r: any) =>
   r.data.status === "requested" && r.data.expiresAt < Date.now();
 async function rows(ctx: any, kind: string) {
