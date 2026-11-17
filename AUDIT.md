@@ -39,4 +39,4 @@ The application now uses a Vite frontend for Vercel, Clerk authentication, and C
 
 ## Git identity and review
 
-Commit identity is indigomate <judymissi@gmail.com>, as requested. Local changes are prepared for review; the original remote history has not been rewritten or force-pushed. The supplied download differs from the current GitHub checkout, so the review includes the supplied export's changes as well as these fixes. No secret keys or local data records belong in the source archive.
+Commit identity is indigomate <+++++++++++>, as requested. Local changes are prepared for review; the original remote history has not been rewritten or force-pushed. The supplied download differs from the current GitHub checkout, so the review includes the supplied export's changes as well as these fixes. No secret keys or local data records belong in the source archive.
