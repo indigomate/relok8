@@ -747,6 +747,12 @@ function Relok8App() {
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
+      {(currentRoute.type === 'home' || currentRoute.type === 'city') && (
+        <a className="r8-home-skip" href="#rooms-grid">
+          {locale === 'pl' ? 'Przejdź do ofert' : 'Skip to listings'}
+        </a>
+      )}
+
       {/* Toast Notification per Section 2 */}
       {toastMessage && (
         <Toast
@@ -785,7 +791,7 @@ function Relok8App() {
         onExpandSearch={() => {
           const el = document.getElementById('search-hero');
           if (el) {
-            el.scrollIntoView({ behavior: 'smooth' });
+            el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
           } else {
             navigateTo(locale === 'pl' ? '/pl' : '/');
           }
@@ -984,10 +990,6 @@ function Relok8App() {
         /* HOME & CITY PAGE TEMPLATE */
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-12 text-left">
           
-          <a href={locale === 'pl' ? '/pl/how-it-works' : '/how-it-works'} className="inline-flex items-center min-h-11 text-sm font-semibold text-indigo-700 underline underline-offset-4">
-            {locale === 'pl' ? 'Pierwszy raz w Relok8? Zobacz przewodnik krok po kroku' : 'New to Relok8? Follow the step-by-step housing guide'}
-          </a>
-
           {/* City Landing Template Header if on a city route */}
           {activeCityConfig ? (
             <CityLandingHeader
@@ -1000,52 +1002,70 @@ function Relok8App() {
               locale={locale}
             />
           ) : (
-            /* Home Hero Section (§4.2 expanded search) */
-            <section id="search-hero" className="pt-2 sm:pt-6 pb-2 text-center max-w-4xl mx-auto space-y-6">
-              <div className="space-y-3">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-                  {strings.heroTitle}
-                </h1>
-                <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                  {strings.heroSubtitle}
-                </p>
+            <section id="search-hero" className="r8-home-hero" aria-labelledby="home-title">
+              <div className="r8-home-intro">
+                <h1 id="home-title">{strings.heroTitle}</h1>
+                <p>{strings.heroSubtitle}</p>
               </div>
 
-              {/* Unified Expanded Search Bar (§4.2) */}
-              <div className="w-full max-w-3xl mx-auto">
+              <div className="r8-home-search">
                 <SearchBar
                   mode="expanded"
                   searchState={searchState}
                   onSearchChange={handleSearchChange}
                   onSearchSubmit={() => {
-                    const el = document.getElementById('rooms-grid');
-                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    const results = document.getElementById('rooms-grid');
+                    if (!results) return;
+                    results.focus({ preventScroll: true });
+                    results.scrollIntoView({
+                      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+                    });
                   }}
                   locale={locale}
                 />
               </div>
 
-              {/* Value fact & Secondary Link */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={() => navigateTo(locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease')}
-                  className="text-indigo-600 hover:text-indigo-800 font-semibold cursor-pointer"
-                >
+              <div className="r8-home-links">
+                <a href={locale === 'pl' ? '/pl/leave-your-lease' : '/leave-your-lease'}>
                   {strings.leavingEarlyQuestion}
-                </button>
-                <span className="hidden sm:inline text-slate-300">·</span>
-                <span className="text-slate-500 font-medium">
-                  {strings.noBrokerFeeFact}
-                </span>
+                </a>
+                <a href={locale === 'pl' ? '/pl/how-it-works' : '/how-it-works'}>
+                  {locale === 'pl' ? 'Zobacz, jak to działa' : 'See how it works'}
+                </a>
               </div>
+
+              <img
+                className="r8-home-photo"
+                src="/images/listing_krakow_loft_1790621454348.jpg"
+                alt=""
+                width={1200}
+                height={896}
+                fetchPriority="high"
+              />
             </section>
           )}
 
+          {!activeCityConfig && (
+            <nav aria-labelledby="browse-cities-title" className="r8-home-cities">
+              <h2 id="browse-cities-title">{locale === 'pl' ? 'Oferty według miasta' : 'Browse by city'}</h2>
+              <ul>
+                {ENABLED_CITIES.map((city) => (
+                  <li key={city.slug}>
+                    <a href={`${locale === 'pl' ? '/pl' : ''}/${city.slug}/rooms`}>
+                      <MapPin size={17} aria-hidden="true" />
+                      {locale === 'pl' && city.slug === 'warsaw' ? 'Warszawa' : city.name}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+
           {/* Rooms Grid Section */}
-          <section id="rooms-grid" className="space-y-6 pt-4 scroll-mt-24">
-            <h2 className="sr-only">
-              {locale === 'pl' ? 'Dostępne pokoje i mieszkania na cesję w Polsce' : 'Available student rooms and lease takeovers in Poland'}
+          <section id="rooms-grid" tabIndex={-1} aria-labelledby="rooms-title" className="space-y-6 pt-4 scroll-mt-24">
+            <h2 id="rooms-title" className={activeCityConfig ? 'sr-only' : 'r8-section-title'}>
+              {locale === 'pl' ? 'Pokoje i mieszkania na cesję' : 'Rooms and lease takeovers'}
             </h2>
             
             {/* Unified Filter Bar (§4.4) */}
@@ -1201,53 +1221,24 @@ function Relok8App() {
           </section>
 
           {/* How It Works Section (§1 principles: Housing First, placed after rooms) */}
-          <section id="how-it-works-section" className="pt-10 border-t border-slate-200 space-y-6 scroll-mt-24">
-            <div className="text-center max-w-2xl mx-auto space-y-1.5">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                {strings.howItWorksTitle}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600">
-                {strings.howItWorksSub}
-              </p>
+          <section id="how-it-works-section" className="r8-home-process">
+            <div className="space-y-2">
+              <h2 className="r8-section-title">{strings.howItWorksTitle}</h2>
+              <p>{strings.howItWorksSub}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-left">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
-                  1
-                </div>
-                <h3 className="font-bold text-sm text-slate-900">
-                  {strings.step1Title}
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {strings.step1Desc}
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-left">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
-                  2
-                </div>
-                <h3 className="font-bold text-sm text-slate-900">
-                  {strings.step2Title}
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {strings.step2Desc}
-                </p>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-left">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center border border-indigo-100">
-                  3
-                </div>
-                <h3 className="font-bold text-sm text-slate-900">
-                  {strings.step3Title}
-                </h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  {strings.step3Desc}
-                </p>
-              </div>
-            </div>
+            <ol className="grid gap-6 md:grid-cols-3">
+              {[
+                { title: strings.step1Title, description: strings.step1Desc },
+                { title: strings.step2Title, description: strings.step2Desc },
+                { title: strings.step3Title, description: strings.step3Desc }
+              ].map((step) => (
+                <li key={step.title} className="r8-home-step space-y-2">
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                </li>
+              ))}
+            </ol>
           </section>
 
           {/* Leaving Early Banner */}

@@ -33,7 +33,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [activeDropdown, setActiveDropdown] = useState<'where' | 'date' | 'type' | 'budget' | null>(null);
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const mobileSearchRef = useRef<HTMLDialogElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close active dropdown on click outside
@@ -56,16 +56,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   ];
 
   const citySummary = searchState.city === 'All Poland' || !searchState.city || searchState.city === 'Anywhere in Poland'
-    ? 'Anywhere in Poland'
+    ? strings.searchWhereAny
     : searchState.city;
 
   const dateSummary = searchState.moveInDate
     ? formatDate(searchState.moveInDate, locale)
-    : 'Flexible';
+    : strings.searchMoveInFlexible;
 
+  const formattedRent = searchState.maxRent.toLocaleString(locale === 'pl' ? 'pl-PL' : 'en-GB');
   const budgetSummary = searchState.maxRent < 10000
-    ? `Up to PLN ${searchState.maxRent.toLocaleString()}`
-    : 'Any budget';
+    ? (locale === 'pl' ? `Do ${formattedRent} zł` : `Up to PLN ${formattedRent}`)
+    : (locale === 'pl' ? 'Dowolny budżet' : 'Any budget');
 
   // Screenshot 6 clean pill format: "Anywhere in Poland · Flexible · Up to PLN 5,000"
   const compactSummary = `${citySummary} · ${dateSummary} · ${budgetSummary}`;
@@ -356,7 +357,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               setActiveDropdown(null);
               if (onSearchSubmit) onSearchSubmit();
             }}
-            className="flex items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none whitespace-nowrap cursor-pointer"
+            className="flex min-h-11 items-center gap-1.5 md:gap-2 px-4 md:px-5 py-2.5 md:py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none whitespace-nowrap cursor-pointer"
           >
             <Search className="w-4 h-4" />
             <span className="hidden sm:inline">{strings.searchSubmit}</span>
@@ -368,132 +369,134 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <div className="md:hidden">
         <button
           type="button"
-          onClick={() => setMobileSheetOpen(true)}
-          className="w-full min-h-[46px] flex items-center gap-3 px-4 py-2.5 bg-white rounded-full border border-slate-300 text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer shadow-2xs hover:border-slate-400 transition-colors"
+          onClick={() => mobileSearchRef.current?.showModal()}
+          aria-haspopup="dialog"
+          aria-label={`${strings.searchSubmit}: ${compactSummary}`}
+          className="w-full min-h-[50px] flex items-center gap-3 px-4 py-2.5 bg-white rounded-full border border-slate-300 text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer shadow-2xs hover:border-slate-400 transition-colors"
         >
-          <Search className="w-4 h-4 text-slate-500 shrink-0 stroke-[2.2]" />
-          <span className="text-xs sm:text-sm font-normal text-slate-800 truncate">
-            {compactSummary}
+          <Search className="w-4 h-4 shrink-0 text-indigo-600 stroke-[2.2]" aria-hidden="true" />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold leading-tight text-slate-900">{strings.searchSubmit}</span>
+            <span className="block truncate text-xs leading-tight text-slate-600">{compactSummary}</span>
           </span>
         </button>
       </div>
 
       {/* Mobile Fullscreen Sheet */}
-      {mobileSheetOpen && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col p-4 overflow-y-auto animate-in fade-in slide-in-from-bottom duration-200">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <h2 className="text-base font-bold text-slate-900">
-              {locale === 'pl' ? 'Szukaj pokoju' : 'Search rooms'}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setMobileSheetOpen(false)}
-              className="p-2 rounded-full text-slate-500 hover:bg-slate-100 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+      <dialog ref={mobileSearchRef} aria-labelledby="mobile-search-title" className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none overflow-y-auto bg-white p-4 open:flex flex-col">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h2 id="mobile-search-title" className="text-base font-bold text-slate-900">
+            {locale === 'pl' ? 'Szukaj pokoju' : 'Search rooms'}
+          </h2>
+          <button
+            type="button"
+            onClick={() => mobileSearchRef.current?.close()}
+            aria-label={locale === 'pl' ? 'Zamknij wyszukiwanie' : 'Close search'}
+            className="min-w-11 min-h-11 grid place-items-center p-2 rounded-full text-slate-500 hover:bg-slate-100 cursor-pointer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          <div className="py-4 space-y-5 flex-1">
-            {/* Where */}
-            <div>
-              <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-2">
-                {strings.searchWhere}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+        <div className="py-4 space-y-5 flex-1">
+          {/* Where */}
+          <div>
+            <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-2">
+              {strings.searchWhere}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => onSearchChange({ city: 'All Poland' })}
+                className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
+                  searchState.city === 'All Poland' || !searchState.city
+                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                    : 'border-slate-200 text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                {strings.searchWhereAny}
+              </button>
+              {ENABLED_CITIES.map((c) => (
                 <button
+                  key={c.slug}
                   type="button"
-                  onClick={() => onSearchChange({ city: 'All Poland' })}
+                  onClick={() => onSearchChange({ city: c.name })}
                   className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
-                    searchState.city === 'All Poland' || !searchState.city
+                    searchState.city === c.name
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
                       : 'border-slate-200 text-slate-800 hover:bg-slate-50'
                   }`}
                 >
-                  {strings.searchWhereAny}
+                  {c.name}
                 </button>
-                {ENABLED_CITIES.map((c) => (
-                  <button
-                    key={c.slug}
-                    type="button"
-                    onClick={() => onSearchChange({ city: c.name })}
-                    className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
-                      searchState.city === c.name
-                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                        : 'border-slate-200 text-slate-800 hover:bg-slate-50'
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Room type */}
-            <div>
-              <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-2">
-                {strings.searchRoomType}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {roomTypeOptions.map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => onSearchChange({ roomType: opt.val })}
-                    className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
-                      (searchState.roomType === opt.val) || (!searchState.roomType && opt.val === 'All room types')
-                        ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                        : 'border-slate-200 text-slate-800 hover:bg-slate-50'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Budget */}
-            <div>
-              <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-2">
-                <span>{strings.searchBudget}</span>
-                <span className="text-indigo-600 font-bold">≤ PLN {searchState.maxRent}</span>
-              </div>
-              <input
-                type="range"
-                min={1000}
-                max={5000}
-                step={100}
-                value={searchState.maxRent}
-                onChange={(e) => onSearchChange({ maxRent: Number(e.target.value) })}
-                className="w-full accent-indigo-600"
-              />
+              ))}
             </div>
           </div>
 
-          <div className="pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-slate-100 flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onSearchChange({ city: 'All Poland', roomType: 'All room types', maxRent: 5000 });
-                setMobileSheetOpen(false);
-              }}
-              className="flex-1 min-h-[46px] py-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
-            >
-              Reset
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMobileSheetOpen(false);
-                if (onSearchSubmit) onSearchSubmit();
-              }}
-              className="flex-2 min-h-[46px] py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-colors cursor-pointer"
-            >
-              Search
-            </button>
+          {/* Room type */}
+          <div>
+            <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-2">
+              {strings.searchRoomType}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {roomTypeOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => onSearchChange({ roomType: opt.val })}
+                  className={`min-h-[44px] p-3 rounded-xl border text-xs font-semibold text-left flex items-center cursor-pointer transition-colors ${
+                    (searchState.roomType === opt.val) || (!searchState.roomType && opt.val === 'All room types')
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                      : 'border-slate-200 text-slate-800 hover:bg-slate-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Budget */}
+          <div>
+            <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-2">
+              <span>{strings.searchBudget}</span>
+              <span className="text-indigo-600 font-bold">≤ PLN {searchState.maxRent}</span>
+            </div>
+            <input
+              type="range"
+              min={1000}
+              max={5000}
+              step={100}
+              value={searchState.maxRent}
+              onChange={(e) => onSearchChange({ maxRent: Number(e.target.value) })}
+              className="w-full accent-indigo-600"
+            />
           </div>
         </div>
-      )}
+
+        <div className="pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] border-t border-slate-100 flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onSearchChange({ city: 'All Poland', roomType: 'All room types', maxRent: 5000 });
+              mobileSearchRef.current?.close();
+            }}
+            className="flex-1 min-h-[46px] py-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"
+          >
+            {strings.filterReset}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              mobileSearchRef.current?.close();
+              if (onSearchSubmit) onSearchSubmit();
+            }}
+            className="flex-2 min-h-[46px] py-3 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-colors cursor-pointer"
+          >
+            {strings.searchSubmit}
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 };
