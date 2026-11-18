@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  ArrowLeft, FileText, CheckCircle2, ShieldCheck, ArrowRight, 
-  Download, HelpCircle, AlertCircle, Building2, Users 
-} from 'lucide-react';
+import { ArrowLeft, ShieldCheck, ArrowRight } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
 
@@ -10,14 +7,12 @@ interface LeaveYourLeasePageProps {
   onBack: () => void;
   locale?: SupportedLocale;
   onOpenIntake?: () => void;
-  onOpenCesja?: () => void;
 }
 
 export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
   onBack,
   locale = 'en',
   onOpenIntake,
-  onOpenCesja
 }) => {
   const [rent, setRent] = useState<string>('2500');
   const [monthsRemaining, setMonthsRemaining] = useState<number>(5);

@@ -53,10 +53,11 @@ export const contact = action({
     const identity = await requireIdentity(ctx);
     if (identity.emailVerified !== true || identity.email?.toLowerCase() !== args.email.trim().toLowerCase()) throw new Error('Use your verified account email');
     bounded(args.name, 150); bounded(args.subject, 200); bounded(args.message, 10000);
+    const topic = args.topic ? bounded(args.topic, 100) : 'general';
     await ctx.runMutation(internal.domain.quota, { operation: 'support', limit: 3 });
     const key = process.env.RESEND_API_KEY, from = process.env.RESEND_FROM_EMAIL, to = process.env.SUPPORT_EMAIL;
     if (!key || !from || !to) throw new Error('Support email is unavailable. No message has been sent.');
-    const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: [to], reply_to: identity.email, subject: `[Relok8 support] ${args.subject}`, text: `From: ${args.name} (${identity.email})\n\n${args.message}` }) });
+    const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: [to], reply_to: identity.email, subject: `[Relok8 support · ${topic}] ${args.subject}`, text: `Topic: ${topic}\nFrom: ${args.name} (${identity.email})\n\n${args.message}` }) });
     if (!response.ok) throw new Error('Email delivery failed. Please try again later.');
     return { success: true };
   },

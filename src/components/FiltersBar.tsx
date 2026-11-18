@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, X, ChevronDown, Check } from 'lucide-react';
+import { SlidersHorizontal, X, Check } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
 
-export type SortOption = 'soonest' | 'price-asc' | 'newest';
+type SortOption = 'soonest' | 'price-asc' | 'newest';
 
 export interface FilterValues {
   maxRent: number;

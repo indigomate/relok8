@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/react';
-import { 
-  ArrowLeft, User, Shield, LogOut, CheckCircle2, 
-  AlertCircle, Mail, Phone, GraduationCap, Lock, 
-  Trash2, Heart, Globe, ExternalLink, Building2, ChevronRight
-} from 'lucide-react';
+import { ArrowLeft, User, Shield, LogOut, CheckCircle2, AlertCircle, Phone, GraduationCap, Lock, Trash2, Heart, Globe, Building2, ChevronRight } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';

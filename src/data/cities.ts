@@ -8,7 +8,7 @@ export interface CityConfig {
   averageRentPLN: number;
 }
 
-export const CITIES_CONFIG: CityConfig[] = [
+const CITIES_CONFIG: CityConfig[] = [
   {
     slug: 'krakow',
     name: 'Kraków',

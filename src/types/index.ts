@@ -1,4 +1,4 @@
-export interface CurrentTenant {
+interface CurrentTenant {
   name: string;
   nationality: string;
   role: string;
@@ -8,24 +8,12 @@ export interface CurrentTenant {
   joinedYear: string;
 }
 
-export interface Money {
-  amountMinor: number; // integer minor units (grosze / cents)
-  currency: string;    // "PLN"
+interface Money {
+  amountMinor: number;
+  currency: string;
 }
 
-export function toMoney(pln: number, currency = 'PLN'): Money {
-  return {
-    amountMinor: Math.round(pln * 100),
-    currency
-  };
-}
-
-export function fromMoney(m: Money | undefined, fallbackPln = 0): number {
-  if (!m) return fallbackPln;
-  return Math.round(m.amountMinor / 100);
-}
-
-export interface DistanceItem {
+interface DistanceItem {
   label: string;
   minutes: number;
   mode: 'walk' | 'bus' | 'tram' | 'metro' | 'bike' | string;
@@ -111,27 +99,6 @@ export function isExampleListing(listing: { id?: string; isExample?: boolean }):
   );
 }
 
-export interface DepositClearingRecord {
-  id: string;
-  listingId: string;
-  listingTitle: string;
-  amountPLN: number;
-  currentTenantName: string;
-  departingTenantName?: string;
-  newTenantName: string;
-  incomingTenantName?: string;
-  landlordName: string;
-  status: 'protocol_pending' | 'landlord_consent' | 'escrow_locked' | 'settled';
-  inspectionDate: string;
-  meterElectricity: string;
-  meterWater: string;
-  meterHeating: string;
-  landlordConsentSigned: boolean;
-  tenantInspectionSigned: boolean;
-  depositTransferred: boolean;
-  receiptIssuedDate?: string;
-}
-
 export interface CesjaAgreementData {
   contractNumber: string;
   city: string;
@@ -162,5 +129,3 @@ export interface CesjaAgreementData {
   depositPLN: number;
   inspectionProtocolDate: string;
 }
-
-export type SubscriptionTier = 'student' | 'expat' | 'corporate';

@@ -237,7 +237,6 @@ export const getByLandlordEmail = query({
     const identity = await requireIdentity(ctx);
     if (identity.emailVerified !== true || !identity.email || identity.email.toLowerCase() !== args.email.trim().toLowerCase()) return [];
     if (!args.email) return [];
-    const targetEmail = args.email.toLowerCase().trim();
     const leases = await ctx.db.query("leases").collect();
     return leases.filter(
       (l) => isLandlord(l, identity)

@@ -1,19 +1,13 @@
 import { backend } from '../lib/backend';
 import { api } from '../../convex/_generated/api';
 import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  ArrowLeft, Search, HelpCircle, Shield, FileCheck, CheckCircle2, 
-  AlertCircle, Mail, Phone, ExternalLink, ChevronDown, ChevronUp,
-  ShieldCheck, BookOpen, MessageSquare, Send, Bot, Sparkles
-} from 'lucide-react';
+import { ArrowLeft, Search, HelpCircle, FileCheck, CheckCircle2, Mail, ExternalLink, ChevronDown, ChevronUp, ShieldCheck, BookOpen, Send, Bot, Sparkles } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
 
 interface HelpPageProps {
   onBack: () => void;
   locale?: SupportedLocale;
-  onOpenLeaveYourLease?: () => void;
-  onOpenIntake?: () => void;
 }
 
 interface FAQItem {
@@ -134,8 +128,6 @@ const FAQS: FAQItem[] = [
 export const HelpPage: React.FC<HelpPageProps> = ({
   onBack,
   locale = 'en',
-  onOpenLeaveYourLease,
-  onOpenIntake
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'cesja' | 'deposit' | 'meldunek' | 'scams' | 'listing'>('all');
   const [searchQuery, setSearchQuery] = useState('');

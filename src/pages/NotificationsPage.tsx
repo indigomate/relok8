@@ -1,18 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  ArrowLeft, Bell, CheckCircle2, Clock, Share2, Sparkles, 
-  AlertCircle, Heart, Phone, ShieldCheck, Check, MessageSquare, 
-  FileText, Home, Filter
-} from 'lucide-react';
+import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { Notification } from '../types/relok8';
-import { 
-  getNotifications, 
-  markNotificationRead, 
-  getSavedPlaces, 
-  getCurrentDevUser, 
-  updateUserAvailability 
-} from '../lib/api';
+import { getNotifications, markNotificationRead } from '../lib/api';
 
 interface NotificationsPageProps {
   onBack: () => void;
@@ -30,46 +20,14 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   currentUser
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [savedPlaces, setSavedPlaces] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState<NotificationCategory>('all');
   
-  // WhatsApp Alerts Configuration
-  const [whatsappOptIn, setWhatsappOptIn] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem('r8_whatsapp_optin');
-      return stored !== null ? stored === 'true' : true;
-    } catch {
-      return true;
-    }
-  });
-
-  const [whatsappPhone, setWhatsappPhone] = useState<string>(() => {
-    try {
-      return localStorage.getItem('r8_whatsapp_phone') || '+48 500 123 456';
-    } catch {
-      return '+48 500 123 456';
-    }
-  });
-
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [phoneInput, setPhoneInput] = useState(whatsappPhone);
-  const [phoneSavedFeedback, setPhoneSavedFeedback] = useState(false);
-  const [testAlertSent, setTestAlertSent] = useState(false);
-
   const activeRole = currentUser?.role || 'prospect';
 
   const loadData = async () => {
     try {
-      const [notifs, saves, user] = await Promise.all([
-        getNotifications(),
-        getSavedPlaces(),
-        getCurrentDevUser()
-      ]);
+      const notifs = await getNotifications();
       setNotifications(notifs);
-      setSavedPlaces(saves);
-      if (user && user.whatsappAlertsOptIn !== undefined) {
-        setWhatsappOptIn(user.whatsappAlertsOptIn);
-      }
     } catch (e) {
       console.warn('Failed to load notifications:', e);
     }
@@ -90,32 +48,6 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     const unread = notifications.filter(n => !n.readAt);
     await Promise.all(unread.map(n => markNotificationRead(n.id).catch(() => {})));
     setNotifications(prev => prev.map(n => ({ ...n, readAt: Date.now() })));
-  };
-
-  const handleToggleWhatsApp = async () => {
-    const newVal = !whatsappOptIn;
-    setWhatsappOptIn(newVal);
-    try {
-      localStorage.setItem('r8_whatsapp_optin', String(newVal));
-      await updateUserAvailability(true);
-    } catch (e) {}
-  };
-
-  const handleSavePhone = () => {
-    const trimmed = phoneInput.trim();
-    if (!trimmed) return;
-    setWhatsappPhone(trimmed);
-    try {
-      localStorage.setItem('r8_whatsapp_phone', trimmed);
-    } catch {}
-    setIsEditingPhone(false);
-    setPhoneSavedFeedback(true);
-    setTimeout(() => setPhoneSavedFeedback(false), 2500);
-  };
-
-  const handleSendTestAlert = () => {
-    setTestAlertSent(true);
-    setTimeout(() => setTestAlertSent(false), 3000);
   };
 
   // Filtered notifications
@@ -382,129 +314,24 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
           {/* Sidebar Settings Column (lg:col-span-5) */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* WhatsApp Instant Alerts Card - Cleaned from leaked spec section tag */}
+            {/* WhatsApp availability */}
             <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-5">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-2xl bg-slate-100 text-slate-500 shrink-0">
+                  <Share2 className="w-5 h-5" />
+                </div>
                 <div className="flex items-start gap-3">
-                  <div className="p-2.5 rounded-2xl bg-[#25D366] text-white shrink-0 shadow-2xs">
-                    <Share2 className="w-5 h-5" />
-                  </div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">
-                      {locale === 'pl' ? 'Natychmiastowe Alerty WhatsApp' : 'WhatsApp Instant Alerts'}
+                      {locale === 'pl' ? 'Alerty WhatsApp' : 'WhatsApp alerts'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                       {locale === 'pl'
-                        ? 'Otrzymuj natychmiastowe powiadomienia, gdy zapisany pokój stanie się dostępny do cesji.'
-                        : 'Receive instant notifications when a saved room opens for takeover.'}
+                        ? 'Automatyczna wysyłka WhatsApp nie jest jeszcze dostępna. Relok8 nie zapisuje numeru ani nie wyświetla potwierdzenia wysyłki, dopóki integracja nie zostanie uruchomiona.'
+                        : 'Automated WhatsApp delivery is not available yet. Relok8 does not save a phone number or report a message as sent until the integration is connected.'}
                     </p>
                   </div>
                 </div>
-
-                {/* Clean Toggle Switch */}
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={whatsappOptIn}
-                    onChange={handleToggleWhatsApp}
-                    className="sr-only peer"
-                    aria-label="Toggle WhatsApp instant alerts"
-                  />
-                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                </label>
-              </div>
-
-              {/* Phone Setup & Status when Opted In */}
-              {whatsappOptIn ? (
-                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-emerald-950 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>{locale === 'pl' ? 'Numer do alertów' : 'Alert phone number'}</span>
-                    </span>
-                    {!isEditingPhone && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingPhone(true)}
-                        className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 underline cursor-pointer"
-                      >
-                        {locale === 'pl' ? 'Zmień' : 'Edit'}
-                      </button>
-                    )}
-                  </div>
-
-                  {isEditingPhone ? (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <input
-                          type="tel"
-                          value={phoneInput}
-                          onChange={(e) => setPhoneInput(e.target.value)}
-                          placeholder="+48 500 123 456"
-                          className="flex-1 px-3 py-1.5 text-xs bg-white rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSavePhone}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shadow-2xs"
-                        >
-                          {locale === 'pl' ? 'Zapisz' : 'Save'}
-                        </button>
-                      </div>
-                      <p className="text-[11px] text-slate-500">
-                        {locale === 'pl' ? 'Podaj numer wraz z numerem kierunkowym kraju (np. +48).' : 'Include country code prefix (e.g. +48, +44, +1).'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-slate-800">
-                        {whatsappPhone}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>{locale === 'pl' ? 'Aktywny' : 'Active'}</span>
-                      </span>
-                    </div>
-                  )}
-
-                  {phoneSavedFeedback && (
-                    <div className="text-[11px] font-semibold text-emerald-700 animate-in fade-in flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{locale === 'pl' ? 'Numer telefonu zapisany!' : 'Alert phone number updated!'}</span>
-                    </div>
-                  )}
-
-                  <div className="pt-2 border-t border-emerald-100 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={handleSendTestAlert}
-                      disabled={testAlertSent}
-                      className="text-xs font-semibold text-emerald-800 hover:text-emerald-950 underline cursor-pointer disabled:opacity-50"
-                    >
-                      {testAlertSent 
-                        ? (locale === 'pl' ? '✓ Test wysłany' : '✓ Test sent') 
-                        : (locale === 'pl' ? 'Wyślij testowy alert' : 'Send test alert')}
-                    </button>
-                    <span className="text-[11px] text-emerald-800/80">
-                      {locale === 'pl' ? 'Bez spamu · 0 zł' : 'Zero spam · Free'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-500 leading-relaxed">
-                  {locale === 'pl'
-                    ? 'Alerty WhatsApp są obecnie wyłączone. Włącz przełącznik powyżej, jeśli chcesz otrzymywać powiadomienia o cesjach bezpośrednio na telefon.'
-                    : 'WhatsApp alerts are currently disabled. Turn on the toggle above to receive instant takeover notifications on your phone.'}
-                </div>
-              )}
-
-              {/* Privacy and Anti-Spam Guarantee */}
-              <div className="text-[11px] text-slate-400 leading-relaxed space-y-1">
-                <p>
-                  <strong>{locale === 'pl' ? 'Zasady przejrzystości:' : 'Notice:'}</strong> {locale === 'pl'
-                    ? 'Wiadomości są wysyłane wyłącznie, gdy zwolni się pokój z Twojej listy zapisanych ofert. Możesz zrezygnować w dowolnym momencie jednym kliknięciem.'
-                    : 'Alerts are dispatched only when a room saved in your favorites opens for lease transfer. You can unsubscribe at any time.'}
-                </p>
               </div>
             </div>
 
@@ -519,12 +346,12 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   <span className="text-emerald-600 font-bold">{locale === 'pl' ? 'Włączone' : 'Always on'}</span>
                 </div>
                 <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-700">{locale === 'pl' ? 'Powiadomienia e-mail' : 'Email Digests'}</span>
-                  <span className="text-slate-600 font-medium">{currentUser?.email || 'judymissi@gmail.com'}</span>
+                  <span className="text-slate-700">{locale === 'pl' ? 'Alerty e-mail' : 'Email alerts'}</span>
+                  <span className="text-slate-500 font-medium">{locale === 'pl' ? 'Niedostępne' : 'Unavailable'}</span>
                 </div>
                 <div className="flex items-center justify-between py-1.5">
-                  <span className="text-slate-700">{locale === 'pl' ? 'Godziny ciszy' : 'Quiet Hours'}</span>
-                  <span className="text-slate-500 font-medium">23:00 – 07:00</span>
+                  <span className="text-slate-700">WhatsApp</span>
+                  <span className="text-slate-500 font-medium">{locale === 'pl' ? 'Niedostępne' : 'Unavailable'}</span>
                 </div>
               </div>
             </div>

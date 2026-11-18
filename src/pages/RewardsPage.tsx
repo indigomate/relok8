@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, Award, Shield, CheckCircle2, Clock, Sparkles, 
-  AlertCircle, Info, MessageSquare, Calendar, Key, Plus, 
-  Search, ArrowRight, UserCheck
-} from 'lucide-react';
+import { ArrowLeft, Award, Shield, CheckCircle2, Clock, Info, MessageSquare, Calendar, Key, Plus, Search } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
-import { RewardEvent, RewardConfig, InsurancePlanConfig } from '../types/relok8';
+import { RewardEvent, RewardConfig } from '../types/relok8';
 import { getRewards } from '../lib/api';
 import { navigateTo } from '../utils/router';
 

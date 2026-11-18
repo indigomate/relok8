@@ -1,15 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MapPin, Calendar, Home, DollarSign, X, ChevronDown, Check } from 'lucide-react';
+import { Search, X, Check } from 'lucide-react';
 import { ENABLED_CITIES } from '../data/cities';
 import { formatDate, SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
 
 export interface SearchState {
   city: string; // "Anywhere in Poland" or city name like "Kraków"
-  moveInDate: string; // ISO date string "2026-10-15" or empty for flexible
+  moveInDate: string; // ISO date string or empty for flexible
   roomType: string; // "All room types", "Private room", "Studio", "1-bedroom", "2-bedroom"
   minRent: number;
   maxRent: number;
+}
+
+function todayInPoland(): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Warsaw',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
 }
 
 interface SearchBarProps {
@@ -64,22 +75,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     : strings.searchMoveInFlexible;
 
   const formattedRent = searchState.maxRent.toLocaleString(locale === 'pl' ? 'pl-PL' : 'en-GB');
+  const formattedMinRent = searchState.minRent.toLocaleString(locale === 'pl' ? 'pl-PL' : 'en-GB');
   const budgetSummary = searchState.maxRent < 10000
-    ? (locale === 'pl' ? `Do ${formattedRent} zł` : `Up to PLN ${formattedRent}`)
+    ? searchState.minRent > 0
+      ? (locale === 'pl' ? `${formattedMinRent}–${formattedRent} zł` : `PLN ${formattedMinRent}–${formattedRent}`)
+      : (locale === 'pl' ? `Do ${formattedRent} zł` : `Up to PLN ${formattedRent}`)
     : (locale === 'pl' ? 'Dowolny budżet' : 'Any budget');
 
   // Screenshot 6 clean pill format: "Anywhere in Poland · Flexible · Up to PLN 5,000"
   const compactSummary = `${citySummary} · ${dateSummary} · ${budgetSummary}`;
-
-  // Simple clean calendar generator for move-in date
-  const generateCalendarDays = () => {
-    const days: { dateStr: string; label: number; disabled: boolean }[] = [];
-    for (let i = 1; i <= 31; i++) {
-      const iso = `2026-10-${String(i).padStart(2, '0')}`;
-      days.push({ dateStr: iso, label: i, disabled: false });
-    }
-    return days;
-  };
 
   // COMPACT STATE IN HEADER
   if (mode === 'compact') {
@@ -209,36 +213,20 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 </button>
               </div>
 
-              <div className="text-center font-semibold text-xs text-slate-700 mb-2">
-                October 2026
-              </div>
-              <div className="grid grid-cols-7 gap-1 text-center text-[11px]">
-                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, idx) => (
-                  <span key={idx} className="font-semibold text-slate-400 py-1">
-                    {day}
-                  </span>
-                ))}
-                {generateCalendarDays().map((d) => {
-                  const isSelected = searchState.moveInDate === d.dateStr;
-                  return (
-                    <button
-                      key={d.dateStr}
-                      type="button"
-                      onClick={() => {
-                        onSearchChange({ moveInDate: d.dateStr });
-                        setActiveDropdown(null);
-                      }}
-                      className={`h-8 w-8 rounded-full flex items-center justify-center font-medium transition-colors ${
-                        isSelected
-                          ? 'bg-indigo-600 text-white font-bold'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {d.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <label htmlFor="desktop-move-in-date" className="block text-xs font-semibold text-slate-700 mb-2">
+                {strings.searchMoveInDate}
+              </label>
+              <input
+                id="desktop-move-in-date"
+                type="date"
+                min={todayInPoland()}
+                value={searchState.moveInDate}
+                onChange={(event) => {
+                  onSearchChange({ moveInDate: event.target.value });
+                  setActiveDropdown(null);
+                }}
+                className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              />
             </div>
           )}
         </div>
@@ -311,11 +299,22 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           {activeDropdown === 'budget' && (
             <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
               <div className="text-xs font-bold text-slate-900 mb-2">
-                Monthly budget (PLN)
+                {locale === 'pl' ? 'Miesięczny budżet (PLN)' : 'Monthly budget (PLN)'}
               </div>
               <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
-                <span>PLN {searchState.minRent || 500}</span>
-                <span className="font-bold text-indigo-600">Up to PLN {searchState.maxRent}</span>
+                <label className="flex flex-col gap-1">
+                  <span>{locale === 'pl' ? 'Od' : 'From'}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={searchState.maxRent}
+                    step={100}
+                    value={searchState.minRent}
+                    onChange={(event) => onSearchChange({ minRent: Math.min(Number(event.target.value) || 0, searchState.maxRent) })}
+                    className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-slate-900"
+                  />
+                </label>
+                <span className="font-bold text-indigo-600">{locale === 'pl' ? 'Do' : 'Up to'} PLN {searchState.maxRent}</span>
               </div>
               <input
                 type="range"
@@ -323,7 +322,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 max={5000}
                 step={100}
                 value={searchState.maxRent}
-                onChange={(e) => onSearchChange({ maxRent: Number(e.target.value) })}
+                onChange={(event) => {
+                  const maxRent = Number(event.target.value);
+                  onSearchChange({ maxRent, minRent: Math.min(searchState.minRent, maxRent) });
+                }}
                 className="w-full accent-indigo-600 cursor-pointer"
               />
               <div className="flex gap-2 mt-4">
@@ -332,7 +334,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     key={preset}
                     type="button"
                     onClick={() => {
-                      onSearchChange({ maxRent: preset });
+                      onSearchChange({ maxRent: preset, minRent: Math.min(searchState.minRent, preset) });
                       setActiveDropdown(null);
                     }}
                     className={`flex-1 py-1 text-[11px] rounded-lg border font-medium ${
@@ -433,6 +435,32 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             </div>
           </div>
 
+          {/* Move-in date */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="mobile-move-in-date" className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                {strings.searchMoveInDate}
+              </label>
+              {searchState.moveInDate && (
+                <button
+                  type="button"
+                  onClick={() => onSearchChange({ moveInDate: '' })}
+                  className="min-h-11 px-2 text-xs font-semibold text-indigo-700"
+                >
+                  {strings.searchMoveInFlexible}
+                </button>
+              )}
+            </div>
+            <input
+              id="mobile-move-in-date"
+              type="date"
+              min={todayInPoland()}
+              value={searchState.moveInDate}
+              onChange={(event) => onSearchChange({ moveInDate: event.target.value })}
+              className="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
           {/* Room type */}
           <div>
             <label className="text-xs font-bold text-slate-800 uppercase tracking-wider block mb-2">
@@ -462,13 +490,28 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               <span>{strings.searchBudget}</span>
               <span className="text-indigo-600 font-bold">≤ PLN {searchState.maxRent}</span>
             </div>
+            <label className="mb-3 flex items-center justify-between gap-3 text-xs text-slate-600">
+              <span>{locale === 'pl' ? 'Minimum' : 'Minimum'}</span>
+              <input
+                type="number"
+                min={0}
+                max={searchState.maxRent}
+                step={100}
+                value={searchState.minRent}
+                onChange={(event) => onSearchChange({ minRent: Math.min(Number(event.target.value) || 0, searchState.maxRent) })}
+                className="min-h-11 w-32 rounded-xl border border-slate-300 px-3 text-sm text-slate-900"
+              />
+            </label>
             <input
               type="range"
               min={1000}
               max={5000}
               step={100}
               value={searchState.maxRent}
-              onChange={(e) => onSearchChange({ maxRent: Number(e.target.value) })}
+              onChange={(event) => {
+                const maxRent = Number(event.target.value);
+                onSearchChange({ maxRent, minRent: Math.min(searchState.minRent, maxRent) });
+              }}
               className="w-full accent-indigo-600"
             />
           </div>
@@ -478,7 +521,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => {
-              onSearchChange({ city: 'All Poland', roomType: 'All room types', maxRent: 5000 });
+              onSearchChange({ city: 'All Poland', moveInDate: '', roomType: 'All room types', minRent: 0, maxRent: 5000 });
               mobileSearchRef.current?.close();
             }}
             className="flex-1 min-h-[46px] py-3 text-xs font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors cursor-pointer"

@@ -6,15 +6,9 @@ import {knownMonthlyCost} from '../utils/listingFlow';
 import {navigateTo} from '../utils/router';
 import { createOrGetThread, sendThreadMessage } from '../lib/api';
 import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, Heart, Share2, MapPin, Check, Shield, 
-  Calendar, School, Train, ChevronLeft, ChevronRight,
-  UserCheck, ShieldCheck, ChevronDown, CheckCircle2, MessageSquare,
-  Maximize2, Lock, Clock, Sparkles
-} from 'lucide-react';
+import { ArrowLeft, Heart, Share2, MapPin, Check, ChevronLeft, ChevronRight, ChevronDown, MessageSquare, Maximize2, Clock } from 'lucide-react';
 import { Listing, isExampleListing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
-import { t } from '../utils/translations';
 import { ImageLightbox } from '../components/ImageLightbox';
 import { EarlyLockModal } from '../components/EarlyLockModal';
 import { AIProxyChatModal } from '../components/AIProxyChatModal';
@@ -27,12 +21,9 @@ interface ListingDetailPageProps {
   onBack: () => void;
   isSaved: boolean;
   onToggleSave: (id: string) => void;
-  onOpenCesja: () => void;
-  onOpenDepositClearing: () => void;
   locale?: SupportedLocale;
   currentUser?: { name: string; email: string; avatar?: string } | null;
   onRequireLogin?: (reason: string) => void;
-  onLike?: (id: string) => void;
 }
 
 export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
@@ -41,14 +32,10 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   onBack,
   isSaved,
   onToggleSave,
-  onOpenCesja,
-  onOpenDepositClearing,
   locale = 'en',
   currentUser,
   onRequireLogin,
-  onLike
 }) => {
-  const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [activePhotoIdx, setActivePhotoIdx] = useState(0);
   const [photoLoaded, setPhotoLoaded] = useState<Record<number, boolean>>({});
 
@@ -121,7 +108,6 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   };
 
   const moveInDateFormatted = formatDate(listing.availableDate, locale);
-  const leaseEndDateFormatted = formatDate(listing.leaseEndDate, locale);
 
   // Amenities list matching screenshot 4 / screenshot 8
   const defaultAmenities = listing.amenities.map(label=>({label}));
@@ -522,10 +508,6 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         onClose={() => setIsAIChatOpen(false)}
         listing={listing}
         locale={locale}
-        onOpenEarlyLock={() => {
-          setIsAIChatOpen(false);
-          setIsEarlyLockOpen(true);
-        }}
         onOpenContact={() => {
           setIsAIChatOpen(false);
           handleMessageClick();

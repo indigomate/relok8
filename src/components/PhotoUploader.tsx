@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { 
-  Camera, Upload, Trash2, X, RefreshCw, CheckCircle2, 
-  AlertCircle, Image as ImageIcon, Sparkles, Check, ShieldCheck,
-  Bed, Laptop, Bath, Info, ArrowRight
-} from 'lucide-react';
+import { Camera, Upload, Trash2, X, RefreshCw, CheckCircle2, AlertCircle, Image as ImageIcon, Check, Info, ArrowRight } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { OnloAvatar } from './OnloAvatar';
 

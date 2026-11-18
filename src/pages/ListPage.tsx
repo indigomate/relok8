@@ -1,13 +1,9 @@
 import { timingLabels, isDateOnly } from '../utils/leaseTiming';
 import {invalidListingStep, draftStore, normalizeLandlordPhone, knownMonthlyCost, billsLabel} from '../utils/listingFlow';
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ArrowLeft, CheckCircle2, UploadCloud, ImagePlus, Trash2, 
-  MapPin, Home, DollarSign, Calendar, Shield, ShieldCheck, AlertCircle 
-} from 'lucide-react';
+import { ArrowLeft, CheckCircle2, UploadCloud, MapPin, Home, DollarSign, Shield, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
-import { t } from '../utils/translations';
 import { navigateTo } from '../utils/router';
 import { PhotoUploader } from '../components/PhotoUploader';
 
@@ -26,7 +22,6 @@ export const ListPage: React.FC<ListPageProps> = ({
   locale = 'en',
   currentUser
 }) => {
-  const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -41,19 +36,6 @@ export const ListPage: React.FC<ListPageProps> = ({
   const [monthlyRentPLN, setMonthlyRentPLN] = useState('');
   const [czynszAdminPLN, setCzynszAdminPLN] = useState('');
   const [depositPLN, setDepositPLN] = useState('');
-  // Dynamic default dates (first of upcoming month and academic year end)
-  const getUpcomingMoveInDate = () => {
-    const d = new Date();
-    const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1);
-    return nextMonth.toISOString().split('T')[0];
-  };
-
-  const getUpcomingLeaseEndDate = () => {
-    const d = new Date();
-    const targetYear = d.getMonth() >= 6 ? d.getFullYear() + 1 : d.getFullYear();
-    return `${targetYear}-06-30`;
-  };
-
   const [occupancyStatus, setOccupancyStatus] = useState<'' | 'occupied' | 'vacant'>('');
   const timing = timingLabels(occupancyStatus || undefined, locale);
   const [availableDate, setAvailableDate] = useState('');

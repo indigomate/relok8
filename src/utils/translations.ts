@@ -87,8 +87,6 @@ export const t = {
     getAlertsTitle: "Looking for more rooms?",
     getAlertsDesc: "Email alerts are not available yet. Browse other cities or check back later.",
     getAlertsButton: "Browse rooms",
-    alertEmailPlaceholder: 'Enter your email address',
-    alertSuccess: 'Alert configured! We will email you new rooms in this city.',
     noRoomsFound: 'No rooms match your current filters.',
     noRoomsInCity: 'No active rooms in this city right now.',
 
@@ -220,8 +218,6 @@ export const t = {
     getAlertsTitle: "Szukasz innych pokoi?",
     getAlertsDesc: "Alerty email nie są jeszcze dostępne. Sprawdź inne miasta lub wróć później.",
     getAlertsButton: "Przeglądaj pokoje",
-    alertEmailPlaceholder: 'Wpisz swój adres e-mail',
-    alertSuccess: 'Powiadomienie zapisane! Wyślemy Ci nowe oferty w tym mieście.',
     noRoomsFound: 'Brak pokoi spełniających wybrane kryteria.',
     noRoomsInCity: 'Brak dostępnych pokoi w tym mieście.',
 

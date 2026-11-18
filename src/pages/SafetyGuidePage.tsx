@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Shield, AlertTriangle, CheckCircle2, FileText, Lock } from 'lucide-react';
+import { ArrowLeft, Shield, AlertTriangle, FileText } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface SafetyGuidePageProps {

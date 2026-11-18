@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { SignIn, SignUp, useUser, useAuth } from '@clerk/react';
 
-export interface UserProfile {
+interface UserProfile {
   id: string;
   name: string;
   email: string;
@@ -128,7 +128,6 @@ export const LoginModal: React.FC<LoginModalProps> = React.memo(({
       const primaryEmail = user.primaryEmailAddress || 
         user.emailAddresses?.find(e => e.id === (user as any).primaryEmailAddressId || e.id === (user as any).primary_email_address_id) ||
         user.emailAddresses?.[0];
-      const isEmailVerified = primaryEmail?.verification?.status === 'verified';
       const isVerified = Boolean(publicMeta.isVerified === true);
 
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';

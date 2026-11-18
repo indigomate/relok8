@@ -1,6 +1,6 @@
 import { timingLabels, leaseHasEnded } from '../utils/leaseTiming';
 import { formatDate } from '../utils/formatters';
-import React, { useState } from "react";
+import { useState } from "react";
 import { ApplicationDecision } from "./ApplicationDecision";
 import { PropertySettings } from "./PropertySettings";
 import { handoverProgress } from "../utils/handover";

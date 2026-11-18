@@ -1,6 +1,6 @@
-import { CITIES_CONFIG, ENABLED_CITIES, getCityBySlug } from '../data/cities';
+import { getCityBySlug } from '../data/cities';
 
-export type RouteType =
+type RouteType =
   | 'home'
   | 'city'
   | 'listing-detail'
@@ -38,7 +38,7 @@ export interface ParsedRoute {
   searchParams: URLSearchParams;
 }
 
-export function slugify(text: string): string {
+function slugify(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
@@ -270,7 +270,7 @@ export function navigateToListing(listingId: string, title?: string, locale?: st
   navigateTo(`${prefix}/listing/${listingId}${slugPart}`, query);
 }
 
-export function switchLocale(newLocale: 'en' | 'pl', currentRoute: ParsedRoute) {
+export function switchLocale(newLocale: 'en' | 'pl') {
   // Replace or add /pl prefix while keeping same page & query params
   const segments = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
   if (segments[0] === 'pl') {

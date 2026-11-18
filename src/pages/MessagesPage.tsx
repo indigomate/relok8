@@ -1,20 +1,9 @@
 import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  ArrowLeft, Send, Sparkles, ShieldCheck, Clock,
-  Bot, CheckCircle2, Lock, UserCheck, AlertCircle,
-  MessageSquare, Globe, Home, Shield, ExternalLink,
-  MapPin, Check
-} from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
-import {
-  Thread,
-  Message,
-  Place,
-  Relok8User,
-  HandledBy
-} from '../types/relok8';
+import { Thread, Message, Place, Relok8User } from '../types/relok8';
 import {
   getThreads,
   getThreadMessages,

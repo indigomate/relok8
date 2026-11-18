@@ -7,7 +7,7 @@ export const getListingMessages = query({ args: { listingId: v.string() }, handl
   return ctx.db.query('aiMessages').filter(q => q.and(q.eq(q.field('listingId'), args.listingId), q.eq(q.field('userId'), identity.subject))).collect();
 } });
 export const sendMessage = mutation({ args: { listingId: v.string(), sender: v.string(), content: v.string(), functionExecuted: v.optional(v.string()) }, handler: async () => { throw new Error('Direct assistant message writes are disabled'); } });
-export const generateAIProxyResponse = action({ args: { listingId: v.string(), userPrompt: v.string(), listingContext: v.any() }, handler: async (ctx, args): Promise<{ sender: string; content: string; timestamp: number }> => {
+export const generateAIProxyResponse = action({ args: { listingId: v.string(), userPrompt: v.string() }, handler: async (ctx, args): Promise<{ sender: string; content: string; timestamp: number }> => {
   await requireIdentity(ctx);
   return ctx.runAction(api.services.listingAssistant, { listingId: args.listingId, userPrompt: args.userPrompt });
 } });

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Printer, Copy, Check, Download, FileText, Scale } from 'lucide-react';
 import { Listing, CesjaAgreementData } from '../types';
-import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
+import { SupportedLocale } from '../utils/formatters';
 
 interface CesjaGeneratorModalProps {
   isOpen: boolean;
   onClose: () => void;
   presetListing?: Listing | null;
+  presetDates?: { originalLeaseDate: string; effectiveDate: string } | null;
   locale?: SupportedLocale;
 }
 
@@ -14,6 +15,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
   isOpen,
   onClose,
   presetListing,
+  presetDates,
   locale = 'en'
 }) => {
   const [copied, setCopied] = useState(false);
@@ -44,6 +46,16 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
   });
 
   const [activeTab, setActiveTab] = useState<'bilingual' | 'fields'>('bilingual');
+
+  useEffect(() => {
+    if (!isOpen || !presetDates) return;
+    setData((current) => ({
+      ...current,
+      originalLeaseDate: presetDates.originalLeaseDate,
+      effectiveDate: presetDates.effectiveDate,
+      inspectionProtocolDate: presetDates.effectiveDate
+    }));
+  }, [isOpen, presetDates]);
 
   if (!isOpen) return null;
 
@@ -169,6 +181,42 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
         <div className="p-6 md:p-8 overflow-y-auto max-h-[75vh]">
           {activeTab === 'fields' ? (
             <div className="space-y-4 max-w-2xl mx-auto">
+              <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] space-y-3">
+                <div className="text-[12px] font-semibold text-[var(--r8-text-3)] uppercase tracking-wider">
+                  Agreement dates
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <label className="text-[var(--r8-text-2)]">
+                    <span className="block mb-1">Original lease date</span>
+                    <input
+                      type="date"
+                      value={data.originalLeaseDate}
+                      onChange={(event) => {
+                        const originalLeaseDate = event.target.value;
+                        setData({
+                          ...data,
+                          originalLeaseDate,
+                          ...(data.effectiveDate < originalLeaseDate
+                            ? { effectiveDate: '', inspectionProtocolDate: '' }
+                            : {})
+                        });
+                      }}
+                      className="min-h-11 w-full rounded-[10px] border border-[var(--r8-border-strong)] bg-[var(--r8-surface-1)] p-2 text-[var(--r8-text)] outline-none focus:border-indigo-600"
+                    />
+                  </label>
+                  <label className="text-[var(--r8-text-2)]">
+                    <span className="block mb-1">Takeover effective date</span>
+                    <input
+                      type="date"
+                      min={data.originalLeaseDate || undefined}
+                      value={data.effectiveDate}
+                      onChange={(event) => setData({ ...data, effectiveDate: event.target.value, inspectionProtocolDate: event.target.value })}
+                      className="min-h-11 w-full rounded-[10px] border border-[var(--r8-border-strong)] bg-[var(--r8-surface-1)] p-2 text-[var(--r8-text)] outline-none focus:border-indigo-600"
+                    />
+                  </label>
+                </div>
+              </div>
+
               <div className="p-4 rounded-[16px] bg-[var(--r8-surface-2)] border border-[var(--r8-border)] space-y-3">
                 <div className="text-[12px] font-semibold text-[var(--r8-text-3)] uppercase tracking-wider">
                   Wynajmujący (Landlord)
@@ -307,8 +355,8 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                 <div className="p-3.5 bg-[var(--r8-surface-1)] rounded-[10px] border border-[var(--r8-border)] space-y-1.5">
                   <div className="font-bold text-[var(--r8-text)]">§ 1 Przedmiot umowy / Subject of the Assignment</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-[var(--r8-text-2)]">
-                    <p><strong>[PL]</strong> Na podstawie art. 509 i art. 519 Kodeksu Cywilnego, Cedent – za uprzednią zgodą Wynajmującego – przenosi na Cesjonariusza ogół praw i obowiązków wynikających z Umowy Najmu lokalu położonego przy: {data.propertyAddress}.</p>
-                    <p className="italic"><strong>[EN]</strong> Pursuant to Articles 509 and 519 of the Polish Civil Code, the Assignor, with the prior express consent of the Landlord, hereby assigns to the Assignee all rights and obligations arising from the Lease Agreement for premises at: {data.propertyAddress}.</p>
+                    <p><strong>[PL]</strong> Na podstawie art. 509 i art. 519 Kodeksu Cywilnego, Cedent – za uprzednią zgodą Wynajmującego – przenosi na Cesjonariusza ogół praw i obowiązków wynikających z Umowy Najmu z dnia {data.originalLeaseDate || '[data umowy]'}, dotyczącej lokalu położonego przy: {data.propertyAddress}.</p>
+                    <p className="italic"><strong>[EN]</strong> Pursuant to Articles 509 and 519 of the Polish Civil Code, the Assignor, with the prior express consent of the Landlord, hereby assigns to the Assignee all rights and obligations arising from the Lease Agreement dated {data.originalLeaseDate || '[original lease date]'} for premises at: {data.propertyAddress}.</p>
                   </div>
                 </div>
 

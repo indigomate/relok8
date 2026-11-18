@@ -48,7 +48,7 @@ describe('My Place updates and public listing consistency', () => {
 });
 describe('bound landlord authorization',()=>{
   test('email fallback cannot override an already-bound landlord account on legacy endpoints',async()=>{
-    const {t,owner,id,oldLandlord,newLandlord}=await setup();
+    const {t,id,oldLandlord,newLandlord}=await setup();
     await t.run(async ctx=>{await ctx.db.patch(id,{landlordUserId:'new'});});
     await expect(oldLandlord.query(api.domain.read,{operation:'place',input:{id}})).rejects.toThrow('Forbidden');
     await expect(oldLandlord.mutation(api.domain.write,{operation:'updatePlace',input:{placeId:id,updates:{rentPLN:1}}})).rejects.toThrow('Forbidden');

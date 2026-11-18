@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Shield, FileCheck, Lock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface LegalTermsPrivacyPageProps {

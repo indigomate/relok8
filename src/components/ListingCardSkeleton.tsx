@@ -5,7 +5,7 @@ interface ListingCardSkeletonProps {
   className?: string;
 }
 
-export const ListingCardSkeleton: React.FC<ListingCardSkeletonProps> = ({ className = '' }) => {
+const ListingCardSkeleton: React.FC<ListingCardSkeletonProps> = ({ className = '' }) => {
   return (
     <article
       aria-busy="true"

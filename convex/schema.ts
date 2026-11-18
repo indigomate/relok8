@@ -7,12 +7,6 @@ export default defineSchema({
     kind: v.string(), key: v.string(), ownerId: v.string(), placeId: v.optional(v.string()), data: v.any(),
   }).index("by_kind", ["kind"]).index("by_key", ["kind", "key"]).index("by_owner", ["kind", "ownerId"]).index("by_place", ["kind", "placeId"]),
   rateLimits: defineTable({ userId: v.string(), operation: v.string(), start: v.number(), count: v.number() }).index("by_user_operation", ["userId", "operation"]),
-  // Tasks table (quick queries and mutations)
-  tasks: defineTable({
-    text: v.string(),
-    isCompleted: v.boolean(),
-  }),
-
   // Relok8 Leases table (for live lease takeover listings)
   leases: defineTable({
     occupancyStatus: v.optional(v.union(v.literal("occupied"), v.literal("vacant"))),

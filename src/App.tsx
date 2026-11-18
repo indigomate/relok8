@@ -3,16 +3,12 @@ import { authReturnPath } from './utils/authFlow';
 import {knownMonthlyCost} from './utils/listingFlow';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/react';
-import { 
-  Search, ArrowRight, Check, CheckCircle2, RefreshCw, 
-  MapPin, Calendar, Home, DollarSign, Shield, Users, Heart, X
-} from 'lucide-react';
-import { Listing, DepositClearingRecord } from './types';
-import { INITIAL_LISTINGS, INITIAL_DEPOSIT_RECORDS } from './data/mockListings';
-import { ENABLED_CITIES, getCityBySlug, getCityByName, CityConfig } from './data/cities';
+import { ArrowRight, MapPin, Home } from 'lucide-react';
+import { Listing } from './types';
+import { ENABLED_CITIES, getCityBySlug, getCityByName } from './data/cities';
 import { Navbar, UserProfile } from './components/Navbar';
 import { SearchBar, SearchState } from './components/SearchBar';
-import { FiltersBar, FilterValues, SortOption } from './components/FiltersBar';
+import { FiltersBar, FilterValues } from './components/FiltersBar';
 import { ListingCard } from './components/ListingCard';
 import { AlertCaptureCard } from './components/AlertCaptureCard';
 import { CityLandingHeader } from './components/CityLandingHeader';
@@ -23,13 +19,8 @@ import { MobileBottomNav } from './components/MobileBottomNav';
 
 // Modals & Pages
 import { CesjaGeneratorModal } from './components/CesjaGeneratorModal';
-import { DepositClearingModal } from './components/DepositClearingModal';
-import { LeaveYourLeaseModal } from './components/LeaveYourLeaseModal';
-import { HelpModal } from './components/HelpModal';
 import { LoginModal } from './components/LoginModal';
 import { CookieBanner } from './components/CookieBanner';
-import { PenaltyCalculatorModal } from './components/PenaltyCalculatorModal';
-import { EarlyLockModal } from './components/EarlyLockModal';
 import { AIProxyChatModal } from './components/AIProxyChatModal';
 import { Toast } from './components/Toast';
 
@@ -54,19 +45,47 @@ import { RewardsPage } from './pages/RewardsPage';
 import { EnrollmentsPage } from './pages/EnrollmentsPage';
 import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
-import { SupportedLocale, formatPLN, formatDate } from './utils/formatters';
+import { SupportedLocale, formatPLN } from './utils/formatters';
 import { t } from './utils/translations';
 import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
-import { deletePlace, uploadListingPhotos } from './lib/api';
+import { uploadListingPhotos } from './lib/api';
 import { ConvexProvider, mapConvexListingToAppListing } from './lib/convex/client';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '../convex/_generated/api';
+
+const DEFAULT_SEARCH: SearchState = {
+  city: 'Anywhere in Poland',
+  moveInDate: '',
+  roomType: 'All room types',
+  minRent: 0,
+  maxRent: 5000
+};
+
+function searchStateFromLocation(route: ParsedRoute, search: string): SearchState {
+  const params = new URLSearchParams(search);
+  const parsedMin = Number(params.get('min'));
+  const parsedMax = Number(params.get('max'));
+  const maxRent = Number.isFinite(parsedMax) && parsedMax >= 500
+    ? Math.min(parsedMax, DEFAULT_SEARCH.maxRent)
+    : DEFAULT_SEARCH.maxRent;
+  const minRent = Number.isFinite(parsedMin) && parsedMin > 0 ? Math.min(parsedMin, maxRent) : DEFAULT_SEARCH.minRent;
+
+  return {
+    city: route.type === 'city' && route.cityName
+      ? route.cityName
+      : params.get('city') || DEFAULT_SEARCH.city,
+    moveInDate: params.get('from') || DEFAULT_SEARCH.moveInDate,
+    roomType: params.get('type') || DEFAULT_SEARCH.roomType,
+    minRent,
+    maxRent
+  };
+}
 
 function Relok8App() {
   const [listingToday, setListingToday] = useState(todayInPoland);
   useEffect(() => {const timer = window.setInterval(() => setListingToday(todayInPoland()), 60000); return () => window.clearInterval(timer);}, []);
   // Theme State: Default light
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const theme = 'light';
 
   // Active Route State from History API
   const [currentRoute, setCurrentRoute] = useState<ParsedRoute>(() =>
@@ -126,7 +145,6 @@ function Relok8App() {
       const primaryEmail = clerkUser.primaryEmailAddress || 
         clerkUser.emailAddresses?.find(e => e.id === (clerkUser as any).primaryEmailAddressId || e.id === (clerkUser as any).primary_email_address_id) ||
         clerkUser.emailAddresses?.[0];
-      const isEmailVerified = primaryEmail?.verification?.status === 'verified';
       const isVerified = Boolean(publicMeta.isVerified === true);
 
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
@@ -170,21 +188,8 @@ function Relok8App() {
 
   // Search State: single source of truth synced with URL query
   const [searchState, setSearchState] = useState<SearchState>(() => {
-    const params = new URLSearchParams(window.location.search);
     const initialRoute = parseRoute(window.location.pathname, window.location.hash, window.location.search);
-    let initialCity = 'Anywhere in Poland';
-    if (initialRoute.type === 'city' && initialRoute.cityName) {
-      initialCity = initialRoute.cityName;
-    } else if (params.get('city')) {
-      initialCity = params.get('city')!;
-    }
-    return {
-      city: initialCity,
-      moveInDate: params.get('from') || '',
-      roomType: params.get('type') || 'All room types',
-      minRent: Number(params.get('min')) || 500,
-      maxRent: Number(params.get('max')) || 5000
-    };
+    return searchStateFromLocation(initialRoute, window.location.search);
   });
 
   // Additional Filter Values
@@ -213,13 +218,13 @@ function Relok8App() {
   const [isFiltering, setIsFiltering] = useState(false);
 
   // Modals state
-  const [isLeaveLeaseOpen, setIsLeaveLeaseOpen] = useState(false);
-  const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isCesjaOpen, setIsCesjaOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [cesjaTemplateDates, setCesjaTemplateDates] = useState<{
+    originalLeaseDate: string;
+    effectiveDate: string;
+  } | null>(null);
 
   // Quick Action Card Modals state
-  const [activeCardEarlyLock, setActiveCardEarlyLock] = useState<Listing | null>(null);
   const [activeCardAIChat, setActiveCardAIChat] = useState<Listing | null>(null);
 
 
@@ -228,7 +233,6 @@ function Relok8App() {
   const liveConvexLeases = useQuery(api.leases.get, {});
   const selectedLease = useQuery(api.leases.getById, currentRoute.type === "listing-detail" && currentRoute.listingId ? {id:currentRoute.listingId} : "skip");
   const createConvexLease = useMutation(api.leases?.create);
-  const reserveConvexLease = useMutation(api.leases?.reserve);
   const deleteConvexLease = useMutation(api.leases?.deleteLease);
   const saveRemote = useMutation(api.favorites.addFavorite);
   const removeRemote = useMutation(api.favorites.removeFavorite);
@@ -255,11 +259,9 @@ function Relok8App() {
       }
     }
   }, [liveConvexLeases]);
-  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(() => !isClerkSignedIn && (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up'));
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>(() => currentRoute.type === 'sign-up' ? 'signup' : 'signin');
   const [loginReason, setLoginReason] = useState('');
-  const [presetListingForCesja, setPresetListingForCesja] = useState<Listing | null>(null);
 
   // Prevent re-renders of LoginModal when the authentication state is already handled by ClerkProvider
   useEffect(() => {
@@ -313,16 +315,17 @@ function Relok8App() {
     const handlePopState = () => {
       const parsed = parseRoute(window.location.pathname, window.location.hash, window.location.search);
       setCurrentRoute(parsed);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      });
 
       if (parsed.locale !== locale) {
         setLocale(parsed.locale);
       }
 
-      if (parsed.type === 'city' && parsed.cityName) {
-        setSearchState((prev) => ({ ...prev, city: parsed.cityName! }));
-      } else if (parsed.type === 'home') {
-        setSearchState((prev) => ({ ...prev, city: 'Anywhere in Poland' }));
+      if (parsed.type === 'city' || parsed.type === 'home') {
+        setSearchState(searchStateFromLocation(parsed, window.location.search));
       }
     };
 
@@ -577,36 +580,36 @@ function Relok8App() {
 
 // Convex is the only data backend.
   const [isLoadingListings, setIsLoadingListings] = useState(true);
-  const [listingError, setListingError] = useState<string | null>(null);
 
 // Convex is the only data backend.
   useEffect(() => {
-    if (liveConvexLeases !== undefined) { setIsLoadingListings(false); setListingError(null); }
+    if (liveConvexLeases !== undefined) { setIsLoadingListings(false); }
   }, [liveConvexLeases]);
 
   // Update search state and sync URL query
   const handleSearchChange = (changes: Partial<SearchState>) => {
-    setSearchState((prev) => {
-      const next = { ...prev, ...changes };
-      const params = new URLSearchParams(window.location.search);
-      if (next.city && next.city !== 'Anywhere in Poland' && next.city !== 'All Poland') {
-        const cityObj = getCityByName(next.city);
-        if (cityObj && currentRoute.type !== 'city') {
-          navigateToCity(cityObj.slug, locale);
-        }
-      } else if (changes.city === 'Anywhere in Poland' || changes.city === 'All Poland') {
-        if (currentRoute.type === 'city') {
-          navigateTo(locale === 'pl' ? '/pl' : '/');
-        }
+    const next = { ...searchState, ...changes };
+    const params = new URLSearchParams(window.location.search);
+    params.delete('city');
+    if (next.moveInDate) params.set('from', next.moveInDate); else params.delete('from');
+    if (next.roomType && next.roomType !== 'All room types') params.set('type', next.roomType); else params.delete('type');
+    if (next.minRent > 0) params.set('min', String(next.minRent)); else params.delete('min');
+    if (next.maxRent < DEFAULT_SEARCH.maxRent) params.set('max', String(next.maxRent)); else params.delete('max');
+
+    setSearchState(next);
+    const query = Object.fromEntries(params.entries());
+    if (next.city && next.city !== 'Anywhere in Poland' && next.city !== 'All Poland') {
+      const city = getCityByName(next.city);
+      if (city && currentRoute.citySlug !== city.slug) {
+        navigateToCity(city.slug, locale, query);
+      } else {
+        window.history.replaceState({}, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
       }
-      if (next.moveInDate) params.set('from', next.moveInDate); else params.delete('from');
-      if (next.roomType && next.roomType !== 'All room types') params.set('type', next.roomType); else params.delete('type');
-      if (next.maxRent < 5000) params.set('max', String(next.maxRent)); else params.delete('max');
-      
-      const newQuery = params.toString() ? `?${params.toString()}` : '';
-      window.history.replaceState({}, '', window.location.pathname + newQuery);
-      return next;
-    });
+    } else if (currentRoute.type === 'city') {
+      navigateTo(locale === 'pl' ? '/pl' : '/', query);
+    } else {
+      window.history.replaceState({}, '', `${window.location.pathname}${params.size ? `?${params}` : ''}`);
+    }
 
     setIsFiltering(true);
     setTimeout(() => setIsFiltering(false), 200);
@@ -622,9 +625,6 @@ function Relok8App() {
       else await saveRemote({ listingId: id, userId: currentUser.id });
     } catch (error: any) { showToast(error.message || 'Could not update saved rooms.'); }
   };
-
-  // Like listing
-  const handleLikeListing = async (_id: string) => { showToast('Use Save to keep this room in your account.'); };
 
   const handleAddListing = async (newListing: Listing) => {
     if (!isBackendAuthenticated) throw new Error('Sign in before publishing a listing.');
@@ -704,6 +704,7 @@ function Relok8App() {
 
       // Max rent
       if (knownMonthlyCost(l) > filterValues.maxRent) return false;
+      if (knownMonthlyCost(l) < searchState.minRent) return false;
 
       // Move in date: listing must be available on or before the selected target date
       if (filterValues.moveInDate) {
@@ -742,7 +743,7 @@ function Relok8App() {
       // default: soonest move-in date
       return new Date(a.availableDate).getTime() - new Date(b.availableDate).getTime();
     });
-  }, [listings, activeCityConfig, searchState.city, filterValues, listingToday]);
+  }, [listings, activeCityConfig, searchState.city, searchState.minRent, filterValues, listingToday]);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
@@ -769,10 +770,9 @@ function Relok8App() {
         locale={locale}
         onSelectLocale={(newLoc) => {
           setLocale(newLoc);
-          switchLocale(newLoc === 'pl' ? 'pl' : 'en', currentRoute);
+          switchLocale(newLoc === 'pl' ? 'pl' : 'en');
         }}
         theme={theme}
-        setTheme={setTheme}
         onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
         onOpenLogin={(mode) => {
           handleOpenLogin(mode || 'signin', 'Sign up or log in to manage your saved rooms and contact tenants.');
@@ -813,18 +813,12 @@ function Relok8App() {
               }}
               isSaved={savedIds.includes(detailListing.id)}
               onToggleSave={(id) => handleToggleSave(id)}
-              onOpenCesja={() => {
-                setPresetListingForCesja(detailListing);
-                setIsCesjaOpen(true);
-              }}
-              onOpenDepositClearing={() => setIsDepositOpen(true)}
               locale={locale}
               currentUser={currentUser}
               onRequireLogin={(reason) => {
                 setLoginReason(reason);
                 setIsLoginOpen(true);
               }}
-              onLike={handleLikeListing}
             />
           );
         })()
@@ -853,8 +847,10 @@ function Relok8App() {
       ) : currentRoute.type === 'cesja-template' ? (
         <CesjaTemplatePage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
-          onOpenCesjaModal={() => setIsCesjaOpen(true)}
-          locale={locale}
+          onOpenCesjaModal={(dates) => {
+            setCesjaTemplateDates(dates);
+            setIsCesjaOpen(true);
+          }}
         />
       ) : currentRoute.type === 'safety-guide' ? (
         <SafetyGuidePage
@@ -884,8 +880,6 @@ function Relok8App() {
         <HelpPage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
-          onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
-          onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
       ) : currentRoute.type === 'list' ? (
         <ListPage key={currentUser?.id || "anonymous"} onRequireLogin={() => {setLoginReason(locale === "pl" ? "Zaloguj się, aby opublikować zapisany szkic." : "Sign in to publish your saved draft.");setIsLoginOpen(true);}}
@@ -899,7 +893,6 @@ function Relok8App() {
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
-          onOpenCesja={() => navigateTo(locale === 'pl' ? '/pl/cesja-template' : '/cesja-template')}
         />
       ) : currentRoute.type === 'savings-calculator' ? (
         <SavingsCalculatorPage
@@ -1094,6 +1087,7 @@ function Relok8App() {
                 });
                 handleSearchChange({
                   city: 'Anywhere in Poland',
+                  minRent: 0,
                   maxRent: 5000,
                   moveInDate: '',
                   roomType: 'All room types'
@@ -1115,10 +1109,6 @@ function Relok8App() {
                     isSaved={savedIds.includes(listing.id)}
                     onToggleSave={(id, e) => handleToggleSave(id, e)}
                     onSelectListing={(l) => navigateToListing(l.id, l.title, locale)}
-                    onOpenEarlyLock={(l, e) => {
-                      e.stopPropagation();
-                      setActiveCardEarlyLock(l);
-                    }}
                     onOpenMessage={(l, e) => {
                       e.stopPropagation();
                       navigateToListing(l.id, l.title, locale, { compose: "1" });
@@ -1126,15 +1116,6 @@ function Relok8App() {
                     onOpenAIChat={(l, e) => {
                       e.stopPropagation();
                       setActiveCardAIChat(l);
-                    }}
-                    onOpenCesja={(l, e) => {
-                      e.stopPropagation();
-                      setPresetListingForCesja(l);
-                      setIsCesjaOpen(true);
-                    }}
-                    onOpenDepositClearing={(l, e) => {
-                      e.stopPropagation();
-                      setIsDepositOpen(true);
                     }}
                     locale={locale}
                   />
@@ -1166,7 +1147,11 @@ function Relok8App() {
                     >
                       {locale === 'pl' ? 'Dodaj ogłoszenie' : 'List your place'}
                     </button>
-                    {(searchState.city !== 'Anywhere in Poland' || searchState.roomType !== 'All room types') && (
+                    {(searchState.city !== 'Anywhere in Poland'
+                      || searchState.moveInDate
+                      || searchState.roomType !== 'All room types'
+                      || searchState.minRent > 0
+                      || searchState.maxRent < 5000) && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1182,6 +1167,7 @@ function Relok8App() {
                           });
                           handleSearchChange({
                             city: 'Anywhere in Poland',
+                            minRent: 0,
                             maxRent: 5000,
                             moveInDate: '',
                             roomType: 'All room types'
@@ -1196,11 +1182,7 @@ function Relok8App() {
                 </div>
 
                 <AlertCaptureCard
-                  city={activeCityConfig ? activeCityConfig.name : (searchState.city !== 'Anywhere in Poland' ? searchState.city : 'Poland')}
                   locale={locale}
-                  onAlertRegistered={(email, city) => {
-                    showToast(locale === 'pl' ? `Powiadomienie zapisane dla: ${city}` : `Alert set for ${city}`);
-                  }}
                 />
               </div>
             )}
@@ -1209,11 +1191,7 @@ function Relok8App() {
             {activeCityConfig && filteredListings.length > 0 && (
               <div className="pt-6">
                 <AlertCaptureCard
-                  city={activeCityConfig.name}
                   locale={locale}
-                  onAlertRegistered={(email, city) => {
-                    showToast(locale === 'pl' ? `Powiadomienie zapisane dla: ${city}` : `Alert set for ${city}`);
-                  }}
                 />
               </div>
             )}
@@ -1253,9 +1231,6 @@ function Relok8App() {
 
       {/* Footer (§4.6) */}
       <Footer
-        onOpenLeaveYourLease={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
-        onOpenHelp={() => navigateTo(locale === 'pl' ? '/pl/help' : '/help')}
-        onOpenSavingsCalculator={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
         onOpenReportListing={() => {
           showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Open a listing and choose Report a problem, or email info@relok8.online.');
         }}
@@ -1284,48 +1259,10 @@ function Relok8App() {
       )}
 
       {/* Modals */}
-      <LeaveYourLeaseModal
-        isOpen={isLeaveLeaseOpen}
-        onClose={() => setIsLeaveLeaseOpen(false)}
-        onOpenIntake={() => {
-          setIsLeaveLeaseOpen(false);
-          navigateTo(locale === 'pl' ? '/pl/list' : '/list');
-        }}
-        onOpenCesja={() => {
-          setIsLeaveLeaseOpen(false);
-          setIsCesjaOpen(true);
-        }}
-        locale={locale}
-      />
-
-      <DepositClearingModal
-        isOpen={isDepositOpen}
-        onClose={() => setIsDepositOpen(false)}
-        records={INITIAL_DEPOSIT_RECORDS}
-        onUpdateRecord={() => {}}
-        locale={locale}
-      />
-
       <CesjaGeneratorModal
         isOpen={isCesjaOpen}
         onClose={() => setIsCesjaOpen(false)}
-        presetListing={presetListingForCesja}
-        locale={locale}
-      />
-
-      <HelpModal
-        isOpen={isHelpOpen}
-        onClose={() => setIsHelpOpen(false)}
-        locale={locale}
-      />
-
-      <PenaltyCalculatorModal
-        isOpen={isCalculatorOpen}
-        onClose={() => setIsCalculatorOpen(false)}
-        onOpenIntake={() => {
-          setIsCalculatorOpen(false);
-          navigateTo(locale === 'pl' ? '/pl/list' : '/list');
-        }}
+        presetDates={cesjaTemplateDates}
         locale={locale}
       />
 
@@ -1358,31 +1295,12 @@ function Relok8App() {
       )}
 
       {/* Quick Action Modals from Listing Cards */}
-      {activeCardEarlyLock && (
-        <EarlyLockModal
-          isOpen={!!activeCardEarlyLock}
-          onClose={() => setActiveCardEarlyLock(null)}
-          listing={activeCardEarlyLock}
-          locale={locale}
-          currentUser={currentUser}
-          onRequireLogin={(reason) => {
-            setLoginReason(reason);
-            setIsLoginOpen(true);
-          }}
-        />
-      )}
-
       {activeCardAIChat && (
         <AIProxyChatModal
           isOpen={!!activeCardAIChat}
           onClose={() => setActiveCardAIChat(null)}
           listing={activeCardAIChat}
           locale={locale}
-          onOpenEarlyLock={() => {
-            const l = activeCardAIChat;
-            setActiveCardAIChat(null);
-            setActiveCardEarlyLock(l);
-          }}
           onOpenContact={() => {
             const l = activeCardAIChat;
             setActiveCardAIChat(null);
@@ -1393,14 +1311,6 @@ function Relok8App() {
 
       <OnloGlobalWidget
         locale={locale}
-        onNavigateToListings={() => {
-          const prefix = locale === 'pl' ? '/pl' : '';
-          navigateTo(`${prefix}/`);
-        }}
-        onNavigateToIntake={() => {
-          const prefix = locale === 'pl' ? '/pl' : '';
-          navigateTo(`${prefix}/list`);
-        }}
       />
       <CookieBanner locale={locale} />
 

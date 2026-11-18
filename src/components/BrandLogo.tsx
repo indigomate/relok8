@@ -1,45 +1,5 @@
 import React from 'react';
 
-export const Relok8Mark: React.FC<{
-  size?: number;
-  className?: string;
-  gradientId?: string;
-}> = ({ size = 28, className = '', gradientId = 'r8-mark-grad' }) => {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient
-          id={gradientId}
-          x1="4"
-          y1="4"
-          x2="28"
-          y2="28"
-          gradientUnits="userSpaceOnUse"
-        >
-          <stop offset="0%" stopColor="#4F46E5" />
-          <stop offset="55%" stopColor="#7C3AED" />
-          <stop offset="100%" stopColor="#FF6B5B" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M16 16C12.5 16 9.5 13.5 9.5 9.8C9.5 6.2 12.4 3.5 16 3.5C19.6 3.5 22.5 6.2 22.5 9.8C22.5 13.5 19.5 16 16 16ZM16 16C19.5 16 23 18.5 23 22.2C23 25.8 19.8 28.5 16 28.5C12.2 28.5 9 25.8 9 22.2C9 18.5 12.5 16 16 16Z"
-        stroke={`url(#${gradientId})`}
-        strokeWidth="3.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-};
-
 export const Relok8Logo: React.FC<{
   height?: number;
   theme?: 'dark' | 'light';
@@ -87,43 +47,5 @@ export const Relok8Logo: React.FC<{
         />
       </svg>
     </div>
-  );
-};
-
-export const LoopingSpinner: React.FC<{
-  size?: number;
-  className?: string;
-}> = ({ size = 20, className = '' }) => {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={`r8-spinner ${className}`}
-      aria-label="Loading"
-    >
-      <defs>
-        <linearGradient id="spinner-grad" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#4F46E5" />
-          <stop offset="55%" stopColor="#7C3AED" />
-          <stop offset="100%" stopColor="#FF6B5B" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M16 16C12.5 16 9.5 13.5 9.5 9.8C9.5 6.2 12.4 3.5 16 3.5C19.6 3.5 22.5 6.2 22.5 9.8C22.5 13.5 19.5 16 16 16ZM16 16C19.5 16 23 18.5 23 22.2C23 25.8 19.8 28.5 16 28.5C12.2 28.5 9 25.8 9 22.2C9 18.5 12.5 16 16 16Z"
-        stroke="var(--r8-border-strong)"
-        strokeWidth="2.8"
-        strokeLinecap="round"
-      />
-      <path
-        d="M16 16C12.5 16 9.5 13.5 9.5 9.8C9.5 6.2 12.4 3.5 16 3.5C19.6 3.5 22.5 6.2 22.5 9.8C22.5 13.5 19.5 16 16 16ZM16 16C19.5 16 23 18.5 23 22.2C23 25.8 19.8 28.5 16 28.5C12.2 28.5 9 25.8 9 22.2C9 18.5 12.5 16 16 16Z"
-        stroke="url(#spinner-grad)"
-        strokeWidth="2.8"
-        strokeLinecap="round"
-        className="r8-spinner-path"
-      />
-    </svg>
   );
 };

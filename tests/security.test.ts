@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../convex/schema';
 import { api } from '../convex/_generated/api';
@@ -41,6 +41,40 @@ describe('authentication and ownership', () => {
   test('an arbitrary email cannot read landlord inventory', async () => {
     const { owner, a } = setup(); await owner.mutation(api.leases.create, listing);
     expect(await a.query(api.leases.getByLandlordEmail, { email: 'landlord@example.test' })).toEqual([]);
+  });
+});
+
+describe('support delivery', () => {
+  test('includes the selected topic in the support email', async () => {
+    const { a } = setup();
+    const previous = {
+      key: process.env.RESEND_API_KEY,
+      from: process.env.RESEND_FROM_EMAIL,
+      to: process.env.SUPPORT_EMAIL
+    };
+    process.env.RESEND_API_KEY = 'test-key';
+    process.env.RESEND_FROM_EMAIL = 'Relok8 <support@example.test>';
+    process.env.SUPPORT_EMAIL = 'desk@example.test';
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response(null, { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      await a.action(api.services.contact, {
+        name: 'A',
+        email: 'a@example.test',
+        subject: 'Question',
+        message: 'Please help',
+        topic: 'lease takeover'
+      });
+      const request = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(request.subject).toContain('lease takeover');
+      expect(request.text).toContain('Topic: lease takeover');
+    } finally {
+      vi.unstubAllGlobals();
+      if (previous.key === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = previous.key;
+      if (previous.from === undefined) delete process.env.RESEND_FROM_EMAIL; else process.env.RESEND_FROM_EMAIL = previous.from;
+      if (previous.to === undefined) delete process.env.SUPPORT_EMAIL; else process.env.SUPPORT_EMAIL = previous.to;
+    }
   });
 });
 

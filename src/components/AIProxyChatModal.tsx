@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, ArrowUp, ChevronRight } from 'lucide-react';
 import { Listing } from '../types';
-import { SupportedLocale, formatPLN } from '../utils/formatters';
+import { SupportedLocale } from '../utils/formatters';
 import { useConvex, ConvexAIMessageDoc } from '../lib/convex/client';
 import { OnloAvatar } from './OnloAvatar';
 
@@ -10,7 +10,6 @@ interface AIProxyChatModalProps {
   onClose: () => void;
   listing: Listing;
   locale?: SupportedLocale;
-  onOpenEarlyLock?: () => void;
   onSelectListing?: (listingId: string) => void;
   onOpenContact?: () => void;
 }
@@ -133,17 +132,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     setLastUserPrompt(userText);
 
     try {
-      await convex.sendAIMessage(
-        listing.id,
-        userText,
-        {
-          title: listing.title,
-          city: listing.city,
-          address: listing.address,
-          monthlyRent: listing.monthlyRentPLN,
-          roomType: listing.roomType,
-        }
-      );
+      await convex.sendAIMessage(listing.id, userText);
     } catch (err) {
       console.error('Error generating AI response:', err);
       setHasError(true);

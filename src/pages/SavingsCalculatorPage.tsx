@@ -1,8 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeft, Calculator, CheckCircle2, Shield, ArrowRight, 
-  DollarSign, FileCheck, HelpCircle 
-} from 'lucide-react';
+import React,{ useState } from 'react';
+import { ArrowLeft, Calculator, Shield, ArrowRight, DollarSign, FileCheck } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
 

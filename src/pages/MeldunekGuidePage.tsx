@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, CheckCircle2, FileText, Building2, HelpCircle, Shield, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, FileText, Building2, Shield, ShieldCheck } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface MeldunekGuidePageProps {

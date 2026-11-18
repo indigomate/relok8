@@ -1,10 +1,6 @@
 import { isDateOnly } from './leaseTiming';
 export type SupportedLocale = 'en' | 'pl' | 'uk' | 'es';
 
-export function isRTL(_locale: SupportedLocale): boolean {
-  return false;
-}
-
 export function formatPLN(amount: number, locale: SupportedLocale = 'en'): string {
   const localeMap: Record<SupportedLocale, string> = {
     en: 'en-US',

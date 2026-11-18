@@ -1,8 +1,8 @@
 import { knownMonthlyCost } from '../utils/listingFlow';
 import React from 'react';
-import { Bookmark, ArrowLeft, Trash2, MapPin, Building } from 'lucide-react';
+import { Bookmark, ArrowLeft, Trash2, MapPin } from 'lucide-react';
 import { Listing } from '../types';
-import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
+import { formatPLN, SupportedLocale } from '../utils/formatters';
 
 interface SavedApartmentsPageProps {
   savedListings: Listing[];

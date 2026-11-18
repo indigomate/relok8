@@ -1,28 +1,33 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Copy, Check, Download, AlertCircle, FileText, ChevronRight } from 'lucide-react';
-import { SupportedLocale } from '../utils/formatters';
+import { ArrowLeft, Copy, Check, Download, AlertCircle } from 'lucide-react';
 
 interface CesjaTemplatePageProps {
   onBack: () => void;
-  onOpenCesjaModal: () => void;
-  locale?: SupportedLocale;
+  onOpenCesjaModal: (dates: { originalLeaseDate: string; effectiveDate: string }) => void;
+}
+
+function formatAgreementDate(value: string, locale: 'pl-PL' | 'en-GB'): string {
+  if (!value) return locale === 'pl-PL' ? '[data]' : '[date]';
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' })
+    .format(new Date(`${value}T12:00:00Z`));
 }
 
 export const CesjaTemplatePage: React.FC<CesjaTemplatePageProps> = ({
   onBack,
   onOpenCesjaModal,
-  locale = 'en'
 }) => {
   const [copied, setCopied] = useState(false);
   const [langTab, setLangTab] = useState<'both' | 'polish' | 'english'>('both');
   const [isEditMode, setIsEditMode] = useState(false);
   const [leaseDate, setLeaseDate] = useState('');
+  const [effectiveDate, setEffectiveDate] = useState('');
   const [showNeedsAttention, setShowNeedsAttention] = useState(true);
+  const missingDetails = Number(!leaseDate) + Number(!effectiveDate);
 
   const fullText = `§ 1 Subject · Przedmiot umowy
-Dotychczasowy Najemca (Cedent) przenosi na Nowego Najemcę (Cesjonariusza) prawa i obowiązki z umowy najmu z dnia ${leaseDate || '[data umowy]'}.
+Dotychczasowy Najemca (Cedent) przenosi na Nowego Najemcę (Cesjonariusza) prawa i obowiązki z umowy najmu z dnia ${formatAgreementDate(leaseDate, 'pl-PL')}.
 
-The outgoing tenant (Assignor) assigns to the incoming tenant (Assignee) the rights and obligations under the lease dated ${leaseDate || '[date of original lease]'}.
+The outgoing tenant (Assignor) assigns to the incoming tenant (Assignee) the rights and obligations under the lease dated ${formatAgreementDate(leaseDate, 'en-GB')}.
 
 § 2 Landlord consent · Zgoda
 Wynajmujący wyraził uprzednią, pisemną zgodę na przejęcie.
@@ -30,9 +35,9 @@ Wynajmujący wyraził uprzednią, pisemną zgodę na przejęcie.
 The landlord has given prior written consent to the takeover.
 
 § 3 Effective date · Data przejęcia
-Przejęcie następuje z dniem 15 października 2026 r.
+Przejęcie następuje z dniem ${formatAgreementDate(effectiveDate, 'pl-PL')}.
 
-The takeover takes effect on 15 October 2026.`;
+The takeover takes effect on ${formatAgreementDate(effectiveDate, 'en-GB')}.`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(fullText);
@@ -184,6 +189,23 @@ The takeover takes effect on 15 October 2026.`;
                   </div>
                 )}
               </div>
+
+              {/* § 3 Effective date */}
+              <div className="space-y-2 text-xs leading-relaxed">
+                <div className="font-bold text-slate-900 text-sm">
+                  § 3 Effective date <span className="text-slate-400 font-normal">· Data przejęcia</span>
+                </div>
+                {(langTab === 'both' || langTab === 'polish') && (
+                  <p className="text-slate-800">
+                    Przejęcie następuje w dniu wskazanym przez strony.
+                  </p>
+                )}
+                {(langTab === 'both' || langTab === 'english') && (
+                  <p className="border-l-2 border-slate-200 pl-3 text-slate-600">
+                    The takeover takes effect on the date selected by the parties.
+                  </p>
+                )}
+              </div>
             </div>
           </>
         ) : (
@@ -212,9 +234,13 @@ The takeover takes effect on 15 October 2026.`;
                 <div className="flex items-start gap-2.5">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold text-amber-900 block">1 detail needs your attention</span>
+                    <span className="font-bold text-amber-900 block">
+                      {missingDetails} {missingDetails === 1 ? 'detail needs' : 'details need'} your attention
+                    </span>
                     <span className="text-amber-800 text-[11px]">
-                      Add the original lease date before you send this.
+                      {!leaseDate
+                        ? (effectiveDate ? 'Add the original lease date before you send this.' : 'Add the original lease date and takeover effective date before you send this.')
+                        : 'Add the takeover effective date before you send this.'}
                     </span>
                   </div>
                 </div>
@@ -264,13 +290,18 @@ The takeover takes effect on 15 October 2026.`;
 
                 {/* Inline Date Field Input */}
                 <div className="pt-2">
+                  <label htmlFor="lease-date-input" className="mb-1 block text-xs font-semibold text-slate-700">
+                    Original lease date
+                  </label>
                   <input
                     id="lease-date-input"
                     type="date"
                     value={leaseDate}
                     onChange={(e) => {
-                      setLeaseDate(e.target.value);
-                      if (e.target.value) setShowNeedsAttention(false);
+                      const value = e.target.value;
+                      setLeaseDate(value);
+                      if (effectiveDate && effectiveDate < value) setEffectiveDate('');
+                      if (value && effectiveDate >= value) setShowNeedsAttention(false);
                     }}
                     className="text-xs p-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-slate-50"
                   />
@@ -285,7 +316,7 @@ The takeover takes effect on 15 October 2026.`;
                 <p className="text-slate-800">
                   Przejęcie następuje z dniem{' '}
                   <span className="inline-block px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100">
-                    15 października 2026 r.
+                    {formatAgreementDate(effectiveDate, 'pl-PL')}
                   </span>
                 </p>
 
@@ -293,9 +324,25 @@ The takeover takes effect on 15 October 2026.`;
                   <p>
                     The takeover takes effect on{' '}
                     <span className="inline-block px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold border border-indigo-100">
-                      15 October 2026
+                      {formatAgreementDate(effectiveDate, 'en-GB')}
                     </span>.
                   </p>
+                </div>
+                <div className="pt-2">
+                  <label htmlFor="effective-date-input" className="mb-1 block text-xs font-semibold text-slate-700">
+                    Takeover effective date
+                  </label>
+                  <input
+                    id="effective-date-input"
+                    type="date"
+                    value={effectiveDate}
+                    min={leaseDate || undefined}
+                    onChange={(event) => {
+                      setEffectiveDate(event.target.value);
+                      if (event.target.value && leaseDate) setShowNeedsAttention(false);
+                    }}
+                    className="min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
                 </div>
               </div>
             </div>
@@ -319,21 +366,22 @@ The takeover takes effect on 15 October 2026.`;
               <button
                 type="button"
                 onClick={() => {
-                  if (!leaseDate) {
-                    alert('Please select the original lease date first.');
+                  if (!leaseDate || !effectiveDate || effectiveDate < leaseDate) {
+                    setShowNeedsAttention(true);
+                    document.getElementById(!leaseDate ? 'lease-date-input' : 'effective-date-input')?.focus();
                     return;
                   }
-                  onOpenCesjaModal();
+                  onOpenCesjaModal({ originalLeaseDate: leaseDate, effectiveDate });
                 }}
                 className={`w-full py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-sm cursor-pointer ${
-                  !leaseDate ? 'bg-indigo-400 hover:bg-indigo-500' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-99'
+                  missingDetails ? 'bg-indigo-400 hover:bg-indigo-500' : 'bg-indigo-600 hover:bg-indigo-700 active:scale-99'
                 }`}
               >
                 Send to landlord for approval
               </button>
-              {!leaseDate && (
+              {missingDetails > 0 && (
                 <span className="text-[11px] text-slate-500 block">
-                  Complete 1 detail to send
+                  Complete {missingDetails} {missingDetails === 1 ? 'detail' : 'details'} to send
                 </span>
               )}
             </div>

@@ -2,13 +2,9 @@ import { AvailabilityBanner } from './AvailabilityBanner';
 import { timingLabels } from '../utils/leaseTiming';
 import {knownMonthlyCost} from '../utils/listingFlow';
 import React, { useState, useEffect } from 'react';
-import { 
-  ChevronLeft, ChevronRight, Heart, Clock, Calendar, Check, 
-  ShieldCheck, MessageSquare, Sparkles, FileText, Lock, Home, ImageOff 
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, Clock, Calendar, MessageSquare, Home } from 'lucide-react';
 import { Listing, isExampleListing } from '../types';
 import { formatPLN, formatDate, SupportedLocale } from '../utils/formatters';
-import { t } from '../utils/translations';
 import { useConvex } from '../lib/convex/client';
 import { OnloAvatar } from './OnloAvatar';
 
@@ -17,11 +13,8 @@ interface ListingCardProps {
   isSaved?: boolean;
   onToggleSave?: (id: string, e?: React.MouseEvent) => void;
   onSelectListing: (listing: Listing) => void;
-  onOpenEarlyLock?: (listing: Listing, e: React.MouseEvent) => void;
   onOpenMessage?: (listing: Listing, e: React.MouseEvent) => void;
   onOpenAIChat?: (listing: Listing, e: React.MouseEvent) => void;
-  onOpenCesja?: (listing: Listing, e: React.MouseEvent) => void;
-  onOpenDepositClearing?: (listing: Listing, e: React.MouseEvent) => void;
   locale?: SupportedLocale;
 }
 
@@ -30,11 +23,8 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   isSaved = false,
   onToggleSave,
   onSelectListing,
-  onOpenEarlyLock,
   onOpenMessage,
   onOpenAIChat,
-  onOpenCesja,
-  onOpenDepositClearing,
   locale = 'en'
 }) => {
   const FALLBACK_ROOM_IMAGE = '';
@@ -47,7 +37,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(!listing.images?.[0]);
 
-  const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const convex = useConvex();
 
   // Synchronize image source on index or listing updates
@@ -162,7 +151,6 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   };
 
   // Move-in and lease dates
-  const moveInDateFormatted = formatDate(listing.availableDate, locale);
   const leaseEndDateFormatted = formatDate(listing.leaseEndDate, locale);
   const isDemo = isExampleListing(listing);
 

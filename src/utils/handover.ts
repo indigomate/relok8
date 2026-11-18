@@ -1,4 +1,4 @@
-export const HANDOVER_STEPS = ['documents', 'deposit', 'keys'] as const;
+const HANDOVER_STEPS = ['documents', 'deposit', 'keys'] as const;
 export const HANDOVER_ROLES = ['tenant', 'landlord', 'applicant'] as const;
 export type HandoverStep = typeof HANDOVER_STEPS[number];
 export type HandoverRole = typeof HANDOVER_ROLES[number];

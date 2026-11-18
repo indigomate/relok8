@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, GraduationCap, ExternalLink, Check, FileCheck, Shield, Home, UserCheck, AlertCircle } from 'lucide-react';
+import { ArrowLeft, GraduationCap, ExternalLink, Check, FileCheck } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 
 interface EnrollmentsPageProps {

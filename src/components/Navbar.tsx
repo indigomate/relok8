@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Globe, Menu, User, Heart, HelpCircle, 
-  MessageSquare, Home, Settings, LogOut, Check, LogIn, Database, Building2,
-  Bell, Award, GraduationCap, ChevronRight
-} from 'lucide-react';
+import { Globe, Menu, User, Heart, HelpCircle, MessageSquare, Home, Settings, LogOut, Check, LogIn, Bell, Award, GraduationCap } from 'lucide-react';
 import { Show, useClerk } from '@clerk/react';
 import { Relok8Logo } from './BrandLogo';
 import { SupportedLocale } from '../utils/formatters';
@@ -28,7 +24,6 @@ interface NavbarProps {
   locale: SupportedLocale;
   onSelectLocale: (locale: SupportedLocale) => void;
   theme?: 'dark' | 'light';
-  setTheme?: (th: 'dark' | 'light') => void;
   onOpenHelp: () => void;
   onOpenLogin: (mode?: 'signin' | 'signup') => void;
   currentUser?: UserProfile | null;
@@ -46,7 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   locale,
   onSelectLocale,
   theme,
-  setTheme,
   onOpenHelp,
   onOpenLogin,
   currentUser,

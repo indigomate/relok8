@@ -1,14 +1,12 @@
 import { backend } from '../lib/backend';
 import { api } from '../../convex/_generated/api';
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, ArrowUp, Sparkles, MessageSquare, ChevronRight, HelpCircle, Shield, CheckCircle2 } from 'lucide-react';
+import { X, ArrowUp } from 'lucide-react';
 import { OnloAvatar, OnloState } from './OnloAvatar';
 import { SupportedLocale } from '../utils/formatters';
 
 interface OnloGlobalWidgetProps {
   locale?: SupportedLocale;
-  onNavigateToListings?: () => void;
-  onNavigateToIntake?: () => void;
 }
 
 interface ChatMessage {
@@ -20,8 +18,6 @@ interface ChatMessage {
 
 export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
   locale = 'en',
-  onNavigateToListings,
-  onNavigateToIntake
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');

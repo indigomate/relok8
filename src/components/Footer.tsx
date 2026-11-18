@@ -5,18 +5,12 @@ import { t } from '../utils/translations';
 import { navigateTo, navigateToCity } from '../utils/router';
 
 interface FooterProps {
-  onOpenLeaveYourLease: () => void;
-  onOpenHelp: () => void;
-  onOpenSavingsCalculator?: () => void;
   onOpenReportListing?: () => void;
   locale?: SupportedLocale;
   theme?: 'dark' | 'light';
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  onOpenLeaveYourLease,
-  onOpenHelp,
-  onOpenSavingsCalculator,
   onOpenReportListing,
   locale = 'en'
 }) => {

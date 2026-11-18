@@ -8,7 +8,7 @@ import { v } from "convex/values";
 export const getProfile = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const identity = await requireSelf(ctx, args.userId);
+    await requireSelf(ctx, args.userId);
     return await ctx.db
       .query("profiles")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

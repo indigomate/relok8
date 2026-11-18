@@ -3,14 +3,14 @@
  * Shared place model where the current tenant and landlord look at the same home.
  */
 
-export type PlaceStatus =
+type PlaceStatus =
   | 'occupied'
   | 'exit_requested'
   | 'available_for_takeover'
   | 'reserved'
   | 'handed_over';
 
-export interface HandoverChecklist {
+interface HandoverChecklist {
   agreementSigned: boolean;
   depositTransferred: boolean;
   keysHandedOver: boolean;
@@ -51,8 +51,8 @@ export interface Place {
   landlordBedPricePLN?: number; // 39 PLN per bed per month (display only)
 }
 
-export type ThreadStatus = 'open' | 'needs_human' | 'reserved' | 'closed';
-export type HandledBy = 'tenant' | 'landlord' | 'onlo';
+type ThreadStatus = 'open' | 'needs_human' | 'reserved' | 'closed';
+type HandledBy = 'tenant' | 'landlord' | 'onlo';
 
 export interface Thread {
   id: string;
@@ -64,7 +64,7 @@ export interface Thread {
   unreadFor: string[]; // array of user IDs
 }
 
-export type MessageAuthorType = 'prospect' | 'tenant' | 'landlord' | 'onlo' | 'system';
+type MessageAuthorType = 'prospect' | 'tenant' | 'landlord' | 'onlo' | 'system';
 
 export interface Message {
   id: string;
@@ -76,7 +76,7 @@ export interface Message {
   createdAt: number;
 }
 
-export type NotificationType =
+type NotificationType =
   | 'message'
   | 'saved_available'
   | 'price_change'
@@ -94,14 +94,7 @@ export interface Notification {
   createdAt: number;
 }
 
-export interface SavedPlace {
-  userId: string;
-  placeId: string;
-  notifyWhenAvailable: boolean; // default true
-  savedAt?: number;
-}
-
-export type RewardKind = 'reply' | 'viewing_booked' | 'handover_completed';
+type RewardKind = 'reply' | 'viewing_booked' | 'handover_completed';
 
 export interface RewardEvent {
   id: string;
@@ -114,26 +107,7 @@ export interface RewardEvent {
   description?: string;
 }
 
-export interface Announcement {
-  id: string;
-  placeId: string;
-  text: string;
-  channel: 'whatsapp';
-  status: 'drafted' | 'shared' | 'failed';
-  createdAt: number;
-}
-
-export interface Invitation {
-  id: string;
-  placeId: string;
-  role: 'tenant' | 'landlord';
-  email: string;
-  token: string;
-  acceptedAt?: number;
-  createdAt?: number;
-}
-
-export type UserRole = 'prospect' | 'tenant' | 'landlord';
+type UserRole = 'prospect' | 'tenant' | 'landlord';
 
 export interface Relok8User {
   id: string;
@@ -185,6 +159,3 @@ export const DEFAULT_INSURANCE_CONFIG: InsurancePlanConfig = {
   basePricePLN: null, // [SET BY BUSINESS] placeholder
   partnerName: 'Relok8 Insurance Partner',
 };
-
-// Onlo cover timeout in milliseconds (2 minutes as specified in Section 5.4)
-export const ONLO_COVER_TIMEOUT_MS = 2 * 60 * 1000;

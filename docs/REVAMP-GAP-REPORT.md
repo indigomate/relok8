@@ -113,7 +113,6 @@
 | `agentMessages` | Matches | `aiMessages` table in `convex/schema.ts` | Role, body, timestamp, tool executions |
 
 **Extra tables present in existing app (to retain):**
-- `tasks`: Simple Convex test table for live connection diagnosis. Retained for connectivity health check (`ConvexTasksExample.tsx`).
 - `reviewQueue`: Admin moderation queue for flagging suspicious listings. Retained for trust & safety.
 
 ---
