@@ -417,7 +417,7 @@ function noticeBox(message: string, tone: EmailContent['noticeTone'] = 'neutral'
 function listingCards(listings: EmailListing[], locale: EmailLocale): string {
   return listings.map((listing) => {
     const url = safeUrl(listing.url, APP_ORIGIN);
-    const image = listing.imageUrl ? `<td width="118" style="padding:0;vertical-align:top;"><img src="${escapeEmailHtml(safeUrl(listing.imageUrl, `${APP_ORIGIN}/og-image.jpg`))}" width="118" height="112" alt="" style="display:block;width:118px;height:112px;object-fit:cover;border:0;border-radius:12px 0 0 12px;" /></td>` : '';
+    const image = listing.imageUrl ? `<td width="118" style="padding:0;vertical-align:top;"><img src="${escapeEmailHtml(safeUrl(listing.imageUrl, `${APP_ORIGIN}/relok8-og-image.png`))}" width="118" height="112" alt="" style="display:block;width:118px;height:112px;object-fit:cover;border:0;border-radius:12px 0 0 12px;" /></td>` : '';
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px;background:#FFFFFF;border:1px solid #E6E8EC;border-radius:13px;"><tr>${image}<td style="padding:16px 17px;vertical-align:middle;"><div style="font-family:Arial,'Helvetica Neue',sans-serif;font-size:15px;line-height:21px;font-weight:700;color:#0F172A;">${escapeEmailHtml(listing.title)}</div><div style="margin-top:3px;font-family:Arial,'Helvetica Neue',sans-serif;font-size:12px;line-height:18px;color:#5B6678;">${escapeEmailHtml(listing.location)}</div><div style="margin-top:8px;font-family:Arial,'Helvetica Neue',sans-serif;font-size:13px;line-height:18px;font-weight:700;color:#4F46E5;">${escapeEmailHtml(listing.price)}</div>${listing.meta ? `<div style="margin-top:3px;font-family:Arial,'Helvetica Neue',sans-serif;font-size:11px;line-height:16px;color:#8A94A6;">${escapeEmailHtml(listing.meta)}</div>` : ''}<div style="margin-top:9px;"><a href="${escapeEmailHtml(url)}" style="font-family:Arial,'Helvetica Neue',sans-serif;font-size:12px;line-height:18px;font-weight:700;color:#4F46E5;text-decoration:none;">${pick(locale, 'View place', 'Zobacz ofertę')} →</a></div></td></tr></table>`;
   }).join('');
 }
@@ -455,7 +455,7 @@ function renderHtml(content: EmailContent, locale: EmailLocale, data: EmailTempl
       <table role="presentation" class="r8-shell" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:600px;">
         <tr><td class="r8-header" style="padding:0 30px 22px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td><a href="${APP_ORIGIN}" style="text-decoration:none;"><img src="${APP_ORIGIN}/email/relok8-email-logo.png" width="124" height="32" alt="Relok8" style="display:block;width:124px;height:32px;" /></a></td>
+            <td><a href="${APP_ORIGIN}" style="text-decoration:none;"><img src="${APP_ORIGIN}/email/relok8-email-logo.png" width="124" height="31" alt="Relok8" style="display:block;width:124px;height:31px;" /></a></td>
             <td align="right" style="font-family:Arial,'Helvetica Neue',sans-serif;font-size:11px;line-height:16px;font-weight:700;color:#8A94A6;text-transform:uppercase;letter-spacing:1px;">${escapeEmailHtml(content.eyebrow)}</td>
           </tr></table>
         </td></tr>
