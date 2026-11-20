@@ -12,4 +12,25 @@ crons.hourly(
   {}
 );
 
+crons.hourly(
+  'queue unread email summaries',
+  { minuteUTC: 20 },
+  (internal as any).emailAutomation.queueUnreadMessageSummaries,
+  {}
+);
+
+crons.daily(
+  'queue listing expiry reminders',
+  { hourUTC: 6, minuteUTC: 35 },
+  (internal as any).emailAutomation.queueListingExpiryReminders,
+  {}
+);
+
+crons.weekly(
+  'queue consented weekly property digests',
+  { dayOfWeek: 'monday', hourUTC: 7, minuteUTC: 10 },
+  (internal as any).emailAutomation.queueWeeklyDigests,
+  {}
+);
+
 export default crons;

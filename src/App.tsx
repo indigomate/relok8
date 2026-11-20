@@ -43,6 +43,7 @@ import { PlacePage } from './pages/PlacePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { RewardsPage } from './pages/RewardsPage';
 import { EnrollmentsPage } from './pages/EnrollmentsPage';
+import { EmailPreferencesPage } from './pages/EmailPreferencesPage';
 import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
 import { SupportedLocale, formatPLN } from './utils/formatters';
@@ -239,12 +240,17 @@ function Relok8App() {
   const liveConvexLeases = useQuery(api.leases.get, {});
   const selectedLease = useQuery(api.leases.getById, currentRoute.type === "listing-detail" && currentRoute.listingId ? {id:currentRoute.listingId} : "skip");
   const createConvexLease = useMutation(api.leases?.create);
+  const syncEmailAccount = useMutation((api as any).emailPreferences.syncAccount);
   const deleteConvexLease = useMutation(api.leases?.deleteLease);
   const saveRemote = useMutation(api.favorites.addFavorite);
   const removeRemote = useMutation(api.favorites.removeFavorite);
   const ownLeases = useQuery(api.leases.mine, isBackendAuthenticated ? {} : "skip");
   useEffect(() => { if (ownLeases) localStorage.setItem('r8_my_listing_ids', JSON.stringify(ownLeases.map(lease => lease._id))); }, [ownLeases]);
   const remoteFavorites = useQuery(api.favorites.getUserFavorites, isBackendAuthenticated && currentUser ? { userId: currentUser.id } : "skip");
+  useEffect(() => {
+    if (!isBackendAuthenticated || !currentUser?.email) return;
+    syncEmailAccount({ locale: locale === 'pl' ? 'pl' : 'en' }).catch(() => {});
+  }, [currentUser?.email, isBackendAuthenticated, locale, syncEmailAccount]);
   useEffect(() => { if (remoteFavorites) setSavedIds(remoteFavorites); }, [remoteFavorites]);
 
   // Synchronize live Convex backend leases with reactive listings state
@@ -955,6 +961,11 @@ function Relok8App() {
             const found = listings.find((l) => l.id === id);
             navigateToListing(id, found?.title || '', locale);
           }}
+        />
+      ) : currentRoute.type === 'email-preferences' ? (
+        <EmailPreferencesPage
+          locale={locale}
+          onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
         />
       ) : currentRoute.type === 'rewards' ? (
         <RewardsPage

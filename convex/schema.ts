@@ -119,6 +119,17 @@ export default defineSchema({
     isVerified: v.boolean(),
     role: v.optional(v.string()), // 'student' | 'departing_tenant' | 'landlord'
     university: v.optional(v.string()),
+    emailUnreadMessages: v.optional(v.boolean()),
+    emailListingReminders: v.optional(v.boolean()),
+    emailWeeklyDigest: v.optional(v.boolean()),
+    marketingConsent: v.optional(v.boolean()),
+    marketingConsentVersion: v.optional(v.string()),
+    marketingConsentedAt: v.optional(v.number()),
+    marketingConsentSource: v.optional(v.string()),
+    marketingUnsubscribedAt: v.optional(v.number()),
+    digestCities: v.optional(v.array(v.string())),
+    digestRoomTypes: v.optional(v.array(v.string())),
+    digestMaxMonthlyRent: v.optional(v.number()),
     createdAt: v.optional(v.number()),
   }).index("by_userId", ["userId"]),
 
@@ -333,4 +344,22 @@ export default defineSchema({
     .index("by_provider_message", ["providerMessageId"])
     .index("by_user", ["userId"])
     .index("by_status", ["status"]),
+
+  // Minimal webhook idempotency ledger. Raw provider payloads are never retained.
+  emailWebhookEvents: defineTable({
+    eventId: v.string(),
+    eventType: v.string(),
+    providerMessageId: v.optional(v.string()),
+    receivedAt: v.number(),
+  }).index("by_event", ["eventId"]),
+
+  // Provider complaints and hard bounces suppress future sends. This table keeps
+  // only the normalized address and reason required to protect deliverability.
+  emailSuppressions: defineTable({
+    email: v.string(),
+    reason: v.union(v.literal("bounce"), v.literal("complaint"), v.literal("manual")),
+    providerMessageId: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_email", ["email"]),
 });

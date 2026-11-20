@@ -2,6 +2,24 @@
 
 Relok8 is WhatsApp-first for daily apartment discovery. Email should handle account access, high-trust lease-takeover events, support, and optional summaries. It should not duplicate every in-app or WhatsApp notification.
 
+## Production automation status
+
+The application now queues welcome, unread-message, listing-expiry, and consented weekly-digest emails through the durable `emailDeliveries` ledger.
+
+- Hourly at `:20`: unread-message summaries after a 30-minute wait
+- Daily at `06:35 UTC`: listing reminders seven days and one day before lease end
+- Monday at `07:10 UTC`: consented weekly property digest
+- Preference center: `/email-preferences?token=...`
+- RFC 8058 endpoint: `/email/unsubscribe?token=...` on the Convex site
+- Resend event endpoint: `https://modest-anteater-459.convex.site/resend/webhook`
+
+Recommended production environment variables:
+
+- `EMAIL_PREFERENCES_SECRET`: at least 32 random bytes. Until configured, signed preference links use the production-only Resend key as a temporary fallback.
+- `RESEND_WEBHOOK_SECRET`: the signing secret shown when the Resend webhook is created.
+
+In Resend, subscribe the webhook to `email.delivered`, `email.bounced`, and `email.complained`. The endpoint verifies Svix signatures and timestamps, deduplicates events, updates `emailDeliveries`, and suppresses complained or bounced addresses without retaining raw provider payloads.
+
 ## 1. Addresses to create
 
 ### Human mailboxes on `relok8.online`

@@ -8,6 +8,7 @@ import {
   type EmailTemplateKind,
   type RenderedEmail,
 } from '../src/emails/templates';
+import { createEmailPreferenceToken } from './lib/emailPreferenceTokens';
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000] as const;
@@ -185,6 +186,23 @@ export const markFailed = internalMutation({
   },
 });
 
+export const markSuppressed = internalMutation({
+  args: { deliveryId: v.id('emailDeliveries'), errorCode: v.string() },
+  handler: async (ctx, args) => {
+    const delivery = await ctx.db.get(args.deliveryId);
+    if (!delivery || ['sent', 'delivered', 'bounced', 'complained'].includes(delivery.status)) return;
+    await ctx.db.patch(delivery._id, {
+      status: 'suppressed',
+      errorCode: args.errorCode.slice(0, 100),
+      errorMessage: args.errorCode === 'marketing_opt_out'
+        ? 'Marketing delivery skipped because the recipient has not consented or has unsubscribed.'
+        : 'Delivery skipped because the address is suppressed.',
+      templateData: undefined,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const deliver = internalAction({
   args: { deliveryId: v.id('emailDeliveries') },
   handler: async (ctx, args) => {
@@ -192,14 +210,46 @@ export const deliver = internalAction({
     if (!delivery) return { sent: false, skipped: true };
 
     try {
+      const policy = await ctx.runQuery((internal as any).emailPreferences.getDeliveryPolicy, {
+        userId: delivery.userId,
+        recipient: delivery.recipient,
+      });
+      if (policy.suppressed || (delivery.category === 'marketing' && !policy.marketingAllowed)) {
+        await ctx.runMutation(internal.emails.markSuppressed, {
+          deliveryId: args.deliveryId,
+          errorCode: policy.suppressed ? 'recipient_suppressed' : 'marketing_opt_out',
+        });
+        return { sent: false, skipped: true };
+      }
       const apiKey = process.env.RESEND_API_KEY;
       const from = process.env.RESEND_FROM_EMAIL;
       if (!apiKey || !from) throw new Error('email_not_configured');
 
+      let templateData = cleanTemplateData(delivery.templateData);
+      let listHeaders: Record<string, string> | undefined;
+      if (delivery.userId && policy.preferenceLinkAllowed) {
+        const token = await createEmailPreferenceToken({
+          userId: delivery.userId,
+          email: delivery.recipient,
+          expiresAt: Date.now() + 180 * 86_400_000,
+        });
+        const appPrefix = delivery.locale === 'pl' ? '/pl' : '';
+        const preferencesUrl = `https://relok8.online${appPrefix}/email-preferences?token=${encodeURIComponent(token)}`;
+        const siteUrl = process.env.CONVEX_SITE_URL || 'https://modest-anteater-459.convex.site';
+        const unsubscribeUrl = `${siteUrl}/email/unsubscribe?token=${encodeURIComponent(token)}`;
+        templateData = { ...templateData, preferencesUrl, unsubscribeUrl };
+        if (delivery.category === 'marketing') {
+          listHeaders = {
+            'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:support@relok8.online?subject=unsubscribe>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          };
+        }
+      }
+
       const rendered = renderRelok8Email(
         delivery.template as EmailTemplateKind,
         delivery.locale as EmailLocale,
-        cleanTemplateData(delivery.templateData),
+        templateData,
       );
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -215,6 +265,7 @@ export const deliver = internalAction({
           subject: rendered.subject,
           html: rendered.html,
           text: rendered.text,
+          ...(listHeaders ? { headers: listHeaders } : {}),
           tags: [
             { name: 'template', value: delivery.template },
             { name: 'category', value: rendered.category },

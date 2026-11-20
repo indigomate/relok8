@@ -129,11 +129,18 @@ export const write = mutation({
       const key = `${lease._id}:${uid}`;
       const existing = await record(ctx, 'thread', key);
       if (existing) return existing.data;
-      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Prospect', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [] }, lease._id);
+      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Prospect', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
     }
     if (operation === 'sendMessage' || operation === 'takeover' || operation === 'askOnlo' || operation === 'markThreadRead') {
       const { row, lease } = await authorizedThread(ctx, text(input.threadId, 200), identity);
-      if (operation === 'markThreadRead') { await put(ctx, 'thread', row.key, row.ownerId, { ...row.data, unreadFor: row.data.unreadFor.filter((id: string) => id !== uid) }, lease._id); return null; }
+      if (operation === 'markThreadRead') {
+        await put(ctx, 'thread', row.key, row.ownerId, {
+          ...row.data,
+          unreadFor: (row.data.unreadFor || []).filter((id: string) => id !== uid),
+          readAtByUser: { ...(row.data.readAtByUser || {}), [uid]: now },
+        }, lease._id);
+        return null;
+      }
       if (operation === 'takeover') {
         allow(lease, identity);
         const thread = { ...row.data, handledBy: landlord(lease, identity) ? 'landlord' : 'tenant' };

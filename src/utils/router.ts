@@ -12,6 +12,7 @@ type RouteType =
   | 'account'
   | 'place'
   | 'notifications'
+  | 'email-preferences'
   | 'rewards'
   | 'enrollments'
   | 'sign-in'
@@ -170,6 +171,10 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
   // Notifications Page
   if (first === 'notifications') {
     return { type: 'notifications', locale, path: pathname, searchParams };
+  }
+
+  if (first === 'email-preferences' || first === 'email-settings') {
+    return { type: 'email-preferences', locale, path: pathname, searchParams };
   }
 
   // Rewards & Insurance

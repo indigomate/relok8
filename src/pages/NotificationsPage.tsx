@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home, CheckCircle2, Clock3 } from 'lucide-react';
+import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home, CheckCircle2, Clock3, Mail } from 'lucide-react';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { ENABLED_CITIES } from '../data/cities';
@@ -37,6 +37,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const recentWhatsappDeliveries = useQuery(api.whatsapp.getRecentDeliveries, isAuthenticated ? {} : 'skip');
   const configureWhatsapp = useMutation(api.whatsapp.configurePreferences);
   const pauseWhatsapp = useMutation(api.whatsapp.pausePreferences);
+  const emailPreferences = useQuery((api as any).emailPreferences.getMine, isAuthenticated ? {} : 'skip') as any;
+  const updateEmailPreferences = useMutation((api as any).emailPreferences.updateMine);
   const [whatsappPhone, setWhatsappPhone] = useState('');
   const [whatsappCity, setWhatsappCity] = useState('All Poland');
   const [whatsappRoomType, setWhatsappRoomType] = useState('All room types');
@@ -45,6 +47,14 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const [whatsappConsent, setWhatsappConsent] = useState(false);
   const [whatsappSaving, setWhatsappSaving] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
+  const [emailUnread, setEmailUnread] = useState(true);
+  const [emailListingReminders, setEmailListingReminders] = useState(true);
+  const [emailDigest, setEmailDigest] = useState(false);
+  const [emailConsent, setEmailConsent] = useState(false);
+  const [emailCity, setEmailCity] = useState('');
+  const [emailMaxRent, setEmailMaxRent] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (!whatsappPreferences) return;
@@ -54,6 +64,40 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     setWhatsappHour(String(whatsappPreferences.sendHourLocal));
     setWhatsappConsent(whatsappPreferences.active);
   }, [whatsappPreferences]);
+
+  useEffect(() => {
+    if (!emailPreferences) return;
+    setEmailUnread(emailPreferences.unreadMessages);
+    setEmailListingReminders(emailPreferences.listingReminders);
+    setEmailDigest(emailPreferences.weeklyDigest);
+    setEmailConsent(emailPreferences.marketingConsent);
+    setEmailCity(emailPreferences.digestCities[0] || '');
+    setEmailMaxRent(emailPreferences.digestMaxMonthlyRent ? String(emailPreferences.digestMaxMonthlyRent) : '');
+  }, [emailPreferences]);
+
+  const handleEmailSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!isAuthenticated) { onRequireLogin?.(); return; }
+    setEmailSaving(true);
+    setEmailStatus(null);
+    try {
+      await updateEmailPreferences({
+        locale: locale === 'pl' ? 'pl' : 'en',
+        unreadMessages: emailUnread,
+        listingReminders: emailListingReminders,
+        weeklyDigest: emailDigest && emailConsent,
+        marketingConsent: emailConsent,
+        digestCities: emailCity ? [emailCity] : [],
+        digestRoomTypes: [],
+        digestMaxMonthlyRent: emailMaxRent ? Number(emailMaxRent) : undefined,
+      });
+      setEmailStatus(locale === 'pl' ? 'Ustawienia e-mail zapisane.' : 'Email preferences saved.');
+    } catch (error) {
+      setEmailStatus(error instanceof Error ? error.message : (locale === 'pl' ? 'Nie udało się zapisać ustawień.' : 'Could not save email preferences.'));
+    } finally {
+      setEmailSaving(false);
+    }
+  };
 
   const handleWhatsappSave = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -528,28 +572,18 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
               )}
             </div>
 
-            {/* In-App Delivery Preferences */}
-            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {locale === 'pl' ? 'Kanały dostarczania' : 'Delivery Channels'}
-              </h3>
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-700">{locale === 'pl' ? 'Powiadomienia w aplikacji' : 'In-App Notifications'}</span>
-                  <span className="text-emerald-600 font-bold">{locale === 'pl' ? 'Włączone' : 'Always on'}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                  <span className="text-slate-700">{locale === 'pl' ? 'Alerty e-mail' : 'Email alerts'}</span>
-                  <span className="text-slate-500 font-medium">{locale === 'pl' ? 'Niedostępne' : 'Unavailable'}</span>
-                </div>
-                <div className="flex items-center justify-between py-1.5">
-                  <span className="text-slate-700">WhatsApp</span>
-                  <span className={whatsappPreferences?.active ? 'text-emerald-600 font-bold' : 'text-slate-500 font-medium'}>
-                    {whatsappPreferences?.active ? (locale === 'pl' ? 'Codziennie' : 'Daily') : (locale === 'pl' ? 'Wyłączone' : 'Off')}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <form onSubmit={handleEmailSave} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4">
+              <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100"><Mail className="w-5 h-5" /></div><div><h3 className="text-sm font-bold text-slate-900">{locale === 'pl' ? 'Alerty e-mail' : 'Email alerts'}</h3><p className="mt-0.5 text-xs leading-5 text-slate-500">{locale === 'pl' ? 'Wybierz wiadomości produktowe i dobrowolny przegląd ofert.' : 'Choose product notifications and the optional property digest.'}</p></div></div>
+              {!isAuthenticated ? <button type="button" onClick={onRequireLogin} className="min-h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white">{locale === 'pl' ? 'Zaloguj się' : 'Sign in'}</button> : <>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Nieprzeczytane wiadomości' : 'Unread-message summaries'}</span><input type="checkbox" checked={emailUnread} onChange={(e) => setEmailUnread(e.target.checked)} className="h-4 w-4 accent-indigo-600" /></label>
+                <label className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Wygaśnięcie ogłoszenia' : 'Listing-expiry reminders'}</span><input type="checkbox" checked={emailListingReminders} onChange={(e) => setEmailListingReminders(e.target.checked)} className="h-4 w-4 accent-indigo-600" /></label>
+                <label className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3"><input type="checkbox" checked={emailConsent} onChange={(e) => { setEmailConsent(e.target.checked); if (!e.target.checked) setEmailDigest(false); }} className="mt-0.5 h-4 w-4 accent-indigo-600"/><span className="text-[11px] leading-4 text-slate-600">{locale === 'pl' ? 'Zgadzam się na cotygodniowe marketingowe wiadomości z ofertami. Zgodę mogę wycofać w każdej chwili.' : 'I agree to receive weekly marketing emails with property matches. I can withdraw consent at any time.'}</span></label>
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Cotygodniowy przegląd' : 'Weekly property digest'}</span><input type="checkbox" disabled={!emailConsent} checked={emailDigest} onChange={(e) => setEmailDigest(e.target.checked)} className="h-4 w-4 accent-indigo-600 disabled:opacity-40" /></label>
+                {emailConsent && emailDigest && <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><select value={emailCity} onChange={(e) => setEmailCity(e.target.value)} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs"><option value="">{locale === 'pl' ? 'Cała Polska' : 'All Poland'}</option>{ENABLED_CITIES.map((city) => <option key={city.slug} value={city.name}>{city.name}</option>)}</select><input type="number" min="500" max="100000" value={emailMaxRent} onChange={(e) => setEmailMaxRent(e.target.value)} placeholder={locale === 'pl' ? 'Maks. czynsz' : 'Max rent'} className="h-10 rounded-xl border border-slate-200 px-3 text-xs" /></div>}
+                {emailStatus && <p role="status" className="text-xs font-semibold text-indigo-700">{emailStatus}</p>}
+                <button disabled={emailSaving} className="min-h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white disabled:opacity-50">{emailSaving ? (locale === 'pl' ? 'Zapisywanie…' : 'Saving…') : (locale === 'pl' ? 'Zapisz e-mail' : 'Save email settings')}</button>
+              </>}
+            </form>
 
           </div>
 
