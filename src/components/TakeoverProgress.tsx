@@ -310,6 +310,7 @@ export function TakeoverProgress({
                       email: inviteEmail,
                       role: "landlord",
                       token,
+                      locale,
                     },
                   });
                   setInviteUrl(
@@ -332,15 +333,15 @@ export function TakeoverProgress({
                 disabled={busy}
                 className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50"
               >
-                {say("Create invitation link", "Utwórz link zaproszenia")}
+                {say("Email landlord invitation", "Wyślij zaproszenie właścicielowi")}
               </button>
               <button type="button" disabled={busy} className="min-h-11 px-4 text-sm font-semibold text-slate-600" onClick={() => setInvitePlace("")}>{say("Close", "Zamknij")}</button>
               {inviteUrl && (
                 <div className="space-y-2">
                   <p>
                     {say(
-                      "Send this link to the landlord yourself. Relok8 has not sent an email. It expires after 7 days.",
-                      "Wyślij link właścicielowi. Relok8 nie wysłał emaila. Link wygasa po 7 dniach.",
+                      "Relok8 emailed the invitation to the landlord. Keep this link as a fallback; it expires after 7 days.",
+                      "Relok8 wysłał zaproszenie emailem do właściciela. Zachowaj ten link awaryjnie; wygasa po 7 dniach.",
                     )}
                   </p>
                   <button type="button" className="min-h-11 px-4 border rounded-xl text-sm font-semibold" onClick={async () => {try {await navigator.clipboard.writeText(inviteUrl); setNotice(say("Invitation link copied.", "Skopiowano link zaproszenia."));} catch {setError(say("Could not copy. Select and copy the link below.", "Nie udało się skopiować. Zaznacz i skopiuj link poniżej."));}}}>{say("Copy invitation link", "Kopiuj link zaproszenia")}</button>

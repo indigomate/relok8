@@ -275,7 +275,7 @@ describe("listing form and links", () => {
 
 describe("privacy and preservation", () => {
   test("landlord invitation context is visible only to the intended verified recipient", async () => {
-    const { owner, a, landlord, id } = await setup();
+    const { t, owner, a, landlord, id } = await setup();
     const token = "d".repeat(64);
     await owner.mutation(api.domain.write, {
       operation: "invitation",
@@ -284,6 +284,8 @@ describe("privacy and preservation", () => {
         email: "landlord@example.test",
         role: "landlord",
         token,
+        locale: "pl",
+        scheduleDelivery: false,
       },
     });
     expect(
@@ -292,6 +294,22 @@ describe("privacy and preservation", () => {
     expect(
       await landlord.query(api.workflow.invitationPreview, { token }),
     ).toMatchObject({ title: "Room", city: "Warsaw" });
+
+    const deliveries = await t.run((ctx) => ctx.db.query("emailDeliveries").collect());
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0]).toMatchObject({
+      idempotencyKey: `landlord-invitation:${token}`,
+      recipient: "landlord@example.test",
+      template: "landlord_invitation",
+      locale: "pl",
+      status: "queued",
+      templateData: {
+        actorName: "owner",
+        listingTitle: "Room",
+        city: "Warsaw",
+        ctaUrl: `https://relok8.online/pl/place?invite=${token}`,
+      },
+    });
   });
   test("optional floor is left unknown instead of inventing a floor", async () => {
     const { owner } = await setup();

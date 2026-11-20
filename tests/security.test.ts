@@ -111,7 +111,7 @@ describe('private messaging and invitations', () => {
   });
   test('invitation is bound to verified recipient and cannot be replayed', async () => {
     const { owner, a, landlord } = setup(); const placeId = await owner.mutation(api.leases.create, listing); const token = 'a'.repeat(64);
-    await write(owner, 'invitation', { placeId, email: 'landlord@example.test', role: 'landlord', token });
+    await write(owner, 'invitation', { placeId, email: 'landlord@example.test', role: 'landlord', token, scheduleDelivery: false });
     await expect(write(a, 'acceptInvitation', { token })).rejects.toThrow('Invalid or expired');
     expect((await write(landlord, 'acceptInvitation', { token })).success).toBe(true);
     await expect(write(landlord, 'acceptInvitation', { token })).rejects.toThrow('Invalid or expired');
@@ -184,7 +184,7 @@ describe('expiry, quotas, and data integrity', () => {
   });
   test('expired invitations are rejected even for the correct recipient', async () => {
     const { t, owner, landlord } = setup(); const placeId = await owner.mutation(api.leases.create, listing); const token = 'b'.repeat(64);
-    await write(owner, 'invitation', { placeId, email: 'landlord@example.test', role: 'landlord', token });
+    await write(owner, 'invitation', { placeId, email: 'landlord@example.test', role: 'landlord', token, scheduleDelivery: false });
     await t.run(async ctx => { const row = await ctx.db.query('domainRecords').withIndex('by_key', q => q.eq('kind', 'invitation').eq('key', token)).unique(); await ctx.db.patch(row!._id, { data: { ...row!.data, createdAt: Date.now() - 8 * 86400000 } }); });
     await expect(write(landlord, 'acceptInvitation', { token })).rejects.toThrow('Invalid or expired');
   });

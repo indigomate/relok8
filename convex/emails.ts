@@ -72,6 +72,46 @@ function cleanTemplateData(value: unknown): EmailTemplateData {
   return JSON.parse(serialized) as EmailTemplateData;
 }
 
+type QueueEmailArgs = {
+  idempotencyKey: string;
+  userId?: string;
+  recipient: string;
+  template: EmailTemplateKind;
+  locale: EmailLocale;
+  templateData?: unknown;
+  relatedId?: string;
+  scheduleDelivery?: boolean;
+};
+
+export async function queueEmailDelivery(ctx: any, args: QueueEmailArgs) {
+  const idempotencyKey = cleanIdempotencyKey(args.idempotencyKey);
+  const existing = await ctx.db
+    .query('emailDeliveries')
+    .withIndex('by_idempotency', (q: any) => q.eq('idempotencyKey', idempotencyKey))
+    .unique();
+  if (existing) return { deliveryId: existing._id, created: false };
+
+  const now = Date.now();
+  const deliveryId = await ctx.db.insert('emailDeliveries', {
+    idempotencyKey,
+    userId: args.userId,
+    recipient: normalizeEmail(args.recipient),
+    template: args.template,
+    locale: args.locale,
+    category: categoryByTemplate[args.template],
+    templateData: cleanTemplateData(args.templateData),
+    relatedId: args.relatedId?.slice(0, 500),
+    status: 'queued',
+    attempts: 0,
+    createdAt: now,
+    updatedAt: now,
+  });
+  if (args.scheduleDelivery !== false) {
+    await ctx.scheduler.runAfter(0, internal.emails.deliver, { deliveryId });
+  }
+  return { deliveryId, created: true };
+}
+
 export const queue = internalMutation({
   args: {
     idempotencyKey: v.string(),
@@ -83,34 +123,7 @@ export const queue = internalMutation({
     relatedId: v.optional(v.string()),
     scheduleDelivery: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const idempotencyKey = cleanIdempotencyKey(args.idempotencyKey);
-    const existing = await ctx.db
-      .query('emailDeliveries')
-      .withIndex('by_idempotency', (q) => q.eq('idempotencyKey', idempotencyKey))
-      .unique();
-    if (existing) return { deliveryId: existing._id, created: false };
-
-    const now = Date.now();
-    const deliveryId = await ctx.db.insert('emailDeliveries', {
-      idempotencyKey,
-      userId: args.userId,
-      recipient: normalizeEmail(args.recipient),
-      template: args.template,
-      locale: args.locale,
-      category: categoryByTemplate[args.template],
-      templateData: cleanTemplateData(args.templateData),
-      relatedId: args.relatedId?.slice(0, 500),
-      status: 'queued',
-      attempts: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
-    if (args.scheduleDelivery !== false) {
-      await ctx.scheduler.runAfter(0, internal.emails.deliver, { deliveryId });
-    }
-    return { deliveryId, created: true };
-  },
+  handler: queueEmailDelivery,
 });
 
 export const getDeliveryContext = internalQuery({
