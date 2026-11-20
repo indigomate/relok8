@@ -154,7 +154,7 @@ describe('reservations and unavailable services', () => {
     const { a } = setup();
     await expect(a.action(api.payments.createEscrowIntent, {})).rejects.toThrow('not enabled');
     await expect(a.mutation(api.payments.captureEscrow, {})).rejects.toThrow('not enabled');
-    await expect(a.action(api.whatsapp.handleWebhookReply, {})).rejects.toThrow('not enabled');
+    await expect(a.action(api.whatsapp.handleWebhookReply, {})).rejects.toThrow('signed WhatsApp webhook');
   });
   test('subscriptions require the verified account email and cannot leak subscribers', async () => {
     const { a } = setup();

@@ -11,7 +11,8 @@
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run test && npm run build",
+    "emails:preview": "tsx scripts/render-email-previews.ts"
   },
   "dependencies": {
     "@clerk/react": "^6.17.5",

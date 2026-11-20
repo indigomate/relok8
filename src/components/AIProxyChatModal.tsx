@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, ArrowUp, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useId } from 'react';
+import { X, ArrowUp, ChevronRight, LockKeyhole } from 'lucide-react';
+import { useConvexAuth } from 'convex/react';
 import { Listing } from '../types';
 import { SupportedLocale } from '../utils/formatters';
 import { useConvex, ConvexAIMessageDoc } from '../lib/convex/client';
@@ -12,6 +13,7 @@ interface AIProxyChatModalProps {
   locale?: SupportedLocale;
   onSelectListing?: (listingId: string) => void;
   onOpenContact?: () => void;
+  onRequireLogin?: () => void;
 }
 
 interface SimilarRoomItem {
@@ -29,16 +31,91 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
   listing,
   locale = 'en',
   onSelectListing,
-  onOpenContact
+  onOpenContact,
+  onRequireLogin,
 }) => {
   const convex = useConvex();
+  const { isAuthenticated } = useConvexAuth();
   const [inputPrompt, setInputPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [lastUserPrompt, setLastUserPrompt] = useState<string | null>(null);
-  const [activeTimestampId, setActiveTimestampId] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isRendered, setIsRendered] = useState(isOpen);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  const requestClose = (afterClose?: () => void) => {
+    setIsVisible(false);
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = window.setTimeout(() => {
+      setIsRendered(false);
+      onClose();
+      afterClose?.();
+    }, 190);
+  };
+
+  useEffect(() => {
+    let frame = 0;
+    let timer = 0;
+    if (isOpen) {
+      setIsRendered(true);
+      frame = window.requestAnimationFrame(() => setIsVisible(true));
+    } else {
+      setIsVisible(false);
+      timer = window.setTimeout(() => setIsRendered(false), 190);
+    }
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [isOpen]);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => {
+      if (isAuthenticated) inputRef.current?.focus();
+      else panelRef.current?.querySelector<HTMLButtonElement>('[data-onlo-login]')?.focus();
+    }, 220);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        requestClose();
+        return;
+      }
+      if (event.key !== 'Tab' || !panelRef.current) return;
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isAuthenticated, isOpen]);
 
   // Available sample/live similar rooms for high-affinity matches
   const fallbackSimilarRooms = useMemo<SimilarRoomItem[]>(() => {
@@ -99,7 +176,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
         top: chatContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
       });
     }
   }, [messages, isGenerating]);
@@ -125,6 +202,10 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
 
   const handleSendPrompt = async (promptText: string) => {
     if (!promptText.trim() || isGenerating) return;
+    if (!isAuthenticated) {
+      onRequireLogin?.();
+      return;
+    }
     const userText = promptText.trim();
     setInputPrompt('');
     setIsGenerating(true);
@@ -147,19 +228,24 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isRendered) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 overflow-hidden bg-slate-950/45 backdrop-blur-xs flex flex-col justify-end text-left animate-in fade-in duration-200"
-      onClick={onClose}
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
+      className="onlo-overlay fixed inset-0 z-50 overflow-hidden bg-slate-950/45 backdrop-blur-xs flex flex-col justify-end sm:items-end text-left sm:p-6"
+      data-state={isVisible ? 'open' : 'closed'}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) requestClose();
+      }}
     >
       {/* Bottom Sheet */}
       <div
-        className="w-full max-w-[440px] mx-auto bg-white rounded-t-[20px] shadow-2xl flex flex-col h-[82vh] max-h-[82vh] overflow-hidden animate-in slide-in-from-bottom duration-260"
-        onClick={(e) => e.stopPropagation()}
+        ref={panelRef}
+        className="onlo-panel w-full sm:w-[440px] bg-white rounded-t-[24px] sm:rounded-[24px] shadow-[0_24px_80px_rgba(15,23,42,0.28)] border border-slate-200 flex flex-col h-[82dvh] sm:h-[min(680px,calc(100dvh-3rem))] overflow-hidden"
       >
         {/* Top Drag Handle */}
         <div className="pt-2 pb-1 flex justify-center shrink-0">
@@ -175,14 +261,14 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-[17px] font-bold text-slate-900 leading-tight">
+                <h2 id={titleId} className="text-[17px] font-bold text-slate-900 leading-tight">
                   Onlo
                 </h2>
                 <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
                   {locale === 'pl' ? 'Twój lokalny przewodnik' : 'Local guide'}
                 </span>
               </div>
-              <p className="text-[12px] text-slate-500 leading-tight mt-0.5 truncate">
+              <p id={descriptionId} className="text-[12px] text-slate-500 leading-tight mt-0.5 truncate">
                 {listing.title} · {listing.city}
               </p>
             </div>
@@ -191,7 +277,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => requestClose()}
               aria-label="Close Onlo chat"
               className="w-9 h-9 rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
             >
@@ -226,7 +312,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
         </div>
 
         {/* Messages Stream */}
-        <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-5 bg-white">
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-5 bg-white overscroll-contain" aria-live="polite" aria-busy={isGenerating}>
           {messages.map((msg, idx) => {
             const isUser = msg.sender === 'user';
             const uniqueKey = msg._id ? `${msg._id}_${idx}` : `msg_${idx}`;
@@ -239,15 +325,17 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             const isLastAssistantMessage = !isUser && idx === messages.length - 1;
 
             return (
-              <div key={uniqueKey} className="space-y-1.5">
+              <div key={uniqueKey} className="onlo-message-entry space-y-1.5">
                 {isUser ? (
                   /* User Bubble: right-aligned, light purple/indigo soft fill, rounded-2xl with bottom-right 4px */
                   <div className="flex justify-end">
-                    <div
-                      onClick={() => setActiveTimestampId(activeTimestampId === uniqueKey ? null : uniqueKey)}
-                      className="max-w-[85%] rounded-2xl rounded-br-xs px-4 py-2.5 bg-indigo-50 text-indigo-950 text-[15px] leading-[22px] cursor-pointer"
-                    >
-                      {msg.content}
+                    <div className="max-w-[85%] space-y-1">
+                      <div className="rounded-2xl rounded-br-md px-4 py-2.5 bg-indigo-600 text-white text-[15px] leading-[22px] shadow-xs">
+                        {msg.content}
+                      </div>
+                      <time className="block text-right text-[10px] text-slate-400 px-1" dateTime={new Date(msg.timestamp || Date.now()).toISOString()}>
+                        {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </time>
                     </div>
                   </div>
                 ) : (
@@ -259,10 +347,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         <span className="text-xs font-bold text-slate-900">Onlo</span>
                         <span className="text-[11px] text-slate-400 font-medium">· {locale === 'pl' ? 'lokalny przewodnik' : 'local guide'}</span>
                       </div>
-                      <div
-                        onClick={() => setActiveTimestampId(activeTimestampId === uniqueKey ? null : uniqueKey)}
-                        className="text-[15px] leading-[22px] text-slate-900 cursor-pointer"
-                      >
+                      <div className="text-[15px] leading-[22px] text-slate-900">
                         {cleanedContent}
                       </div>
 
@@ -270,15 +355,15 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                       {isSimilarListingsQuery && (
                         <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xs">
                           {fallbackSimilarRooms.map((room) => (
-                            <div
+                            <button
+                              type="button"
                               key={room.id}
                               onClick={() => {
                                 if (onSelectListing) {
-                                  onSelectListing(room.id);
-                                  onClose();
+                                  requestClose(() => onSelectListing(room.id));
                                 }
                               }}
-                              className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer group"
+                              className="w-full p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors cursor-pointer group text-left"
                             >
                               <div className="flex items-center gap-3 min-w-0">
                                 <img
@@ -299,7 +384,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                                 </div>
                               </div>
                               <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                            </div>
+                            </button>
                           ))}
                         </div>
                       )}
@@ -320,8 +405,10 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                           <button
                             type="button"
                             onClick={() => {
-                              if (onOpenContact) onOpenContact();
-                              else window.location.href = `mailto:info@relok8.online?subject=Inquiry regarding room ${listing.id}`;
+                              requestClose(() => {
+                                if (onOpenContact) onOpenContact();
+                                else window.location.href = `mailto:info@relok8.online?subject=Inquiry regarding room ${listing.id}`;
+                              });
                             }}
                             className="text-indigo-600 font-medium hover:underline cursor-pointer"
                           >
@@ -333,31 +420,25 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                   </div>
                 )}
 
-                {/* Optional Timestamp shown on tap */}
-                {activeTimestampId === uniqueKey && (
-                  <div className={`text-[12px] text-slate-400 px-1 ${isUser ? 'text-right' : 'text-left'}`}>
-                    {new Date(msg.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                )}
               </div>
             );
           })}
 
           {/* Typing Indicator with Onlo Thinking Avatar */}
           {isGenerating && (
-            <div className="flex items-start gap-3 animate-in fade-in py-1">
+            <div className="onlo-message-entry flex items-start gap-3 py-1" role="status">
               <OnloAvatar size={28} variant="avatar" state="thinking" className="mt-0.5 shrink-0" />
               <div className="space-y-1.5 flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-slate-900">Onlo</span>
-                  <span className="text-[11px] text-indigo-600 font-medium animate-pulse">
+                  <span className="text-[11px] text-indigo-600 font-medium">
                     · {locale === 'pl' ? 'zastanawia się...' : 'thinking...'}
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl rounded-tl-xs bg-indigo-50/70 border border-indigo-100 text-indigo-950 text-xs shadow-2xs">
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:120ms]" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-bounce [animation-delay:240ms]" />
+                  <span className="onlo-typing-dot" />
+                  <span className="onlo-typing-dot [animation-delay:140ms]" />
+                  <span className="onlo-typing-dot [animation-delay:280ms]" />
                   <span className="text-[12px] font-medium ml-1">
                     {locale === 'pl' ? 'Onlo przygotowuje odpowiedź...' : 'Onlo is answering...'}
                   </span>
@@ -385,7 +466,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
 
         {/* Composer pinned at the bottom */}
         <div className="p-4 border-t border-slate-100 bg-white pb-[max(1rem,env(safe-area-inset-bottom))] shrink-0">
-          <form
+          {isAuthenticated ? <form
             onSubmit={(e) => {
               e.preventDefault();
               handleSendPrompt(inputPrompt);
@@ -393,6 +474,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             className="flex items-center gap-2"
           >
             <input
+              ref={inputRef}
               type="text"
               value={inputPrompt}
               onChange={(e) => setInputPrompt(e.target.value)}
@@ -407,7 +489,20 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
             >
               <ArrowUp className="w-5 h-5 stroke-[2.2]" />
             </button>
-          </form>
+          </form> : (
+            <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-3 flex items-center gap-3">
+              <span className="w-9 h-9 rounded-lg bg-white border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                <LockKeyhole className="w-4 h-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-slate-900">{locale === 'pl' ? 'Zaloguj się, aby zapytać o ten pokój' : 'Sign in to ask about this room'}</p>
+                <p className="text-[11px] text-slate-500">{locale === 'pl' ? 'Onlo korzysta z aktualnych danych ogłoszenia.' : 'Onlo uses the current listing details.'}</p>
+              </div>
+              <button data-onlo-login type="button" onClick={() => requestClose(onRequireLogin)} className="min-h-10 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                {locale === 'pl' ? 'Zaloguj' : 'Sign in'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

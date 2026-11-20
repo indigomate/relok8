@@ -7,6 +7,7 @@ import { navigateTo } from '../utils/router';
 
 interface HelpPageProps {
   onBack: () => void;
+  onOpenOnlo: () => void;
   locale?: SupportedLocale;
 }
 
@@ -127,6 +128,7 @@ const FAQS: FAQItem[] = [
 
 export const HelpPage: React.FC<HelpPageProps> = ({
   onBack,
+  onOpenOnlo,
   locale = 'en',
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'cesja' | 'deposit' | 'meldunek' | 'scams' | 'listing'>('all');
@@ -135,43 +137,6 @@ export const HelpPage: React.FC<HelpPageProps> = ({
   const [supportMessage, setSupportMessage] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
   const [ticketStatus, setTicketStatus] = useState<'idle' | 'submitting' | 'sent'>('idle');
-
-  // Onlo Helper Panel State (§10)
-  const [isOnloPanelOpen, setIsOnloPanelOpen] = useState(false);
-  const [onloInput, setOnloInput] = useState('');
-  const [onloAnswer, setOnloAnswer] = useState<string | null>(null);
-  const [isOnloLoading, setIsOnloLoading] = useState(false);
-
-  const handleAskOnlo = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!onloInput.trim() || isOnloLoading) return;
-    setIsOnloLoading(true);
-    setOnloAnswer(null);
-
-    const q = onloInput.trim().toLowerCase();
-    setTimeout(() => {
-      let ans = '';
-      if (q.includes('meldun') || q.includes('pesel') || q.includes('address')) {
-        ans = locale === 'pl'
-          ? 'Meldunek jest w 100% legalny i bezpłatny w Urzędzie Miasta/Dzielnicy z podpisaną umową cesji. Nadaje on także numer PESEL. Nie stanowi to porady prawnej.'
-          : 'Address registration (meldunek) is free at Urząd Miasta with your signed lease assignment. It automatically issues your PESEL number. Not legal advice.';
-      } else if (q.includes('deposit') || q.includes('kaucj')) {
-        ans = locale === 'pl'
-          ? 'Kaucja rozliczana jest bezpośrednio między starym i nowym najemcą w protokole zdawczo-odbiorczym. Właściciel zachowuje kaucję pierwotną. Nie stanowi to porady prawnej.'
-          : 'The security deposit is settled peer-to-peer at key handover via the inspection protocol. The landlord retains the initial deposit in escrow. Not legal advice.';
-      } else if (q.includes('art') || q.includes('kc') || q.includes('cesja') || q.includes('transfer')) {
-        ans = locale === 'pl'
-          ? 'Cesja umowy najmu (Art. 509 i 519 KC) polega na przeniesieniu praw i obowiązków z obecnego najemcy na nowego za pisemną zgodą wynajmującego. Nie stanowi to porady prawnej.'
-          : 'A lease takeover under Polish Civil Code Art. 509 & 519 KC transfers rights and obligations from the departing tenant to the replacement with landlord consent. Not legal advice.';
-      } else {
-        ans = locale === 'pl'
-          ? 'Relok8 umożliwia bezpośrednie przejęcie umowy najmu bez prowizji agencji. Właściciel lokalu wyraża formalną zgodę na wstąpienie nowego najemcy. Nie stanowi to porady prawnej.'
-          : 'Relok8 facilitates direct lease takeovers with zero broker fees. The landlord formally approves the replacement tenant under Art. 509 KC. Not legal advice.';
-      }
-      setOnloAnswer(ans);
-      setIsOnloLoading(false);
-    }, 350);
-  };
 
   // Sync document title and meta description for SEO
   useEffect(() => {
@@ -289,53 +254,29 @@ export const HelpPage: React.FC<HelpPageProps> = ({
           />
         </div>
 
-        {/* Ask Onlo Row & Short Helper Panel (§10) */}
-        <div className="max-w-2xl space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <button
-              type="button"
-              onClick={() => setIsOnloPanelOpen(!isOnloPanelOpen)}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Bot className="w-4 h-4" />
-              <span>{isOnloPanelOpen ? 'Hide Onlo Helper' : 'Ask Onlo AI Helper about leases & meldunek'}</span>
-              <Sparkles className="w-3 h-3 text-indigo-500" />
-            </button>
-            <span className="text-[11px] text-slate-400">Lease takeover assistant</span>
-          </div>
-
-          {isOnloPanelOpen && (
-            <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-3 animate-in fade-in">
-              <div className="text-xs text-indigo-950 font-semibold flex items-center gap-1.5">
-                <Bot className="w-4 h-4 text-indigo-600 shrink-0" />
-                <span>Ask Onlo anything about Art. 509 KC, deposits, or moving in:</span>
-              </div>
-
-              <form onSubmit={handleAskOnlo} className="flex gap-2">
-                <input
-                  type="text"
-                  value={onloInput}
-                  onChange={(e) => setOnloInput(e.target.value)}
-                  placeholder={locale === 'pl' ? 'Np. Czy meldunek jest wymagany? Jak działa zwrot kaucji?' : 'e.g. Is meldunek mandatory? How is the deposit transferred?'}
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-indigo-200 bg-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-600 text-slate-900"
-                />
-                <button
-                  type="submit"
-                  disabled={!onloInput.trim() || isOnloLoading}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  {isOnloLoading ? 'Thinking...' : 'Ask'}
-                </button>
-              </form>
-
-              {onloAnswer && (
-                <div className="p-3 bg-white rounded-xl border border-indigo-100 text-xs text-slate-800 leading-relaxed space-y-1">
-                  <div>{onloAnswer}</div>
-                  <div className="text-[10px] text-slate-400">Not legal advice.</div>
-                </div>
-              )}
+        {/* Use the real Onlo assistant rather than a scripted imitation. */}
+        <div className="max-w-2xl rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="w-9 h-9 rounded-xl bg-white border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+              <Bot className="w-4.5 h-4.5" />
+            </span>
+            <div>
+              <p className="text-sm font-bold text-slate-900">
+                {locale === 'pl' ? 'Nie widzisz swojej odpowiedzi?' : 'Can’t find your answer?'}
+              </p>
+              <p className="text-xs leading-5 text-slate-600">
+                {locale === 'pl' ? 'Zapytaj Onlo o meldunek, czynsz, kaucję lub przejęcie najmu.' : 'Ask Onlo about meldunek, czynsz, deposits, or taking over a lease.'}
+              </p>
             </div>
-          )}
+          </div>
+          <button
+            type="button"
+            onClick={onOpenOnlo}
+            className="min-h-11 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold inline-flex items-center justify-center gap-2 cursor-pointer transition-[background-color,transform] shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}
+          </button>
         </div>
 
 

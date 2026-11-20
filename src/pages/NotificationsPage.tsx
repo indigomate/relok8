@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home } from 'lucide-react';
+import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home, CheckCircle2, Clock3 } from 'lucide-react';
+import { useConvexAuth, useMutation, useQuery } from 'convex/react';
+import { api } from '../../convex/_generated/api';
+import { ENABLED_CITIES } from '../data/cities';
 import { SupportedLocale } from '../utils/formatters';
 import { Notification } from '../types/relok8';
 import { getNotifications, markNotificationRead } from '../lib/api';
@@ -8,6 +11,7 @@ interface NotificationsPageProps {
   onBack: () => void;
   locale?: SupportedLocale;
   onOpenListing?: (id: string) => void;
+  onRequireLogin?: () => void;
   currentUser?: { id?: string; name?: string; email?: string; role?: string } | null;
 }
 
@@ -17,12 +21,92 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   onBack,
   locale = 'en',
   onOpenListing,
+  onRequireLogin,
   currentUser
 }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeFilter, setActiveFilter] = useState<NotificationCategory>('all');
   
-  const activeRole = currentUser?.role || 'prospect';
+  const activeRole = currentUser?.role === 'landlord'
+    ? 'landlord'
+    : currentUser?.role === 'tenant' || currentUser?.role === 'departing_tenant'
+      ? 'tenant'
+      : 'prospect';
+  const { isAuthenticated } = useConvexAuth();
+  const whatsappPreferences = useQuery(api.whatsapp.getPreferences, isAuthenticated ? {} : 'skip');
+  const recentWhatsappDeliveries = useQuery(api.whatsapp.getRecentDeliveries, isAuthenticated ? {} : 'skip');
+  const configureWhatsapp = useMutation(api.whatsapp.configurePreferences);
+  const pauseWhatsapp = useMutation(api.whatsapp.pausePreferences);
+  const [whatsappPhone, setWhatsappPhone] = useState('');
+  const [whatsappCity, setWhatsappCity] = useState('All Poland');
+  const [whatsappRoomType, setWhatsappRoomType] = useState('All room types');
+  const [whatsappMaxRent, setWhatsappMaxRent] = useState('');
+  const [whatsappHour, setWhatsappHour] = useState('8');
+  const [whatsappConsent, setWhatsappConsent] = useState(false);
+  const [whatsappSaving, setWhatsappSaving] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!whatsappPreferences) return;
+    setWhatsappCity(whatsappPreferences.cities[0] || 'All Poland');
+    setWhatsappRoomType(whatsappPreferences.roomTypes[0] || 'All room types');
+    setWhatsappMaxRent(whatsappPreferences.maxMonthlyRent ? String(whatsappPreferences.maxMonthlyRent) : '');
+    setWhatsappHour(String(whatsappPreferences.sendHourLocal));
+    setWhatsappConsent(whatsappPreferences.active);
+  }, [whatsappPreferences]);
+
+  const handleWhatsappSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!isAuthenticated) {
+      onRequireLogin?.();
+      return;
+    }
+    setWhatsappSaving(true);
+    setWhatsappStatus(null);
+    try {
+      const maxMonthlyRent = whatsappMaxRent.trim() ? Number(whatsappMaxRent) : undefined;
+      await configureWhatsapp({
+        phoneE164: whatsappPhone.trim() || undefined,
+        cities: whatsappCity === 'All Poland' ? [] : [whatsappCity],
+        roomTypes: whatsappRoomType === 'All room types' ? [] : [whatsappRoomType],
+        maxMonthlyRent,
+        locale: locale === 'pl' ? 'pl' : 'en',
+        sendHourLocal: Number(whatsappHour),
+        consent: whatsappConsent,
+      });
+      setWhatsappPhone('');
+      setWhatsappStatus({
+        kind: 'success',
+        message: locale === 'pl'
+          ? 'Zapisano codzienny alert WhatsApp.'
+          : 'Your daily WhatsApp alert is saved.',
+      });
+    } catch (error) {
+      setWhatsappStatus({
+        kind: 'error',
+        message: error instanceof Error ? error.message : (locale === 'pl' ? 'Nie udało się zapisać alertu.' : 'Could not save the alert.'),
+      });
+    } finally {
+      setWhatsappSaving(false);
+    }
+  };
+
+  const handleWhatsappPause = async () => {
+    setWhatsappSaving(true);
+    setWhatsappStatus(null);
+    try {
+      await pauseWhatsapp({});
+      setWhatsappConsent(false);
+      setWhatsappStatus({
+        kind: 'success',
+        message: locale === 'pl' ? 'Alerty WhatsApp zostały wstrzymane.' : 'WhatsApp alerts are paused.',
+      });
+    } catch (error) {
+      setWhatsappStatus({ kind: 'error', message: error instanceof Error ? error.message : 'Could not pause alerts.' });
+    } finally {
+      setWhatsappSaving(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -70,7 +154,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const unreadCount = notifications.filter(n => !n.readAt).length;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-32 sm:pb-24 font-sans">
+    <div className="r8-notifications min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-32 sm:pb-24 font-sans">
       {/* Top Header - Compact single-row layout */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 sm:h-16 flex items-center justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -314,25 +398,134 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
           {/* Sidebar Settings Column (lg:col-span-5) */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* WhatsApp availability */}
+            {/* WhatsApp-first apartment digest settings */}
             <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-5">
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 rounded-2xl bg-slate-100 text-slate-500 shrink-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                <div className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
                   <Share2 className="w-5 h-5" />
                 </div>
-                <div className="flex items-start gap-3">
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">
-                      {locale === 'pl' ? 'Alerty WhatsApp' : 'WhatsApp alerts'}
+                      {locale === 'pl' ? 'Codzienny przegląd WhatsApp' : 'Daily WhatsApp apartment digest'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                       {locale === 'pl'
-                        ? 'Automatyczna wysyłka WhatsApp nie jest jeszcze dostępna. Relok8 nie zapisuje numeru ani nie wyświetla potwierdzenia wysyłki, dopóki integracja nie zostanie uruchomiona.'
-                        : 'Automated WhatsApp delivery is not available yet. Relok8 does not save a phone number or report a message as sent until the integration is connected.'}
+                        ? 'Otrzymuj raz dziennie nowe pokoje pasujące do miasta, budżetu i typu lokalu.'
+                        : 'Receive one daily message with new rooms matching your city, budget, and room type.'}
                     </p>
                   </div>
                 </div>
+                {whatsappPreferences?.active && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 px-2.5 py-1 text-[11px] font-bold shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {locale === 'pl' ? 'Aktywny' : 'Active'}
+                  </span>
+                )}
               </div>
+
+              {!isAuthenticated ? (
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 space-y-3">
+                  <p className="text-xs leading-5 text-slate-700">
+                    {locale === 'pl' ? 'Zaloguj się, aby połączyć numer WhatsApp z własnymi filtrami mieszkań.' : 'Sign in to connect your WhatsApp number to your apartment filters.'}
+                  </p>
+                  <button type="button" onClick={onRequireLogin} className="min-h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                    {locale === 'pl' ? 'Zaloguj się' : 'Sign in'}
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleWhatsappSave} className="space-y-4">
+                  <div>
+                    <label htmlFor="whatsapp-phone" className="block text-xs font-bold text-slate-700 mb-1.5">
+                      {locale === 'pl' ? 'Numer WhatsApp' : 'WhatsApp number'}
+                    </label>
+                    <input
+                      id="whatsapp-phone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={whatsappPhone}
+                      onChange={(event) => setWhatsappPhone(event.target.value)}
+                      placeholder={whatsappPreferences ? `${whatsappPreferences.maskedPhone} · ${locale === 'pl' ? 'pozostaw puste, aby zachować' : 'leave blank to keep'}` : '+48 123 456 789'}
+                      className="w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    />
+                    <p className="mt-1.5 text-[11px] text-slate-500">
+                      {locale === 'pl' ? 'Użyj formatu międzynarodowego z kodem kraju.' : 'Use international format with the country code.'}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                    <label className="text-xs font-bold text-slate-700">
+                      {locale === 'pl' ? 'Miasto' : 'City'}
+                      <select value={whatsappCity} onChange={(event) => setWhatsappCity(event.target.value)} className="mt-1.5 w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        <option value="All Poland">{locale === 'pl' ? 'Cała Polska' : 'All Poland'}</option>
+                        {ENABLED_CITIES.map((city) => <option key={city.slug} value={city.name}>{city.name}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-xs font-bold text-slate-700">
+                      {locale === 'pl' ? 'Typ lokalu' : 'Room type'}
+                      <select value={whatsappRoomType} onChange={(event) => setWhatsappRoomType(event.target.value)} className="mt-1.5 w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                        <option value="All room types">{locale === 'pl' ? 'Wszystkie typy' : 'All room types'}</option>
+                        <option value="Private room">{locale === 'pl' ? 'Pokój prywatny' : 'Private room'}</option>
+                        <option value="Studio">Studio</option>
+                        <option value="Shared room">{locale === 'pl' ? 'Pokój współdzielony' : 'Shared room'}</option>
+                        <option value="Entire apartment">{locale === 'pl' ? 'Całe mieszkanie' : 'Entire apartment'}</option>
+                      </select>
+                    </label>
+                    <label className="text-xs font-bold text-slate-700">
+                      {locale === 'pl' ? 'Maksymalny koszt miesięczny' : 'Maximum monthly cost'}
+                      <div className="relative mt-1.5">
+                        <input type="number" min="500" max="100000" step="50" value={whatsappMaxRent} onChange={(event) => setWhatsappMaxRent(event.target.value)} placeholder={locale === 'pl' ? 'Bez limitu' : 'No limit'} className="w-full h-11 px-3 pr-12 rounded-xl border border-slate-200 bg-white text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600" />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">PLN</span>
+                      </div>
+                    </label>
+                    <label className="text-xs font-bold text-slate-700">
+                      {locale === 'pl' ? 'Godzina wysyłki' : 'Delivery time'}
+                      <div className="relative mt-1.5">
+                        <Clock3 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <select value={whatsappHour} onChange={(event) => setWhatsappHour(event.target.value)} className="w-full h-11 pl-9 pr-3 rounded-xl border border-slate-200 bg-white text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600">
+                          {[7, 8, 9, 10, 12, 18, 20].map((hour) => <option key={hour} value={hour}>{String(hour).padStart(2, '0')}:00 · Europe/Warsaw</option>)}
+                        </select>
+                      </div>
+                    </label>
+                  </div>
+
+                  <label className="flex items-start gap-2.5 rounded-xl bg-slate-50 border border-slate-200 p-3 cursor-pointer">
+                    <input type="checkbox" checked={whatsappConsent} onChange={(event) => setWhatsappConsent(event.target.checked)} className="mt-0.5 w-4 h-4 accent-indigo-600" />
+                    <span className="text-[11px] leading-4 text-slate-600">
+                      {locale === 'pl'
+                        ? 'Wyrażam zgodę na jeden codzienny alert WhatsApp od Relok8. Mogę w każdej chwili odpowiedzieć STOP lub wyłączyć alert tutaj.'
+                        : 'I agree to receive one daily WhatsApp apartment alert from Relok8. I can reply STOP or pause it here at any time.'}
+                    </span>
+                  </label>
+
+                  {whatsappStatus && (
+                    <div role="status" className={`rounded-xl px-3 py-2.5 text-xs ${whatsappStatus.kind === 'success' ? 'bg-emerald-50 border border-emerald-100 text-emerald-800' : 'bg-rose-50 border border-rose-100 text-rose-800'}`}>
+                      {whatsappStatus.message}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
+                    <button type="submit" disabled={whatsappSaving || !whatsappConsent} className="min-h-11 flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer disabled:cursor-not-allowed">
+                      {whatsappSaving ? (locale === 'pl' ? 'Zapisywanie…' : 'Saving…') : whatsappPreferences ? (locale === 'pl' ? 'Zapisz ustawienia' : 'Save settings') : (locale === 'pl' ? 'Włącz codzienny alert' : 'Enable daily alert')}
+                    </button>
+                    {whatsappPreferences?.active && (
+                      <button type="button" onClick={handleWhatsappPause} disabled={whatsappSaving} className="min-h-11 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer">
+                        {locale === 'pl' ? 'Wstrzymaj' : 'Pause'}
+                      </button>
+                    )}
+                  </div>
+
+                  {recentWhatsappDeliveries?.[0] && (
+                    <p className="text-[11px] text-slate-500">
+                      {locale === 'pl' ? 'Ostatnia dostawa' : 'Latest delivery'}: <span className="font-semibold text-slate-700 capitalize">{recentWhatsappDeliveries[0].status}</span> · {recentWhatsappDeliveries[0].digestDate}
+                    </p>
+                  )}
+                  <p className="text-[10px] leading-4 text-slate-400">
+                    {locale === 'pl' ? 'Wiadomości są wysyłane przez oficjalny interfejs WhatsApp Business po zatwierdzeniu szablonu Meta.' : 'Messages are sent through the official WhatsApp Business API after Meta approves the message template.'}
+                  </p>
+                </form>
+              )}
             </div>
 
             {/* In-App Delivery Preferences */}
@@ -351,7 +544,9 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 </div>
                 <div className="flex items-center justify-between py-1.5">
                   <span className="text-slate-700">WhatsApp</span>
-                  <span className="text-slate-500 font-medium">{locale === 'pl' ? 'Niedostępne' : 'Unavailable'}</span>
+                  <span className={whatsappPreferences?.active ? 'text-emerald-600 font-bold' : 'text-slate-500 font-medium'}>
+                    {whatsappPreferences?.active ? (locale === 'pl' ? 'Codziennie' : 'Daily') : (locale === 'pl' ? 'Wyłączone' : 'Off')}
+                  </span>
                 </div>
               </div>
             </div>

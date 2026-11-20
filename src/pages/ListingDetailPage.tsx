@@ -508,6 +508,14 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         onClose={() => setIsAIChatOpen(false)}
         listing={listing}
         locale={locale}
+        onRequireLogin={() => {
+          setIsAIChatOpen(false);
+          onRequireLogin?.(
+            locale === 'pl'
+              ? 'Zaloguj się, aby zapytać Onlo o ten pokój.'
+              : 'Sign in to ask Onlo about this room.'
+          );
+        }}
         onOpenContact={() => {
           setIsAIChatOpen(false);
           handleMessageClick();

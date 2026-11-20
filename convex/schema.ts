@@ -59,7 +59,7 @@ export default defineSchema({
     universitiesNearby: v.optional(v.array(v.string())),
     transitNearby: v.optional(v.string()),
     createdAt: v.optional(v.number()),
-  }),
+  }).index("by_status", ["status"]),
 
   // Relok8 Listings table (atomic holds and real-time reactive sync)
   listings: defineTable({
@@ -215,4 +215,121 @@ export default defineSchema({
     .index("by_email", ["email"])
     .index("by_city", ["city"])
     .index("by_email_city", ["email", "city"]),
+
+  // Explicit WhatsApp opt-in and apartment-digest preferences.
+  whatsappSubscriptions: defineTable({
+    userId: v.string(),
+    displayName: v.optional(v.string()),
+    phoneE164: v.string(),
+    cities: v.array(v.string()),
+    roomTypes: v.array(v.string()),
+    maxMonthlyRent: v.optional(v.number()),
+    locale: v.union(v.literal("en"), v.literal("pl")),
+    timeZone: v.string(),
+    sendHourLocal: v.number(),
+    active: v.boolean(),
+    consentVersion: v.string(),
+    consentedAt: v.number(),
+    consentSource: v.string(),
+    optedOutAt: v.optional(v.number()),
+    lastDigestAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_phone", ["phoneE164"])
+    .index("by_active", ["active"]),
+
+  // Durable, idempotent delivery ledger. Phone numbers stay on subscriptions;
+  // delivery rows contain only the minimum provider metadata needed to retry.
+  whatsappDeliveries: defineTable({
+    subscriptionId: v.id("whatsappSubscriptions"),
+    userId: v.string(),
+    kind: v.union(v.literal("daily_apartment_digest"), v.literal("landlord_approval")),
+    digestDate: v.string(),
+    listingIds: v.array(v.string()),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("sending"),
+      v.literal("sent"),
+      v.literal("delivered"),
+      v.literal("read"),
+      v.literal("failed"),
+      v.literal("skipped")
+    ),
+    attempts: v.number(),
+    providerMessageId: v.optional(v.string()),
+    errorCode: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    sentAt: v.optional(v.number()),
+  })
+    .index("by_subscription_date", ["subscriptionId", "digestDate"])
+    .index("by_provider_message", ["providerMessageId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
+
+  // Small idempotency ledger for Meta webhook events; raw webhook payloads and
+  // message bodies are intentionally not retained.
+  whatsappWebhookEvents: defineTable({
+    eventId: v.string(),
+    eventType: v.string(),
+    receivedAt: v.number(),
+  }).index("by_event", ["eventId"]),
+
+  // Durable, idempotent application email delivery ledger. Template payloads
+  // are removed after a successful handoff to Resend.
+  emailDeliveries: defineTable({
+    idempotencyKey: v.string(),
+    userId: v.optional(v.string()),
+    recipient: v.string(),
+    template: v.union(
+      v.literal("account_verification"),
+      v.literal("sign_in_code"),
+      v.literal("password_reset"),
+      v.literal("welcome"),
+      v.literal("landlord_invitation"),
+      v.literal("takeover_request"),
+      v.literal("takeover_approved"),
+      v.literal("takeover_declined"),
+      v.literal("handover_action"),
+      v.literal("handover_complete"),
+      v.literal("unread_message"),
+      v.literal("listing_published"),
+      v.literal("listing_expiry"),
+      v.literal("support_received"),
+      v.literal("weekly_digest")
+    ),
+    locale: v.union(v.literal("en"), v.literal("pl")),
+    category: v.union(
+      v.literal("security"),
+      v.literal("transactional"),
+      v.literal("product"),
+      v.literal("marketing")
+    ),
+    templateData: v.optional(v.any()),
+    relatedId: v.optional(v.string()),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("sending"),
+      v.literal("sent"),
+      v.literal("delivered"),
+      v.literal("failed"),
+      v.literal("bounced"),
+      v.literal("complained"),
+      v.literal("suppressed")
+    ),
+    attempts: v.number(),
+    providerMessageId: v.optional(v.string()),
+    errorCode: v.optional(v.string()),
+    errorMessage: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    sentAt: v.optional(v.number()),
+  })
+    .index("by_idempotency", ["idempotencyKey"])
+    .index("by_provider_message", ["providerMessageId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
 });

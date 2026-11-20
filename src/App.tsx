@@ -48,6 +48,7 @@ import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 import { SupportedLocale, formatPLN } from './utils/formatters';
 import { t } from './utils/translations';
 import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale, ParsedRoute } from './utils/router';
+import { shouldShowGlobalOnlo } from './utils/onloAvailability';
 import { uploadListingPhotos } from './lib/api';
 import { ConvexProvider, mapConvexListingToAppListing } from './lib/convex/client';
 import { useQuery, useMutation, useConvexAuth } from 'convex/react';
@@ -226,6 +227,11 @@ function Relok8App() {
 
   // Quick Action Card Modals state
   const [activeCardAIChat, setActiveCardAIChat] = useState<Listing | null>(null);
+  const [isGlobalOnloOpen, setIsGlobalOnloOpen] = useState(false);
+
+  useEffect(() => {
+    setIsGlobalOnloOpen(false);
+  }, [currentRoute.path]);
 
 
   // Live Convex reactive subscriptions (chatty-seahorse-914)
@@ -879,6 +885,7 @@ function Relok8App() {
       ) : currentRoute.type === 'help' ? (
         <HelpPage
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
+          onOpenOnlo={() => setIsGlobalOnloOpen(true)}
           locale={locale}
         />
       ) : currentRoute.type === 'list' ? (
@@ -937,6 +944,12 @@ function Relok8App() {
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
           currentUser={currentUser}
+          onRequireLogin={() => handleOpenLogin(
+            'signin',
+            locale === 'pl'
+              ? 'Zaloguj się, aby skonfigurować alerty WhatsApp.'
+              : 'Sign in to configure WhatsApp alerts.'
+          )}
           onOpenListing={(id) => {
             const found = listings.find((l) => l.id === id);
             navigateToListing(id, found?.title || '', locale);
@@ -1301,6 +1314,15 @@ function Relok8App() {
           onClose={() => setActiveCardAIChat(null)}
           listing={activeCardAIChat}
           locale={locale}
+          onRequireLogin={() => {
+            setActiveCardAIChat(null);
+            handleOpenLogin(
+              'signin',
+              locale === 'pl'
+                ? 'Zaloguj się, aby zapytać Onlo o to ogłoszenie.'
+                : 'Sign in to ask Onlo about this listing.'
+            );
+          }}
           onOpenContact={() => {
             const l = activeCardAIChat;
             setActiveCardAIChat(null);
@@ -1309,9 +1331,23 @@ function Relok8App() {
         />
       )}
 
-      <OnloGlobalWidget
-        locale={locale}
-      />
+      {shouldShowGlobalOnlo(currentRoute.type) && !activeCardAIChat && (
+        <OnloGlobalWidget
+          locale={locale}
+          isOpen={isGlobalOnloOpen}
+          isAuthenticated={isBackendAuthenticated}
+          onOpenChange={setIsGlobalOnloOpen}
+          onRequireLogin={() => {
+            setIsGlobalOnloOpen(false);
+            handleOpenLogin(
+              'signin',
+              locale === 'pl'
+                ? 'Zaloguj się, aby porozmawiać z Onlo.'
+                : 'Sign in to chat with Onlo.'
+            );
+          }}
+        />
+      )}
       <CookieBanner locale={locale} />
 
 

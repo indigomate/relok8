@@ -20,6 +20,9 @@ export const OnloAvatar: React.FC<OnloAvatarProps> = ({
   onStateTransition
 }) => {
   const pixelSize = typeof size === 'number' ? `${size}px` : size;
+  const accessibilityProps = title
+    ? { 'aria-label': title, title }
+    : { 'aria-hidden': true as const };
 
   // Active state with automatic transitions for 'hello' (0.6s) and 'happy' (2s)
   const [currentState, setCurrentState] = useState<OnloState>(state);
@@ -242,8 +245,7 @@ export const OnloAvatar: React.FC<OnloAvatarProps> = ({
       <div
         style={{ width: pixelSize, height: pixelSize }}
         className={`inline-flex items-center justify-center shrink-0 rounded-[24%] bg-[#0b101d] overflow-hidden shadow-xs select-none relative ${className}`}
-        aria-label={title}
-        title={title}
+        {...accessibilityProps}
       >
         <img
           src="/onlo.png"
@@ -258,9 +260,8 @@ export const OnloAvatar: React.FC<OnloAvatarProps> = ({
     return (
       <div
         style={{ width: pixelSize, height: pixelSize }}
-        className={`inline-flex items-center justify-center shrink-0 rounded-[24%] bg-[#0b101d] p-[10%] shadow-xs select-none relative overflow-visible ${className}`}
-        aria-label={title}
-        title={title}
+        className={`inline-flex items-center justify-center shrink-0 rounded-[24%] bg-[#0b101d] shadow-xs select-none relative overflow-visible ${className}`}
+        {...accessibilityProps}
       >
         {svgElement}
       </div>
@@ -271,8 +272,7 @@ export const OnloAvatar: React.FC<OnloAvatarProps> = ({
     <div
       style={{ width: pixelSize, height: pixelSize }}
       className={`inline-block shrink-0 select-none relative overflow-visible ${className}`}
-      aria-label={title}
-      title={title}
+      {...accessibilityProps}
     >
       {svgElement}
     </div>
