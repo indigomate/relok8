@@ -1054,10 +1054,10 @@ function Relok8App() {
 
               <img
                 className="r8-home-photo"
-                src="/images/listing_krakow_loft_1790621454348.jpg"
+                src="/images/home-hero-katowice.webp"
                 alt=""
-                width={1200}
-                height={896}
+                width={1600}
+                height={1068}
                 fetchPriority="high"
               />
             </section>
