@@ -112,6 +112,7 @@ export default defineSchema({
     userId: v.string(), // Clerk ID or custom user identifier
     fullName: v.optional(v.string()),
     email: v.optional(v.string()),
+    locale: v.optional(v.union(v.literal("en"), v.literal("pl"))),
     avatarUrl: v.optional(v.string()),
     phoneNumber: v.optional(v.string()),
     whatsappNumber: v.optional(v.string()),

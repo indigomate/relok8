@@ -4,6 +4,7 @@ import { v, ConvexError } from "convex/values";
 import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
 import { DEFAULT_REWARD_CONFIG, DEFAULT_INSURANCE_CONFIG } from "../src/types/relok8";
 import { queueEmailDelivery } from './emails';
+import { rememberEmailContact } from './lib/emailContacts';
 
 const text = (value: unknown, max = 10000): string => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error('Invalid text');
@@ -175,6 +176,7 @@ export const write = mutation({
       return { id: uid, name: identity.name || 'User', email: identity.email || '', role: 'prospect', avatar: identity.pictureUrl || '', isVerified: false, ...settings };
     }
     if (operation === 'acceptInvitation') {
+      await rememberEmailContact(ctx, identity, input.locale);
       const token = text(input.token, 200);
       const row = await record(ctx, 'invitation', token);
       if (!row || row.data.role !== 'landlord' || row.data.acceptedAt || now - row.data.createdAt > 7 * 86400000 || identity.emailVerified !== true || identity.email?.toLowerCase() !== row.data.email.toLowerCase()) throw new Error('Invalid or expired invitation');
@@ -194,6 +196,7 @@ export const write = mutation({
       if (await record(ctx, 'invitation', input.token)) throw new Error('Token already used');
       const recipient = input.email.toLowerCase();
       const locale = input.locale === 'pl' ? 'pl' : 'en';
+      await rememberEmailContact(ctx, identity, locale);
       // Automated tests use the reserved .test TLD to inspect the queued record without contacting Resend.
       const skipTestDelivery = input.scheduleDelivery === false && recipient.endsWith('.test');
       const invitation = await put(ctx, 'invitation', input.token, uid, { id: input.token, placeId: lease._id, role: input.role, email: recipient, token: input.token, createdAt: now }, lease._id);

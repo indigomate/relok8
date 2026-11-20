@@ -17,7 +17,7 @@ export function EarlyLockModal({ isOpen, onClose, locale, currentUser, listing, 
     if (!currentUser) { onRequireLogin?.('Sign in to request landlord approval.'); return; }
     setPending(true);
     try {
-      await request({ listingId: listing.id, message: locale==='pl'?'Proszę o rozpatrzenie wniosku o przejęcie najmu. Warunki do uzgodnienia.':'Please review my takeover request. Dates and terms are to be agreed.' });
+      await request({ listingId: listing.id, message: locale==='pl'?'Proszę o rozpatrzenie wniosku o przejęcie najmu. Warunki do uzgodnienia.':'Please review my takeover request. Dates and terms are to be agreed.', locale: locale === 'pl' ? 'pl' : 'en' });
       setStatus(locale==='pl'?'Wniosek otrzymany. Właściciel ma 7 dni na decyzję. Śledź wniosek w My Place. Nie dokonano rezerwacji ani płatności.':'Request received. The landlord has 7 days to review it. Track it in My Place. No reservation or payment has been made.');
     } catch (error: any) { setStatus(error.message || 'Could not send your request.'); }
     finally { setPending(false); }

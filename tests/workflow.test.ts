@@ -51,6 +51,8 @@ describe("new housing journeys", () => {
     expect(
       (await owner.query(api.workflow.activity, {}))[0].applications,
     ).toHaveLength(1);
+    const deliveries = await t.run((ctx) => ctx.db.query("emailDeliveries").collect());
+    expect(deliveries.filter((delivery) => delivery.template === "takeover_request")).toHaveLength(2);
   });
   test("anonymous and self applications are rejected", async () => {
     const { t, owner, id } = await setup();
@@ -153,6 +155,10 @@ describe("new housing journeys", () => {
       (await a.query(api.workflow.activity, {}))[0].applications[0].status,
     ).toBe("completed");
     expect(await t.query(api.leases.get, {})).toEqual([]);
+    const deliveries = await t.run((ctx) => ctx.db.query("emailDeliveries").collect());
+    expect(deliveries.filter((delivery) => delivery.template === "takeover_approved")).toHaveLength(3);
+    expect(deliveries.filter((delivery) => delivery.template === "handover_action")).toHaveLength(16);
+    expect(deliveries.filter((delivery) => delivery.template === "handover_complete")).toHaveLength(3);
   });
   test("cancelling approval returns listing to availability", async () => {
     const { t, a, landlord, id } = await setup();
@@ -295,7 +301,8 @@ describe("privacy and preservation", () => {
       await landlord.query(api.workflow.invitationPreview, { token }),
     ).toMatchObject({ title: "Room", city: "Warsaw" });
 
-    const deliveries = await t.run((ctx) => ctx.db.query("emailDeliveries").collect());
+    const deliveries = (await t.run((ctx) => ctx.db.query("emailDeliveries").collect()))
+      .filter((delivery) => delivery.template === "landlord_invitation");
     expect(deliveries).toHaveLength(1);
     expect(deliveries[0]).toMatchObject({
       idempotencyKey: `landlord-invitation:${token}`,

@@ -48,7 +48,7 @@ export const listingAssistant = action({
   },
 });
 export const contact = action({
-  args: { name: v.string(), email: v.string(), subject: v.string(), message: v.string(), topic: v.optional(v.string()) },
+  args: { name: v.string(), email: v.string(), subject: v.string(), message: v.string(), topic: v.optional(v.string()), locale: v.optional(v.union(v.literal('en'), v.literal('pl'))) },
   handler: async (ctx, args): Promise<{ success: true }> => {
     const identity = await requireIdentity(ctx);
     if (identity.emailVerified !== true || identity.email?.toLowerCase() !== args.email.trim().toLowerCase()) throw new Error('Use your verified account email');
@@ -59,6 +59,24 @@ export const contact = action({
     if (!key || !from || !to) throw new Error('Support email is unavailable. No message has been sent.');
     const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: [to], reply_to: identity.email, subject: `[Relok8 support · ${topic}] ${args.subject}`, text: `Topic: ${topic}\nFrom: ${args.name} (${identity.email})\n\n${args.message}` }) });
     if (!response.ok) throw new Error('Email delivery failed. Please try again later.');
+    const locale = args.locale === 'pl' ? 'pl' : 'en';
+    const reference = `R8-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+    await ctx.runMutation(internal.emails.queue, {
+      idempotencyKey: `support-receipt:${reference}`,
+      userId: identity.subject,
+      recipient: identity.email,
+      template: 'support_received',
+      locale,
+      templateData: {
+        recipientName: args.name,
+        reference,
+        subject: args.subject,
+        date: new Intl.DateTimeFormat(locale === 'pl' ? 'pl-PL' : 'en-GB', { dateStyle: 'long', timeZone: 'Europe/Warsaw' }).format(new Date()),
+        ctaUrl: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/help`,
+      },
+      relatedId: reference,
+      scheduleDelivery: !identity.email.endsWith('.test'),
+    });
     return { success: true };
   },
 });

@@ -665,6 +665,7 @@ function Relok8App() {
           meldunekAllowed: newListing.meldunekAllowed,
           landlordName: newListing.landlordName,
           landlordContactEmail: newListing.landlordContactEmail,
+          locale: locale === 'pl' ? 'pl' : 'en',
         });
     showToast('Listing published successfully.');
     return { ...newListing, id };

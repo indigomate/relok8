@@ -9,6 +9,48 @@ import {
   requireAdmin,
 } from "./lib/auth";
 import { consume } from "./domain";
+import { queueEmailDelivery } from './emails';
+import {
+  emailLocale,
+  getEmailContact,
+  rememberEmailContact,
+  type EmailContact,
+} from './lib/emailContacts';
+
+const APP_ORIGIN = 'https://relok8.online';
+
+function emailDate(timestamp: number, locale: 'en' | 'pl') {
+  return new Intl.DateTimeFormat(locale === 'pl' ? 'pl-PL' : 'en-GB', {
+    dateStyle: 'long',
+    timeZone: 'Europe/Warsaw',
+  }).format(new Date(timestamp));
+}
+
+async function queueWorkflowEmail(ctx: any, args: Parameters<typeof queueEmailDelivery>[1]) {
+  return queueEmailDelivery(ctx, {
+    ...args,
+    // Reserved test recipients never leave the test runner.
+    scheduleDelivery: !args.recipient.endsWith('.test'),
+  });
+}
+
+async function workflowContacts(ctx: any, l: any, application: any, fallbackLocale: unknown) {
+  const locale = emailLocale(fallbackLocale);
+  const applicant = application ? await getEmailContact(ctx, application.ownerId) : null;
+  const tenant = await getEmailContact(ctx, l.ownerId);
+  const landlordProfile = await getEmailContact(ctx, l.landlordUserId);
+  const landlord: EmailContact | null = landlordProfile || (l.landlordContactEmail ? {
+    userId: l.landlordUserId || `landlord:${l._id}`,
+    email: l.landlordContactEmail.trim().toLowerCase(),
+    name: l.landlordName?.trim() || (locale === 'pl' ? 'Wynajmujący' : 'Landlord'),
+    locale,
+  } : null);
+  return [
+    { role: 'applicant', contact: applicant },
+    { role: 'tenant', contact: tenant },
+    { role: 'landlord', contact: landlord },
+  ].filter((entry): entry is { role: string; contact: EmailContact } => !!entry.contact);
+}
 const expired = (r: any) =>
   r.data.status === "requested" && r.data.expiresAt < Date.now();
 async function rows(ctx: any, kind: string) {
@@ -103,9 +145,14 @@ export const activity = query({
   },
 });
 export const request = mutation({
-  args: { listingId: v.string(), message: v.string() },
+  args: {
+    listingId: v.string(),
+    message: v.string(),
+    locale: v.optional(v.union(v.literal('en'), v.literal('pl'))),
+  },
   handler: async (ctx, a) => {
     const u = await requireIdentity(ctx);
+    await rememberEmailContact(ctx, u, a.locale);
     await consume(ctx, u, "application", 10);
     const l = await lease(ctx, a.listingId);
     if (!validLeaseDates(l.moveInDate, l.leaseEndDate) || leaseHasEnded(l.leaseEndDate)) throw new Error("Current lease has ended or its dates need updating");
@@ -132,9 +179,10 @@ export const request = mutation({
     if(thread) await ctx.db.patch(thread._id, {data:{...thread.data,lastMessageAt:now,unreadFor:[l.ownerId,l.landlordUserId].filter(Boolean)}});
     const messageId=crypto.randomUUID();
     await ctx.db.insert('domainRecords',{kind:'message',key:messageId,ownerId:u.subject,placeId:l._id,data:{id:messageId,threadId,authorId:u.subject,authorType:'prospect',body:a.message.trim(),createdAt:now}});
+    const applicationKey = crypto.randomUUID();
     const id = await ctx.db.insert("domainRecords", {
       kind: "application",
-      key: crypto.randomUUID(),
+      key: applicationKey,
       ownerId: u.subject,
       placeId: l._id,
       data: {
@@ -164,6 +212,29 @@ export const request = mutation({
       l._id,
       "Review a takeover request in My Place.",
     );
+    const locale = emailLocale(a.locale);
+    const recipients = await workflowContacts(ctx, l, null, locale);
+    const seen = new Set<string>();
+    for (const { role, contact } of recipients) {
+      if (seen.has(contact.email)) continue;
+      seen.add(contact.email);
+      await queueWorkflowEmail(ctx, {
+        idempotencyKey: `takeover-request:${applicationKey}:${role}`,
+        userId: contact.userId,
+        recipient: contact.email,
+        template: 'takeover_request',
+        locale: contact.locale,
+        templateData: {
+          recipientName: contact.name,
+          applicantName: u.name || 'Applicant',
+          listingTitle: l.title,
+          city: l.city,
+          expiryDate: emailDate(now + 7 * 86400000, contact.locale),
+          ctaUrl: `${APP_ORIGIN}${contact.locale === 'pl' ? '/pl' : ''}/place`,
+        },
+        relatedId: String(id),
+      });
+    }
     return id;
   },
 });
@@ -177,9 +248,11 @@ export const decide = mutation({
       v.literal("cancelled"),
     ),
     reason: v.string(),
+    locale: v.optional(v.union(v.literal('en'), v.literal('pl'))),
   },
   handler: async (ctx, a) => {
     const u = await requireIdentity(ctx);
+    await rememberEmailContact(ctx, u, a.locale);
     await consume(ctx, u, "application-decision", 20);
     const r = await ctx.db.get(a.applicationId);
     if (!r || r.kind !== "application" || !r.placeId)
@@ -267,6 +340,27 @@ export const decide = mutation({
         l._id,
         "Takeover request updated. See My Place for the decision and next steps.",
       );
+    const recipients = await workflowContacts(ctx, l, r, a.locale);
+    const seen = new Set<string>();
+    for (const { role, contact } of recipients) {
+      if (seen.has(contact.email)) continue;
+      seen.add(contact.email);
+      await queueWorkflowEmail(ctx, {
+        idempotencyKey: `takeover-decision:${r.key}:${a.decision}:${role}`,
+        userId: contact.userId,
+        recipient: contact.email,
+        template: a.decision === 'approved' ? 'takeover_approved' : 'takeover_declined',
+        locale: contact.locale,
+        templateData: {
+          recipientName: contact.name,
+          listingTitle: l.title,
+          city: l.city,
+          decisionNote: a.reason.trim(),
+          ctaUrl: `${APP_ORIGIN}${contact.locale === 'pl' ? '/pl' : ''}/place`,
+        },
+        relatedId: String(r._id),
+      });
+    }
   },
 });
 export const confirm = mutation({
@@ -278,9 +372,11 @@ export const confirm = mutation({
       v.literal("keys"),
     ),
     confirmed: v.boolean(),
+    locale: v.optional(v.union(v.literal('en'), v.literal('pl'))),
   },
   handler: async (ctx, a) => {
     const u = await requireIdentity(ctx);
+    await rememberEmailContact(ctx, u, a.locale);
     const r = await ctx.db.get(a.applicationId);
     if (
       !r ||
@@ -299,7 +395,9 @@ export const confirm = mutation({
             ? "tenant"
             : null;
     if (!role) throw new Error("Forbidden");
+    const now = Date.now();
     const confirmations = { ...r.data.confirmations };
+    if (confirmations[a.step]?.[role]?.confirmed === a.confirmed) return;
     const sequence = ["documents", "deposit", "keys"];
     const complete = (s: string) =>
       ["tenant", "landlord", "applicant"].every(
@@ -323,7 +421,7 @@ export const confirm = mutation({
       throw new Error("Correct later confirmations first");
     confirmations[a.step] = {
       ...confirmations[a.step],
-      [role]: { confirmed: a.confirmed, at: Date.now(), actor: u.subject },
+      [role]: { confirmed: a.confirmed, at: now, actor: u.subject },
     };
     const completed = sequence.every(complete);
     await ctx.db.patch(r._id, {
@@ -331,7 +429,7 @@ export const confirm = mutation({
         ...r.data,
         confirmations,
         status: completed ? "completed" : "approved",
-        updatedAt: Date.now(),
+        updatedAt: now,
       },
     });
     if (completed)
@@ -354,6 +452,34 @@ export const confirm = mutation({
           ? "All participants reported handover complete."
           : "A participant updated handover confirmations in My Place.",
       );
+    const recipients = await workflowContacts(ctx, l, r, a.locale);
+    const seen = new Set<string>();
+    for (const { role: recipientRole, contact } of recipients) {
+      if (!completed && contact.email === u.email?.trim().toLowerCase()) continue;
+      if (seen.has(contact.email)) continue;
+      seen.add(contact.email);
+      const stepLabel = contact.locale === 'pl'
+        ? ({ documents: 'dokumenty', deposit: 'ustalenia kaucji', keys: 'klucze' } as const)[a.step]
+        : ({ documents: 'documents', deposit: 'deposit arrangement', keys: 'keys' } as const)[a.step];
+      await queueWorkflowEmail(ctx, {
+        idempotencyKey: completed
+          ? `handover-complete:${r.key}:${recipientRole}`
+          : `handover-step:${r.key}:${a.step}:${role}:${a.confirmed}:${now}:${recipientRole}`,
+        userId: contact.userId,
+        recipient: contact.email,
+        template: completed ? 'handover_complete' : 'handover_action',
+        locale: contact.locale,
+        templateData: {
+          recipientName: contact.name,
+          actorName: u.name || 'Relok8 member',
+          listingTitle: l.title,
+          city: l.city,
+          stepLabel,
+          ctaUrl: `${APP_ORIGIN}${contact.locale === 'pl' ? '/pl' : ''}/place`,
+        },
+        relatedId: String(r._id),
+      });
+    }
   },
 });
 export const publication = mutation({

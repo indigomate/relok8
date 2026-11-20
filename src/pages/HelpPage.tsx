@@ -189,7 +189,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
     if (!supportMessage || !supportEmail) return;
     setTicketStatus('submitting');
     try {
-      await backend().action(api.services.contact, { name: supportEmail.split('@')[0], email: supportEmail, subject: 'Help Center Inquiry', message: supportMessage, topic: selectedCategory });
+      await backend().action(api.services.contact, { name: supportEmail.split('@')[0], email: supportEmail, subject: 'Help Center Inquiry', message: supportMessage, topic: selectedCategory, locale: locale === 'pl' ? 'pl' : 'en' });
       setTicketStatus('sent');
       setSupportMessage('');
     } catch (error: any) {

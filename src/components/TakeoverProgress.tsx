@@ -148,7 +148,7 @@ export function TakeoverProgress({
               run(async () => {
                 await backend().mutation(api.domain.write, {
                   operation: "acceptInvitation",
-                  input: { token },
+                  input: { token, locale },
                 });
                 navigateTo(prefix + "/place");
               })
@@ -398,7 +398,7 @@ export function TakeoverProgress({
                     {new Date(a.expiresAt).toLocaleDateString()}
                   </p>
                 )}
-                <ApplicationDecision key={a.id + a.status} landlord={p.landlord} applicant={!p.owner && !p.landlord} status={a.status} busy={busy} locale={locale} onDecide={(decision, reason) => run(() => decide({applicationId: a.id, decision, reason}))} />
+                <ApplicationDecision key={a.id + a.status} landlord={p.landlord} applicant={!p.owner && !p.landlord} status={a.status} busy={busy} locale={locale} onDecide={(decision, reason) => run(() => decide({applicationId: a.id, decision, reason, locale: locale === 'pl' ? 'pl' : 'en'}))} />
                 {["approved", "completed"].includes(a.status) && (
                   <div className="bg-slate-50 p-4 rounded-xl space-y-4">
                     <p className="text-xs text-slate-600">{say("All three participants confirm each stage. Arrange documents and payments directly; these updates are participant reports.", "Wszystkie trzy strony potwierdzają każdy etap. Dokumenty i płatności ustalacie bezpośrednio; aktualizacje są oświadczeniami uczestników.")}</p>
@@ -426,6 +426,7 @@ export function TakeoverProgress({
                                   applicationId: a.id,
                                   step: s,
                                   confirmed: e.target.checked,
+                                  locale: locale === 'pl' ? 'pl' : 'en',
                                 }),
                               )
                             }

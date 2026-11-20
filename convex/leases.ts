@@ -1,6 +1,8 @@
 import { leaseHasEnded, validLeaseDates } from '../src/utils/leaseTiming';
 import { consume, removeLease } from "./domain";
 import { requireIdentity, requireSelf, isLandlord, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing } from "./lib/auth";
+import { rememberEmailContact } from './lib/emailContacts';
+import { queueEmailDelivery } from './emails';
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
@@ -103,6 +105,7 @@ export const create = mutation({
     landlordContactPhone: v.optional(v.string()),
     universitiesNearby: v.optional(v.array(v.string())),
     transitNearby: v.optional(v.string()),
+    locale: v.optional(v.union(v.literal("en"), v.literal("pl"))),
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
@@ -115,13 +118,38 @@ export const create = mutation({
       const upload = await ctx.db.query('uploads').withIndex('by_url', q => q.eq('url', url)).unique();
       if (!upload || upload.ownerId !== identity.subject) throw new Error('Use your own uploaded photos');
     }
+    const contact = await rememberEmailContact(ctx, identity, args.locale);
+    const { locale: _locale, ...listingArgs } = args;
+    const listingEmailKey = crypto.randomUUID();
     const leaseId = await ctx.db.insert("leases", {
-      ...args,
+      ...listingArgs,
       ownerId: identity.subject,
       isLocked: false,
       status: "AVAILABLE",
       createdAt: Date.now(),
     });
+    if (contact) {
+      const expiryDate = new Intl.DateTimeFormat(contact.locale === 'pl' ? 'pl-PL' : 'en-GB', {
+        dateStyle: 'long',
+        timeZone: 'Europe/Warsaw',
+      }).format(new Date(`${args.leaseEndDate}T12:00:00Z`));
+      await queueEmailDelivery(ctx, {
+        idempotencyKey: `listing-published:${listingEmailKey}`,
+        userId: identity.subject,
+        recipient: contact.email,
+        template: 'listing_published',
+        locale: contact.locale,
+        templateData: {
+          recipientName: contact.name,
+          listingTitle: args.title,
+          city: args.city,
+          expiryDate,
+          ctaUrl: `https://relok8.online${contact.locale === 'pl' ? '/pl' : ''}/listing/${leaseId}`,
+        },
+        relatedId: String(leaseId),
+        scheduleDelivery: !contact.email.endsWith('.test'),
+      });
+    }
     return leaseId;
   },
 });
