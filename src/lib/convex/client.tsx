@@ -38,7 +38,15 @@ export interface ConvexListingDoc {
   isFurnished?: boolean;
   flatmatesCount?: number;
   distanceToCampus?: string;
+  transitNearby?: string;
   meldunekAllowed?: boolean;
+}
+
+export interface ListingTextTranslation {
+  title?: string;
+  description?: string;
+  distanceToCampus?: string;
+  transitNearby?: string;
 }
 
 export interface ConvexAIMessageDoc {
@@ -56,11 +64,11 @@ interface ConvexDBState {
   aiMessages: ConvexAIMessageDoc[];
 }
 
-export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
+export function mapConvexListingToAppListing(doc: ConvexListingDoc, translation?: ListingTextTranslation): Listing {
   return {
     id: doc._id,
     type: 'lease_takeover',
-    title: doc.title,
+    title: translation?.title || doc.title,
     city: doc.city,
     district: doc.district || '',
     address: doc.address,
@@ -78,7 +86,7 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
     squareMeters: doc.areaM2,
     isFurnished: !!doc.isFurnished,
     flatmatesCount: doc.flatmatesCount || 0,
-    distanceToCampus: doc.distanceToCampus || '',
+    distanceToCampus: translation?.distanceToCampus || doc.distanceToCampus || '',
     meldunekAllowed: !!doc.meldunekAllowed,
     landlordApproved: (doc as any).advertisingPermission === true,
     images: doc.images || [],
@@ -95,7 +103,8 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc): Listing {
     },
     amenities: doc.amenities,
     universitiesNearby: doc.universitiesNearby || [],
-    description: doc.description || '',
+    transitNearby: translation?.transitNearby || doc.transitNearby || '',
+    description: translation?.description || doc.description || '',
     floor: doc.floor === undefined ? '' : String(doc.floor),
     lat: doc.coordinates?.lat,
     lng: doc.coordinates?.lng,

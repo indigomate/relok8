@@ -34,7 +34,7 @@ Payment capture, escrow, and automated WhatsApp approvals are disabled because n
 
 ## Optional services
 
-Set GEMINI_API_KEY and GEMINI_MODEL in Convex for the assistant. Set RESEND_API_KEY, RESEND_FROM_EMAIL and SUPPORT_EMAIL for support mail. These actions authenticate callers and enforce per-user quotas. No email or AI success is fabricated when a service is unavailable. Listing alert preferences are stored only for the authenticated account's verified email; production alert delivery still requires a verified mail sender and a delivery/unsubscribe workflow.
+Set GEMINI_API_KEY and GEMINI_MODEL in Convex for the housing assistant. Set OPUS_MT_API_URL for cached live translation using Helsinki-NLP Opus-MT. Set RESEND_API_KEY, RESEND_FROM_EMAIL and SUPPORT_EMAIL for support mail. These actions authenticate callers and enforce per-user quotas. No email or AI success is fabricated when a service is unavailable. Listing alert preferences are stored only for the authenticated account's verified email; production alert delivery still requires a verified mail sender and a delivery/unsubscribe workflow. See `docs/AI-TRANSLATION-SETUP.md` for translation coverage, hosting, and safeguards.
 
 ## Vercel
 

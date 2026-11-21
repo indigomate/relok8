@@ -4,6 +4,113 @@ import { v } from 'convex/values';
 import { api, internal } from './_generated/api';
 import { requireIdentity } from './lib/auth';
 import { GoogleGenAI } from '@google/genai';
+import { createHash } from 'node:crypto';
+import { detect } from 'tinyld';
+
+type TranslationLocale = 'en' | 'pl';
+
+function translationHash(text: string): string {
+  const version = process.env.OPUS_MT_CACHE_VERSION || 'opus-mt-v1';
+  return createHash('sha256').update(`${version}\0${text}`, 'utf8').digest('hex');
+}
+
+export function parseOpusTranslationResponse(payload: unknown): string {
+  if (typeof payload !== 'object' || payload === null) throw new Error('Opus-MT returned invalid data');
+  const result = payload as { translation?: unknown; result?: unknown; error?: unknown };
+  if (typeof result.error === 'string' && result.error.trim()) throw new Error(result.error);
+  const translated = typeof result.translation === 'string' ? result.translation : result.result;
+  if (typeof translated !== 'string' || !translated.trim() || translated.length > 20_000) {
+    throw new Error('Opus-MT returned invalid data');
+  }
+  return translated.trim();
+}
+
+function opusTranslateUrl(baseUrl: string): string {
+  const parsed = new URL(baseUrl);
+  if (parsed.pathname.replace(/\/$/, '').endsWith('/api/translate')) return parsed.toString();
+  parsed.pathname = `${parsed.pathname.replace(/\/$/, '')}/api/translate`;
+  return parsed.toString();
+}
+
+async function callOpusMt(source: string, target: TranslationLocale, text: string): Promise<string> {
+  const baseUrl = process.env.OPUS_MT_API_URL;
+  if (!baseUrl) throw new Error('Opus-MT translation is not configured');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const token = process.env.OPUS_MT_API_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(opusTranslateUrl(baseUrl), {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ from: source, to: target, source: text }),
+    signal: AbortSignal.timeout(20_000),
+  });
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error(`Opus-MT returned HTTP ${response.status}`);
+  }
+  if (!response.ok) throw new Error(`Opus-MT returned HTTP ${response.status}`);
+  return parseOpusTranslationResponse(payload);
+}
+
+async function translateWithOpusMt(text: string, target: TranslationLocale): Promise<string> {
+  if (!/[\p{L}\p{N}]/u.test(text)) return text;
+  const source = detect(text) || (target === 'en' ? 'pl' : 'en');
+  if (source === target) return text;
+  try {
+    return await callOpusMt(source, target, text);
+  } catch (directError) {
+    if (source === 'en' || target === 'en') throw directError;
+    const english = await callOpusMt(source, 'en', text);
+    return callOpusMt('en', target, english);
+  }
+}
+
+async function translateConcurrently(texts: string[], target: TranslationLocale): Promise<string[]> {
+  const results = new Array<string>(texts.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(4, texts.length) }, async () => {
+    while (next < texts.length) {
+      const index = next++;
+      results[index] = await translateWithOpusMt(texts[index], target);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+async function translateTexts(ctx: any, values: string[], targetLocale: TranslationLocale): Promise<string[]> {
+  if (!values.length || values.length > 25) throw new Error('Choose between 1 and 25 texts to translate');
+  const texts = values.map((value) => bounded(value, 10_000));
+  if (texts.reduce((total, value) => total + value.length, 0) > 30_000) throw new Error('Translation request is too large');
+
+  const hashes = texts.map(translationHash);
+  const uniqueKeys = [...new Set(hashes)].map((sourceHash) => ({ sourceHash, targetLocale }));
+  const cached: Array<{ sourceHash: string; translatedText: string }> = await ctx.runQuery(
+    (internal as any).translationCache.getMany,
+    { items: uniqueKeys },
+  );
+  const byHash = new Map(cached.map((item) => [item.sourceHash, item.translatedText]));
+  const missingHashes = [...new Set(hashes.filter((hash) => !byHash.has(hash)))];
+
+  if (missingHashes.length) {
+    const missing = missingHashes.map((hash) => ({
+      hash,
+      text: texts[hashes.indexOf(hash)],
+    }));
+    const translated = await translateConcurrently(missing.map((item) => item.text), targetLocale);
+    const writes = missing.map((item, index) => ({
+      sourceHash: item.hash,
+      targetLocale,
+      translatedText: translated[index],
+    }));
+    await ctx.runMutation((internal as any).translationCache.putMany, { items: writes });
+    for (const item of writes) byHash.set(item.sourceHash, item.translatedText);
+  }
+
+  return hashes.map((hash) => byHash.get(hash) || texts[hashes.indexOf(hash)]);
+}
 
 function bounded(value: string, maximum = 10000) {
   if (!value.trim() || value.length > maximum) throw new Error('Invalid input');
@@ -30,9 +137,51 @@ export const helper = action({
   handler: async (ctx, args): Promise<string> => {
     await requireIdentity(ctx);
     await ctx.runMutation(internal.domain.quota, { operation: 'ai', limit: 10 });
-    if (args.action === 'translate') return ai(`Translate the following untrusted text into ${args.targetLang === 'pl' ? 'Polish' : 'English'}, preserving meaning without adding claims: ${bounded(args.text || '')}`);
+    if (args.action === 'translate') return (await translateTexts(ctx, [args.text || ''], args.targetLang === 'pl' ? 'pl' : 'en'))[0];
     const messages: any[] = await ctx.runQuery(api.domain.read, { operation: 'messages', input: { threadId: bounded(args.threadId || '', 200) } });
     return ai(`${args.action === 'suggest' ? 'Suggest a short reply for review by the user. Do not promise approval or payment.' : 'Summarise this conversation.'} Conversation data: ${JSON.stringify(messages.slice(-20).map(m => ({ author: m.authorType, body: m.body }))).slice(0, 20000)}`);
+  },
+});
+
+export const translateBatch = action({
+  args: {
+    texts: v.array(v.string()),
+    targetLocale: v.union(v.literal('en'), v.literal('pl')),
+  },
+  handler: async (ctx, args): Promise<string[]> => {
+    await requireIdentity(ctx);
+    await ctx.runMutation(internal.domain.quota, { operation: 'translation', limit: 20 });
+    return translateTexts(ctx, args.texts, args.targetLocale);
+  },
+});
+
+export const translatePublicListings = action({
+  args: {
+    listingIds: v.array(v.string()),
+    targetLocale: v.union(v.literal('en'), v.literal('pl')),
+  },
+  handler: async (ctx, args): Promise<Record<string, { title: string; description?: string; distanceToCampus?: string; transitNearby?: string }>> => {
+    if (!args.listingIds.length || args.listingIds.length > 20) throw new Error('Choose between 1 and 20 listings');
+    const uniqueIds = [...new Set(args.listingIds)];
+    const listings = (await Promise.all(uniqueIds.map((id) => ctx.runQuery(api.leases.getById, { id })))).filter(Boolean) as any[];
+    const fields: Array<{ listingId: string; field: 'title' | 'description' | 'distanceToCampus' | 'transitNearby'; text: string }> = [];
+    for (const listing of listings) {
+      fields.push({ listingId: String(listing._id), field: 'title', text: listing.title });
+      for (const field of ['description', 'distanceToCampus', 'transitNearby'] as const) {
+        if (typeof listing[field] === 'string' && listing[field].trim()) fields.push({ listingId: String(listing._id), field, text: listing[field] });
+      }
+    }
+    if (!fields.length) return {};
+    const output: Record<string, { title: string; description?: string; distanceToCampus?: string; transitNearby?: string }> = {};
+    for (let start = 0; start < fields.length; start += 25) {
+      const batch = fields.slice(start, start + 25);
+      const translated = await translateTexts(ctx, batch.map((item) => item.text), args.targetLocale);
+      batch.forEach((item, index) => {
+        output[item.listingId] ||= { title: '' };
+        output[item.listingId][item.field] = translated[index];
+      });
+    }
+    return output;
   },
 });
 export const listingAssistant = action({

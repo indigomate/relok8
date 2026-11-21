@@ -7,6 +7,13 @@ export default defineSchema({
     kind: v.string(), key: v.string(), ownerId: v.string(), placeId: v.optional(v.string()), data: v.any(),
   }).index("by_kind", ["kind"]).index("by_key", ["kind", "key"]).index("by_owner", ["kind", "ownerId"]).index("by_place", ["kind", "placeId"]),
   rateLimits: defineTable({ userId: v.string(), operation: v.string(), start: v.number(), count: v.number() }).index("by_user_operation", ["userId", "operation"]),
+  translationCache: defineTable({
+    sourceHash: v.string(),
+    targetLocale: v.union(v.literal("en"), v.literal("pl")),
+    translatedText: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_hash_locale", ["sourceHash", "targetLocale"]),
   // Relok8 Leases table (for live lease takeover listings)
   leases: defineTable({
     occupancyStatus: v.optional(v.union(v.literal("occupied"), v.literal("vacant"))),

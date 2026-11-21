@@ -1,6 +1,6 @@
 import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { Thread, Message, Place, Relok8User } from '../types/relok8';
@@ -14,12 +14,12 @@ import {
   getCurrentDevUser,
   updateUserAvailability,
   onloSuggestReply,
-  onloTranslate,
   getPlaceRoomMessages,
   sendPlaceRoomMessage,
   startPolling
 } from '../lib/api';
 import { OnloAvatar } from '../components/OnloAvatar';
+import { useLiveTranslations } from '../hooks/useLiveTranslations';
 
 interface MessagesPageProps {
   onBack: () => void;
@@ -55,14 +55,6 @@ const getAvatarStyle = (name: string): string => {
   return palettes[Math.abs(hash) % palettes.length];
 };
 
-// Strips redundant "Translated:", "Translation:", and surrounding quotes
-const cleanTranslation = (text: string): string => {
-  return text
-    .replace(/^(translated|translation|tłumaczenie):\s*/i, '')
-    .replace(/^["'“](.*)["'”]$/, '$1')
-    .trim();
-};
-
 export const MessagesPage: React.FC<MessagesPageProps> = ({
   onBack,
   locale = 'en',
@@ -81,9 +73,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const [activeTab, setActiveTab] = useState<'prospects' | 'place_room'>('prospects');
   const [filter, setFilter] = useState<'all' | 'unread' | 'needs_human' | 'onlo'>('all');
 
-  // In-bubble translation state (msgId -> translated text)
-  const [translations, setTranslations] = useState<Record<string, string>>({});
-  const [translatingMsgId, setTranslatingMsgId] = useState<string | null>(null);
+  const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
 
   // Composer state
   const [inputText, setInputText] = useState('');
@@ -124,6 +114,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
   const activeThread = threads.find(t => t.id === activeThreadId);
   const activePlace = places.find(p => p.id === (activeThread?.placeId || initialPlaceId)) || places[0];
+  const translationItems = useMemo(() => [
+    ...messages.map((message) => ({ key: `message:${message.id}`, text: message.body })),
+    ...(activePlace?.title ? [{ key: `place:${activePlace.id}:title`, text: activePlace.title }] : []),
+    ...(activePlace?.rules ? [{ key: `place:${activePlace.id}:rules`, text: activePlace.rules }] : []),
+    ...(activePlace?.commuteNote ? [{ key: `place:${activePlace.id}:commute`, text: activePlace.commuteNote }] : []),
+  ], [messages, activePlace?.id, activePlace?.title, activePlace?.rules, activePlace?.commuteNote]);
+  const { translations: liveTranslations, isTranslating } = useLiveTranslations(translationItems, locale, isAuthenticated);
+  const activePlaceTitle = activePlace
+    ? liveTranslations[`place:${activePlace.id}:title`] || activePlace.title
+    : '';
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -276,24 +276,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       console.warn('Suggest reply error:', e);
     } finally {
       setIsHelperLoading(false);
-    }
-  };
-
-  // In-bubble translation handler: translates once, in reader's language, no banners
-  const handleTranslateMessage = async (msg: Message) => {
-    try {
-      setTranslatingMsgId(msg.id);
-      const targetLang = locale === 'pl' ? 'pl' : 'en';
-      const rawTranslation = await onloTranslate(msg.body, targetLang);
-      const cleaned = cleanTranslation(rawTranslation);
-      setTranslations((prev) => ({
-        ...prev,
-        [msg.id]: cleaned,
-      }));
-    } catch (e) {
-      console.warn('Translation failed:', e);
-    } finally {
-      setTranslatingMsgId(null);
     }
   };
 
@@ -616,7 +598,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                         {getProspectName(activeThread?.prospectId || '')}
                       </div>
                       <div className="text-[11px] text-slate-500 truncate">
-                        about <span className="font-medium text-slate-700">{activePlace?.title || 'Place in Lublin'}</span>
+                        about <span className="font-medium text-slate-700">{activePlaceTitle || 'Place in Lublin'}</span>
                       </div>
                     </div>
                   </>
@@ -726,6 +708,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 messages.map((m, idx) => {
                   const isMe = m.authorId === devUser?.id;
                   const isOnlo = m.authorType === 'onlo';
+                  const translatedBody = liveTranslations[`message:${m.id}`];
+                  const hasTranslation = Boolean(translatedBody && translatedBody !== m.body);
+                  const visibleBody = hasTranslation && !showOriginal[m.id] ? translatedBody : m.body;
                   const prevMsg = idx > 0 ? messages[idx - 1] : null;
                   const showDayDivider =
                     !prevMsg ||
@@ -779,20 +764,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                               : 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
                           }`}
                         >
-                          <div>{m.body}</div>
-
-                          {/* In-bubble translation: shown once, in reader's language, no banners or quotes */}
-                          {translations[m.id] && (
-                            <div
-                              className={`mt-2 pt-2 border-t text-[11px] leading-relaxed ${
-                                isMe
-                                  ? 'border-indigo-400/50 text-indigo-100'
-                                  : 'border-slate-200/80 text-slate-600'
-                              }`}
-                            >
-                              {translations[m.id]}
-                            </div>
-                          )}
+                          <div>{visibleBody}</div>
                         </div>
 
                         {/* Timestamp & In-bubble Translate trigger */}
@@ -804,16 +776,21 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                             })}
                           </span>
 
-                          {!isMe && !isOnlo && !translations[m.id] && (
+                          {hasTranslation && (
                             <button
                               type="button"
-                              disabled={translatingMsgId === m.id}
-                              onClick={() => handleTranslateMessage(m)}
-                              className="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                              onClick={() => setShowOriginal((current) => ({ ...current, [m.id]: !current[m.id] }))}
+                              className="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-0.5 cursor-pointer"
                             >
                               <Globe className="w-2.5 h-2.5" />
-                              <span>{translatingMsgId === m.id ? 'Translating...' : 'Translate'}</span>
+                              <span>{showOriginal[m.id]
+                                ? (locale === 'pl' ? 'Pokaż tłumaczenie' : 'Show translation')
+                                : (locale === 'pl' ? 'Tłumaczenie Opus-MT · Oryginał' : 'Opus-MT translation · Original')}
+                              </span>
                             </button>
+                          )}
+                          {!hasTranslation && isTranslating && (
+                            <span>{locale === 'pl' ? 'Tłumaczenie…' : 'Translating…'}</span>
                           )}
                         </div>
                       </div>

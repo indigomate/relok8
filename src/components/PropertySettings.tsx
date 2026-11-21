@@ -1,11 +1,13 @@
 import { timingLabels } from '../utils/leaseTiming';
 import { formatPLN } from '../utils/formatters';
 import { knownMonthlyCost, billsLabel } from '../utils/listingFlow';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { SupportedLocale } from '../utils/formatters';
 import type { Message, Place } from '../types/relok8';
+import { useLiveTranslations } from '../hooks/useLiveTranslations';
+import { LiveTranslatedText } from './LiveTranslatedText';
 
 export function PropertySettings({ listingId, owner, landlord, locale, onDeleteListing }: {
   listingId: string; owner: boolean; landlord: boolean; locale: SupportedLocale;
@@ -15,6 +17,11 @@ export function PropertySettings({ listingId, owner, landlord, locale, onDeleteL
   const write = useMutation(api.domain.write);
   const [roomOpen, setRoomOpen] = useState(false);
   const roomMessages = useQuery(api.domain.read, roomOpen ? {operation: 'roomMessages', input: {placeId: listingId}} : 'skip') as Message[] | undefined;
+  const translationItems = useMemo(() => [
+    ...(roomMessages || []).map((item) => ({ key: `room-message:${item.id}`, text: item.body })),
+    ...(place?.exitNotes ? [{ key: `place:${listingId}:exit-notes`, text: place.exitNotes }] : []),
+  ], [roomMessages, place?.exitNotes, listingId]);
+  const { translations } = useLiveTranslations(translationItems, locale, roomOpen || Boolean(place?.exitNotes));
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +57,7 @@ export function PropertySettings({ listingId, owner, landlord, locale, onDeleteL
     {(place.status === 'occupied' || place.status === 'exit_requested') && <details className="border-t border-slate-100 pt-3">
       <summary className="cursor-pointer min-h-11 py-2 font-semibold">{say('Early lease exit', 'Wcześniejsze zakończenie najmu')}</summary>
       {place.leaveDate && <p className="text-sm my-3">{say('Proposed departure: ', 'Proponowana wyprowadzka: ')}{place.leaveDate}</p>}
-      {place.exitNotes && <p className="text-sm whitespace-pre-wrap break-words">{place.exitNotes}</p>}
+      {place.exitNotes && <p className="text-sm"><LiveTranslatedText original={place.exitNotes} translated={translations[`place:${listingId}:exit-notes`]} locale={locale} /></p>}
       {owner && place.status === 'occupied' && <form className="grid gap-3" onSubmit={e => {e.preventDefault();const form = new FormData(e.currentTarget);void run(() => mutate('requestExit', { leaveDate: form.get('date'), notes: form.get('notes') }));}}>
         <label className="grid gap-2 text-sm">{say('Departure date', 'Data wyprowadzki')}<input className="border rounded-lg p-3" type="date" name="date" required /></label>
         <label className="grid gap-2 text-sm">{say('Notes for the landlord', 'Uwagi dla właściciela')}<textarea className="border rounded-lg p-3" name="notes" maxLength={2000} /></label>
@@ -67,7 +74,7 @@ export function PropertySettings({ listingId, owner, landlord, locale, onDeleteL
       <summary className="cursor-pointer min-h-11 py-2 font-semibold">{say('Private property conversation', 'Prywatna rozmowa o lokalu')}</summary>
       <p className="text-xs text-slate-500 py-2">{say('For the listing author and landlord. Applicant enquiries are in Messages.', 'Dla autora ogłoszenia i właściciela. Zapytania kandydatów znajdziesz w Wiadomościach.')}</p>
       <div className="max-h-60 overflow-y-auto space-y-3 py-3" role="log" aria-label={say('Property messages', 'Wiadomości o lokalu')}>
-        {roomMessages === undefined ? <p role="status">{say('Loading messages…', 'Wczytywanie wiadomości…')}</p> : roomMessages.length === 0 ? <p className="text-sm text-slate-500">{say('No messages yet.', 'Brak wiadomości.')}</p> : roomMessages.map(m => <p key={m.id} className="text-sm whitespace-pre-wrap break-words border-l-2 border-slate-200 pl-3"><span className="block text-xs text-slate-500">{m.authorType === 'landlord' ? say('Landlord', 'Właściciel') : say('Listing author', 'Autor ogłoszenia')}</span>{m.body}</p>)}
+        {roomMessages === undefined ? <p role="status">{say('Loading messages…', 'Wczytywanie wiadomości…')}</p> : roomMessages.length === 0 ? <p className="text-sm text-slate-500">{say('No messages yet.', 'Brak wiadomości.')}</p> : roomMessages.map(m => <p key={m.id} className="text-sm border-l-2 border-slate-200 pl-3"><span className="block text-xs text-slate-500">{m.authorType === 'landlord' ? say('Landlord', 'Właściciel') : say('Listing author', 'Autor ogłoszenia')}</span><LiveTranslatedText original={m.body} translated={translations[`room-message:${m.id}`]} locale={locale} /></p>)}
       </div>
       <form className="space-y-3" onSubmit={e => {e.preventDefault();void run(async () => {await mutate('roomMessage', {body: message.trim()});setMessage('');});}}>
         <label className="grid gap-2 text-sm">{say('Message', 'Wiadomość')}<textarea required maxLength={5000} value={message} onChange={e => setMessage(e.target.value)} className="w-full rounded-lg border p-3" /></label>

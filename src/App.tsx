@@ -52,7 +52,7 @@ import { parseRoute, navigateTo, navigateToCity, navigateToListing, switchLocale
 import { shouldShowGlobalOnlo } from './utils/onloAvailability';
 import { uploadListingPhotos } from './lib/api';
 import { ConvexProvider, mapConvexListingToAppListing } from './lib/convex/client';
-import { useQuery, useMutation, useConvexAuth } from 'convex/react';
+import { useAction, useQuery, useMutation, useConvexAuth } from 'convex/react';
 import { api } from '../convex/_generated/api';
 
 const DEFAULT_SEARCH: SearchState = {
@@ -239,6 +239,13 @@ function Relok8App() {
   const { isAuthenticated: isBackendAuthenticated } = useConvexAuth();
   const liveConvexLeases = useQuery(api.leases.get, {});
   const selectedLease = useQuery(api.leases.getById, currentRoute.type === "listing-detail" && currentRoute.listingId ? {id:currentRoute.listingId} : "skip");
+  const translatePublicListings = useAction((api as any).services.translatePublicListings);
+  const [listingTranslations, setListingTranslations] = useState<Record<string, {
+    title?: string;
+    description?: string;
+    distanceToCampus?: string;
+    transitNearby?: string;
+  }>>({});
   const createConvexLease = useMutation(api.leases?.create);
   const syncEmailAccount = useMutation((api as any).emailPreferences.syncAccount);
   const deleteConvexLease = useMutation(api.leases?.deleteLease);
@@ -253,6 +260,30 @@ function Relok8App() {
   }, [currentUser?.email, isBackendAuthenticated, locale, syncEmailAccount]);
   useEffect(() => { if (remoteFavorites) setSavedIds(remoteFavorites); }, [remoteFavorites]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setListingTranslations({});
+    if (!liveConvexLeases?.length) return () => { cancelled = true; };
+    const run = async () => {
+      try {
+        const next: Record<string, { title?: string; description?: string; distanceToCampus?: string; transitNearby?: string }> = {};
+        for (let start = 0; start < liveConvexLeases.length; start += 20) {
+          const translated = await translatePublicListings({
+            listingIds: liveConvexLeases.slice(start, start + 20).map((listing) => String(listing._id)),
+            targetLocale: locale === 'pl' ? 'pl' : 'en',
+          });
+          if (cancelled) return;
+          Object.assign(next, translated);
+        }
+        if (!cancelled) setListingTranslations(next);
+      } catch {
+        if (!cancelled) setListingTranslations({});
+      }
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, [liveConvexLeases, locale, translatePublicListings]);
+
   // Synchronize live Convex backend leases with reactive listings state
   useEffect(() => {
     if (liveConvexLeases !== undefined) {
@@ -262,7 +293,7 @@ function Relok8App() {
           localStorage.removeItem('r8_listings');
         } catch {}
       } else {
-        const mapped: Listing[] = liveConvexLeases.map((l: any) => mapConvexListingToAppListing(l));
+        const mapped: Listing[] = liveConvexLeases.map((l: any) => mapConvexListingToAppListing(l, listingTranslations[String(l._id)]));
         const cleanMapped = mapped.filter((l: any) => l && l.id && !l.id.startsWith('cx_list_') && !l.id.startsWith('place-'));
         setListings(cleanMapped);
         try {
@@ -270,7 +301,7 @@ function Relok8App() {
         } catch {}
       }
     }
-  }, [liveConvexLeases]);
+  }, [liveConvexLeases, listingTranslations]);
   const [isLoginOpen, setIsLoginOpen] = useState(() => !isClerkSignedIn && (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up'));
   const [loginMode, setLoginMode] = useState<'signin' | 'signup'>(() => currentRoute.type === 'sign-up' ? 'signup' : 'signin');
   const [loginReason, setLoginReason] = useState('');
@@ -815,7 +846,9 @@ function Relok8App() {
       {/* Route Views */}
       {currentRoute.type === 'listing-detail' && currentRoute.listingId ? (
         (() => {
-          const detailListing = selectedLease ? mapConvexListingToAppListing(selectedLease as any) : listings.find((l) => l.id === currentRoute.listingId);
+          const detailListing = selectedLease
+            ? mapConvexListingToAppListing(selectedLease as any, listingTranslations[String((selectedLease as any)._id)])
+            : listings.find((l) => l.id === currentRoute.listingId);
           if (!detailListing) return <main className="max-w-3xl mx-auto px-6 py-20"><h1 className="text-2xl font-bold">{isLoadingListings ? 'Loading listing…' : 'Listing not found'}</h1><p>{isLoadingListings ? 'Please wait while the listing loads.' : 'This listing may have been removed or the link may be incorrect.'}</p></main>;
           return (
             <ListingDetailPage

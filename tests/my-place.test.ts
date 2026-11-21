@@ -16,6 +16,7 @@ vi.mock('convex/react', async () => {
       return undefined;
     },
     useMutation: () => vi.fn(),
+    useAction: () => vi.fn(async (_args: unknown) => []),
   };
 });
 import { PlacePage } from '../src/pages/PlacePage';
