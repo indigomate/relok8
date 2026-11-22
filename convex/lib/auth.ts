@@ -1,5 +1,4 @@
 import { validLeaseDates } from '../../src/utils/leaseTiming';
-import { publicMemberAlias } from '../../src/utils/privacy';
 import type { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";
 
 type AuthCtx = Pick<QueryCtx | MutationCtx | ActionCtx, "auth">;
@@ -36,28 +35,7 @@ export async function requireLandlord(ctx: AuthCtx, record: { landlordUserId?: s
 }
 export function publicListing<T extends Record<string, any>>(record: T): T {
   const { landlordContactPhone, landlordContactEmail, ownerId, landlordUserId, placeState, lockedByUserId, reservedByName, ...safe } = record;
-  const publicAddress = [record.district, record.city].filter(Boolean).join(', ') || record.city || '';
-  const publicCoordinates = record.coordinates && Number.isFinite(record.coordinates.lat) && Number.isFinite(record.coordinates.lng)
-    ? {
-        lat: Math.round(record.coordinates.lat * 100) / 100,
-        lng: Math.round(record.coordinates.lng * 100) / 100,
-      }
-    : undefined;
-  const currentTenant = record.currentTenant
-    ? {
-        ...record.currentTenant,
-        name: publicMemberAlias(String(ownerId || record._id || 'listing-author')),
-        avatar: '',
-      }
-    : undefined;
-  return {
-    ...safe,
-    address: publicAddress,
-    coordinates: publicCoordinates,
-    currentTenant,
-    landlordName: record.landlordName ? 'Property owner' : undefined,
-    advertisingPermission: placeState?.advertisingPermission === true,
-  } as unknown as T;
+  return { ...safe, advertisingPermission: placeState?.advertisingPermission === true } as unknown as T;
 }
 export function validateMoney(value: unknown, positive = false, maximum = 1000000) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || (positive && value <= 0) || value > maximum || Math.abs(value * 100 - Math.round(value * 100)) > 0.000001) throw new Error('Invalid amount');

@@ -1,4 +1,4 @@
-# Listing activation and public identity privacy
+# Listing activation and public visibility
 
 ## Product principle
 
@@ -10,7 +10,7 @@ The email and listing form focus on practical value:
 
 - Find an interested replacement before moving out.
 - Keep enquiries, landlord coordination, and handover steps in one workspace.
-- Show availability without publishing the member's name or exact street address.
+- Show the member's supplied name and full address so interested people know who they are contacting and where the home is located.
 - Pause the listing if availability changes.
 
 Relok8 does not promise that a listing will secure a replacement, obtain landlord approval, transfer a contract, or protect a deposit.
@@ -38,16 +38,16 @@ Delivery stops before sending when the user has withdrawn consent, the current e
 
 These boundaries can be changed only when the product behavior and copy are updated together.
 
-## Public versus private identity
+## Public versus private information
 
 | Data | Public listing or conversation label | Authorized/private workflow |
 | --- | --- | --- |
-| Member name | Stable alias such as `Member A1B2` | Account owner and necessary workflow records may retain the verified name |
-| Avatar | Hidden | May remain in the account provider |
-| Home address | District and city | Exact address is retained for the listing owner and authorized workflow participants |
-| Map coordinates | Rounded to two decimal places | Original coordinates remain in the protected listing record |
+| Member name | Supplied account/listing name | Retained for account and workflow records |
+| Avatar | Supplied listing avatar | May also remain in the account provider |
+| Home address | Full supplied street address | Retained in the listing record |
+| Map coordinates | Supplied map position | Retained in the listing record |
 | Landlord contact | Hidden | Used only in authorized landlord coordination |
-| Prospect identity | Stable alias in messages and applications | Verified account identity remains with Clerk and protected profile data |
+| Prospect identity | Verified profile name for conversation participants | Verified account identity remains with Clerk and protected profile data |
 
 Members are also told to remove faces, documents, apartment numbers, and other personal information from listing photos. Free-text and images still require moderation because a member can type or upload personal data themselves.
 
@@ -58,5 +58,5 @@ Members are also told to remove faces, documents, apartment numbers, and other p
 - Run the job again: no duplicate is created.
 - Reach day 10 without listing: exactly one follow-up is queued.
 - Publish a listing or withdraw consent: no further invitation is queued.
-- Open a public listing: no account name, exact address, contact detail, or precise coordinate is returned.
+- Open a public listing: the supplied name, full address, and precise location are visible, while account IDs, landlord email, and landlord phone remain absent.
 - Trigger a complaint or bounce webhook: the address is suppressed from future delivery.

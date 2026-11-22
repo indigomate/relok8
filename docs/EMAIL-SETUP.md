@@ -85,7 +85,7 @@ Transactional does not mean unlimited. Each email needs an idempotency key, a de
 - Timing: first message once the account is at least 3 days old; one follow-up once it is at least 10 days old.
 - Stop conditions: a listing is published, marketing consent is withdrawn, the user unsubscribes, or Resend reports a bounce or complaint.
 - Honest product boundaries: publishing is free; a listing can contain up to 8 photos, remains public only while the lease is current, and can be paused. These are real operating limits, not simulated scarcity.
-- Privacy claim: public listing queries replace names with stable member aliases, remove public avatars and contact details, reduce the address to district and city, and round map coordinates. Exact details remain available only in authorized workflows.
+- Visibility claim: public listings show the supplied name, full street address, avatar, and map position. Account IDs and direct landlord phone/email details remain hidden and available only in authorized workflows.
 
 ## 4. Shared design system
 

@@ -20,7 +20,6 @@ import {
 } from '../lib/api';
 import { OnloAvatar } from '../components/OnloAvatar';
 import { useLiveTranslations } from '../hooks/useLiveTranslations';
-import { publicMemberAlias } from '../utils/privacy';
 
 interface MessagesPageProps {
   onBack: () => void;
@@ -189,7 +188,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const tenantCoveredName = currentUser?.name || 'the tenant';
 
   // Resolve prospect names
-  const getProspectName = (prospectId: string): string => publicMemberAlias(prospectId, locale);
+  const getProspectName = (prospectId: string): string => (threads.find(t => t.prospectId === prospectId) as any)?.prospectName || 'Prospective tenant';
   const getThreadPreview = (_t: Thread): string => 'Open conversation';
 
   // Filtered threads list

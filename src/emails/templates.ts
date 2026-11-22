@@ -225,7 +225,7 @@ function contentFor(kind: EmailTemplateKind, locale: EmailLocale, data: EmailTem
         intro: `${hello} ${pick(locale, 'If you are leaving a room or lease early, a Relok8 listing helps you find an interested person and coordinate the next steps in one place.', 'Jeśli wcześniej opuszczasz pokój lub najem, ogłoszenie Relok8 pomaga znaleźć zainteresowaną osobę i skoordynować kolejne kroki w jednym miejscu.')}`,
         paragraphs: [
           pick(locale, 'Publishing is free. Add up to 8 photos, keep the listing active until the current lease end date, and pause it whenever availability changes.', 'Publikacja jest bezpłatna. Dodaj maksymalnie 8 zdjęć, utrzymuj ogłoszenie do końca obecnego najmu i wstrzymaj je, gdy zmieni się dostępność.'),
-          pick(locale, 'Your public page uses an anonymous member label and shows only the district and city—not your name or exact street address.', 'Publiczna strona używa anonimowej nazwy użytkownika i pokazuje tylko dzielnicę oraz miasto, bez imienia i dokładnego adresu.'),
+          pick(locale, 'Your listing shows the name and full address you provide so interested people know who they are contacting and where the home is located. Phone numbers and email addresses stay private.', 'Ogłoszenie pokazuje podane imię i pełny adres, aby zainteresowane osoby wiedziały, z kim się kontaktują i gdzie znajduje się lokal. Numery telefonów i adresy e-mail pozostają prywatne.'),
         ],
         ctaLabel: pick(locale, 'List your place free', 'Dodaj bezpłatne ogłoszenie'),
         ctaUrl: safeUrl(data.ctaUrl, `${APP_ORIGIN}/list`),

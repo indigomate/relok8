@@ -352,7 +352,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                       placeholder="e.g. ul. Puławska 42 / 12"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                     />
-                    <p className="mt-1.5 text-[11px] leading-4 text-slate-500">{locale === 'pl' ? 'Dokładny adres jest przechowywany prywatnie. Publicznie pokazujemy tylko dzielnicę i miasto.' : 'Your exact address is stored privately. Public pages show only the district and city.'}</p>
+                    <p className="mt-1.5 text-[11px] leading-4 text-slate-500">{locale === 'pl' ? 'Ten pełny adres będzie widoczny w publicznym ogłoszeniu, aby zainteresowane osoby wiedziały, gdzie znajduje się lokal.' : 'This full address will appear on the public listing so interested people know where the home is located.'}</p>
                   </div>
 
                   <div className="sm:col-span-2">

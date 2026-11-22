@@ -5,7 +5,6 @@ import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
 import { DEFAULT_REWARD_CONFIG, DEFAULT_INSURANCE_CONFIG } from "../src/types/relok8";
 import { queueEmailDelivery } from './emails';
 import { rememberEmailContact } from './lib/emailContacts';
-import { publicMemberAlias } from '../src/utils/privacy';
 
 const text = (value: unknown, max = 10000): string => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error('Invalid text');
@@ -83,15 +82,24 @@ export const read = query({
       }
       case 'threads': {
         const rows = await records(ctx, 'thread');
+        const profiles = await ctx.db.query('profiles').collect();
+        const names = new Map(profiles.map((profile) => [profile.userId, profile.fullName]));
         const result = [];
         for (const row of rows) {
           if (input.placeId && row.placeId !== input.placeId) continue;
           const lease = await leaseFor(ctx, row.placeId);
-          if (row.ownerId === identity.subject || owns(lease, identity) || landlord(lease, identity)) result.push(row.data);
+          if (row.ownerId === identity.subject || owns(lease, identity) || landlord(lease, identity)) {
+            result.push({ ...row.data, prospectName: names.get(row.data.prospectId) || row.data.prospectName });
+          }
         }
         return result.sort((a, b) => b.lastMessageAt - a.lastMessageAt);
       }
-      case 'thread': return (await authorizedThread(ctx, text(input.id, 100), identity)).row.data;
+      case 'thread': {
+        const { row } = await authorizedThread(ctx, text(input.id, 100), identity);
+        const profiles = await ctx.db.query('profiles').collect();
+        const profile = profiles.find((item) => item.userId === row.data.prospectId);
+        return { ...row.data, prospectName: profile?.fullName || row.data.prospectName };
+      }
       case 'messages': {
         const { row } = await authorizedThread(ctx, text(input.threadId, 100), identity);
         return (await records(ctx, 'message')).filter(r => r.data.threadId === row.key).map(r => r.data).sort((a, b) => a.createdAt - b.createdAt);
@@ -130,7 +138,7 @@ export const write = mutation({
       const key = `${lease._id}:${uid}`;
       const existing = await record(ctx, 'thread', key);
       if (existing) return existing.data;
-      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: publicMemberAlias(uid), status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
+      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Prospect', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
     }
     if (operation === 'sendMessage' || operation === 'takeover' || operation === 'askOnlo' || operation === 'markThreadRead') {
       const { row, lease } = await authorizedThread(ctx, text(input.threadId, 200), identity);
