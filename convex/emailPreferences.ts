@@ -204,7 +204,7 @@ export const getDeliveryPolicy = internalQuery({
     return {
       suppressed: Boolean(suppression),
       preferenceLinkAllowed: emailMatchesUser,
-      marketingAllowed: Boolean(emailMatchesUser && profile?.marketingConsent === true && profile?.emailWeeklyDigest === true),
+      marketingAllowed: Boolean(emailMatchesUser && profile?.marketingConsent === true),
     };
   },
 });

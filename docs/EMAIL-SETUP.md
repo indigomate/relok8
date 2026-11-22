@@ -4,10 +4,11 @@ Relok8 is WhatsApp-first for daily apartment discovery. Email should handle acco
 
 ## Production automation status
 
-The application now queues welcome, unread-message, listing-expiry, and consented weekly-digest emails through the durable `emailDeliveries` ledger.
+The application now queues welcome, unread-message, listing-expiry, consented listing-invitation, and consented weekly-digest emails through the durable `emailDeliveries` ledger.
 
 - Hourly at `:20`: unread-message summaries after a 30-minute wait
 - Daily at `06:35 UTC`: listing reminders seven days and one day before lease end
+- Daily at `09:40 UTC`: listing invitations for verified, opted-in members with no listing (day 3 and day 10 only)
 - Monday at `07:10 UTC`: consented weekly property digest
 - Preference center: `/email-preferences?token=...`
 - RFC 8058 endpoint: `/email/unsubscribe?token=...` on the Convex site
@@ -62,6 +63,7 @@ Set `Reply-To: support@relok8.online` on product emails. Do not use a `no-reply@
 9. **Listing expiry reminder** — seven days and one day before the lease/listing becomes unavailable.
 10. **Weekly saved-search digest** — optional marketing email for people who explicitly opt in. WhatsApp remains the daily channel.
 11. **Welcome to Relok8** — a single onboarding email after verification, tailored to finding a room or leaving a lease.
+12. **Invitation to list a place** — no more than two marketing messages, on day 3 and day 10, only for verified members who explicitly consented and still have no listing.
 
 Do not send an email for every chat message, saved listing, page visit, Onlo response, or WhatsApp delivery. Relok8 does not currently support payments or escrow, so it must not send payment-received, deposit-held, refund, or payout emails.
 
@@ -73,9 +75,17 @@ Do not send an email for every chat message, saved listing, page visit, Onlo res
 | Invitation, request, decision, handover | Convex + Resend | Transactional | No; required for an active workflow |
 | Support receipt | Convex + Resend | Transactional | No |
 | Unread summary, expiry reminder | Convex + Resend | Product notification | Yes, through notification settings |
-| Weekly digest | Convex + Resend | Marketing | Yes, one click; explicit opt-in required |
+| Weekly digest, invitation to list | Convex + Resend | Marketing | Yes, one click; explicit opt-in required |
 
 Transactional does not mean unlimited. Each email needs an idempotency key, a delivery record, retry limits, and a link to the exact Relok8 screen. Marketing consent must never be inferred from creating an account, saving a room, or accepting WhatsApp alerts.
+
+### Listing-invitation rules
+
+- Eligibility: verified account, deliverable email address, explicit Relok8 marketing consent, and no listing owned by that user.
+- Timing: first message once the account is at least 3 days old; one follow-up once it is at least 10 days old.
+- Stop conditions: a listing is published, marketing consent is withdrawn, the user unsubscribes, or Resend reports a bounce or complaint.
+- Honest product boundaries: publishing is free; a listing can contain up to 8 photos, remains public only while the lease is current, and can be paused. These are real operating limits, not simulated scarcity.
+- Privacy claim: public listing queries replace names with stable member aliases, remove public avatars and contact details, reduce the address to district and city, and round map coordinates. Exact details remain available only in authorized workflows.
 
 ## 4. Shared design system
 

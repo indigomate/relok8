@@ -308,6 +308,7 @@ export default defineSchema({
       v.literal("sign_in_code"),
       v.literal("password_reset"),
       v.literal("welcome"),
+      v.literal("listing_nudge"),
       v.literal("landlord_invitation"),
       v.literal("takeover_request"),
       v.literal("takeover_approved"),

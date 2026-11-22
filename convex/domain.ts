@@ -5,6 +5,7 @@ import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
 import { DEFAULT_REWARD_CONFIG, DEFAULT_INSURANCE_CONFIG } from "../src/types/relok8";
 import { queueEmailDelivery } from './emails';
 import { rememberEmailContact } from './lib/emailContacts';
+import { publicMemberAlias } from '../src/utils/privacy';
 
 const text = (value: unknown, max = 10000): string => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error('Invalid text');
@@ -129,7 +130,7 @@ export const write = mutation({
       const key = `${lease._id}:${uid}`;
       const existing = await record(ctx, 'thread', key);
       if (existing) return existing.data;
-      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Prospect', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
+      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: publicMemberAlias(uid), status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
     }
     if (operation === 'sendMessage' || operation === 'takeover' || operation === 'askOnlo' || operation === 'markThreadRead') {
       const { row, lease } = await authorizedThread(ctx, text(input.threadId, 200), identity);

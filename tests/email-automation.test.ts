@@ -72,6 +72,54 @@ describe('email automation and consent', () => {
     expect((digests[0].templateData as any).listings).toHaveLength(1);
   });
 
+  test('listing invitations require consent, stop after two sends, and stop when a listing exists', async () => {
+    const t = convexTest(schema, modules);
+    const candidate = t.withIdentity(identity('listing-candidate'));
+    const withoutConsent = t.withIdentity(identity('listing-no-consent'));
+    const alreadyListed = t.withIdentity(identity('listing-owner'));
+    const emailApi = (api as any).emailPreferences;
+    const automation = (internal as any).emailAutomation;
+
+    await candidate.mutation(emailApi.syncAccount, { locale: 'en' });
+    await candidate.mutation(emailApi.updateMine, {
+      locale: 'en', unreadMessages: true, listingReminders: true,
+      weeklyDigest: false, marketingConsent: true, digestCities: [], digestRoomTypes: [],
+    });
+    await withoutConsent.mutation(emailApi.syncAccount, { locale: 'en' });
+    await alreadyListed.mutation(emailApi.syncAccount, { locale: 'en' });
+    await alreadyListed.mutation(emailApi.updateMine, {
+      locale: 'en', unreadMessages: true, listingReminders: true,
+      weeklyDigest: false, marketingConsent: true, digestCities: [], digestRoomTypes: [],
+    });
+    await alreadyListed.mutation((api as any).leases.create, listing());
+
+    await t.run(async (ctx) => {
+      const profiles = await ctx.db.query('profiles').collect();
+      for (const profile of profiles) {
+        await ctx.db.patch(profile._id, {
+          createdAt: Date.now() - (profile.userId === 'listing-candidate' ? 4 : 20) * 86_400_000,
+        });
+      }
+    });
+
+    expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(1);
+    expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(0);
+
+    await t.run(async (ctx) => {
+      const profile = await ctx.db.query('profiles').filter((q) => q.eq(q.field('userId'), 'listing-candidate')).unique();
+      await ctx.db.patch(profile!._id, { createdAt: Date.now() - 11 * 86_400_000 });
+    });
+
+    expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(1);
+    expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(0);
+
+    const invitations = (await t.run((ctx) => ctx.db.query('emailDeliveries').collect()))
+      .filter((row) => row.template === 'listing_nudge');
+    expect(invitations).toHaveLength(2);
+    expect(invitations.every((row) => row.recipient === 'listing-candidate@example.test')).toBe(true);
+    expect(invitations.every((row) => row.category === 'marketing')).toBe(true);
+  });
+
   test('queues listing reminders at seven days and unread summaries after thirty minutes', async () => {
     const t = convexTest(schema, modules);
     const owner = t.withIdentity(identity('owner'));

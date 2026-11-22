@@ -14,6 +14,7 @@ import { EarlyLockModal } from '../components/EarlyLockModal';
 import { AIProxyChatModal } from '../components/AIProxyChatModal';
 import { OnloAvatar } from '../components/OnloAvatar';
 import { useConvex } from '../lib/convex/client';
+import { publicMemberAlias } from '../utils/privacy';
 
 interface ListingDetailPageProps {
   openComposer?: boolean;
@@ -67,6 +68,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
     avatar: '',
     reasonForLeaving: ''
   };
+  const tenantDisplayName = publicMemberAlias(`listing:${listing.id}`, locale);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -78,13 +80,15 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
     e.preventDefault();
     if (!currentUser) {
       if (onRequireLogin) {
-        onRequireLogin(`Sign up or log in to message ${tenant.name} directly and coordinate the lease takeover.`);
+        onRequireLogin(locale === 'pl' ? 'Zarejestruj się lub zaloguj, aby napisać do autora ogłoszenia.' : 'Sign up or log in to message the listing author.');
       }
       return;
     }
     if(inquiryPending)return;
     setInquiryPending(true);
-    const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in your listing on ${listing.address}. Could we confirm the occupancy, proposed takeover date (${formatDate(listing.availableDate, locale)}) and arrange a viewing?`;
+    const finalMessage = inquiryText.trim() || (locale === 'pl'
+      ? `Dzień dobry, interesuje mnie to ogłoszenie. Czy możemy potwierdzić dostępność, proponowaną datę przejęcia (${formatDate(listing.availableDate, locale)}) i umówić oglądanie?`
+      : `Hello, I am interested in this listing. Could we confirm availability, the proposed takeover date (${formatDate(listing.availableDate, locale)}), and arrange a viewing?`);
     try {
       const thread = await createOrGetThread(listing.id);
       await sendThreadMessage(thread.id, finalMessage);
@@ -100,7 +104,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const handleMessageClick = () => {
     if (!currentUser) {
       if (onRequireLogin) {
-        onRequireLogin(`Sign in to message ${tenant.name} directly.`);
+        onRequireLogin(locale === 'pl' ? 'Zaloguj się, aby napisać do autora ogłoszenia.' : 'Sign in to message the listing author.');
       }
       return;
     }
@@ -333,7 +337,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               className="p-3.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-98 cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 text-indigo-100" />
-              <span>{locale === 'pl' ? `Napisz do: ${tenant.name.split(' ')[0]}` : `Message ${tenant.name.split(' ')[0]}`}</span>
+              <span>{locale === 'pl' ? 'Napisz do autora' : 'Message listing author'}</span>
             </button>
 
             <button
@@ -369,11 +373,11 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         {/* Current Tenant Card (Screenshot 4: Avatar circle with initials, Name, Current tenant pill, subtitle) */}
         <div className="flex items-center gap-3.5 py-1">
           <div className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-sm shrink-0">
-            {tenant.name.split(' ').map((n: string) => n[0]).join('') || 'MS'}
+            {tenantDisplayName.split(' ').map((part) => part[0]).join('')}
           </div>
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-sm">{tenant.name}</span>
+              <span className="font-bold text-slate-900 text-sm">{tenantDisplayName}</span>
               <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700">
                 Current tenant
               </span>
@@ -478,7 +482,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer whitespace-nowrap flex items-center gap-1.5"
           >
             <MessageSquare className="w-4 h-4 text-indigo-100" />
-            <span>{locale === 'pl' ? `Napisz do: ${tenant.name.split(' ')[0]}` : `Message ${tenant.name.split(' ')[0]}`}</span>
+            <span>{locale === 'pl' ? 'Napisz do autora' : 'Message listing author'}</span>
           </button>
         </div>
       </div>
@@ -527,7 +531,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
             <h3 className="text-base font-bold text-slate-900">
-              Message {tenant.name}
+              {locale === 'pl' ? `Wiadomość do: ${tenantDisplayName}` : `Message ${tenantDisplayName}`}
             </h3>
             <p className="text-xs text-slate-500">
               Coordinate a viewing or introduce yourself for the takeover on {listing.address}.
@@ -536,7 +540,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
               <textarea
                 value={inquiryText}
                 onChange={(e) => setInquiryText(e.target.value)}
-                placeholder={`Hi ${tenant.name}, I'm interested in taking over your lease from ${moveInDateFormatted}...`}
+                placeholder={locale === 'pl' ? `Dzień dobry, interesuje mnie przejęcie najmu od ${moveInDateFormatted}...` : `Hello, I'm interested in taking over the lease from ${moveInDateFormatted}...`}
                 rows={4}
                 className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600"
               />

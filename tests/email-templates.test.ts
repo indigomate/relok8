@@ -27,12 +27,14 @@ describe('Relok8 email templates', () => {
   });
 
   test('marketing email includes unsubscribe controls', () => {
-    const rendered = renderRelok8Email('weekly_digest', 'en', {
-      unsubscribeUrl: 'https://relok8.online/unsubscribe/example',
-    });
-    expect(rendered.category).toBe('marketing');
-    expect(rendered.html).toContain('Unsubscribe');
-    expect(rendered.text).toContain('Unsubscribe:');
+    for (const kind of ['weekly_digest', 'listing_nudge'] as const) {
+      const rendered = renderRelok8Email(kind, 'en', {
+        unsubscribeUrl: 'https://relok8.online/unsubscribe/example',
+      });
+      expect(rendered.category).toBe('marketing');
+      expect(rendered.html).toContain('Unsubscribe');
+      expect(rendered.text).toContain('Unsubscribe:');
+    }
   });
 
   test('transactional templates do not display a marketing unsubscribe link', () => {

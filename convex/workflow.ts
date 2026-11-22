@@ -16,6 +16,7 @@ import {
   rememberEmailContact,
   type EmailContact,
 } from './lib/emailContacts';
+import { publicMemberAlias } from '../src/utils/privacy';
 
 const APP_ORIGIN = 'https://relok8.online';
 
@@ -175,7 +176,8 @@ export const request = mutation({
     const threadId = l._id + ':' + u.subject;
     const thread = await ctx.db.query('domainRecords').withIndex('by_key', q => q.eq('kind','thread').eq('key',threadId)).unique();
     const now = Date.now();
-    if(!thread) await ctx.db.insert('domainRecords',{kind:'thread',key:threadId,ownerId:u.subject,placeId:l._id,data:{id:threadId,placeId:l._id,prospectId:u.subject,prospectName:u.name||'Applicant',status:'open',handledBy:'tenant',lastMessageAt:now,unreadFor:[l.ownerId,l.landlordUserId].filter(Boolean)}});
+    const applicantAlias = publicMemberAlias(u.subject, emailLocale(a.locale));
+    if(!thread) await ctx.db.insert('domainRecords',{kind:'thread',key:threadId,ownerId:u.subject,placeId:l._id,data:{id:threadId,placeId:l._id,prospectId:u.subject,prospectName:applicantAlias,status:'open',handledBy:'tenant',lastMessageAt:now,unreadFor:[l.ownerId,l.landlordUserId].filter(Boolean)}});
     if(thread) await ctx.db.patch(thread._id, {data:{...thread.data,lastMessageAt:now,unreadFor:[l.ownerId,l.landlordUserId].filter(Boolean)}});
     const messageId=crypto.randomUUID();
     await ctx.db.insert('domainRecords',{kind:'message',key:messageId,ownerId:u.subject,placeId:l._id,data:{id:messageId,threadId,authorId:u.subject,authorType:'prospect',body:a.message.trim(),createdAt:now}});
@@ -187,7 +189,7 @@ export const request = mutation({
       placeId: l._id,
       data: {
         threadId,
-        name: u.name || "Applicant",
+        name: applicantAlias,
         message: a.message.trim(),
         status: "requested",
         createdAt: now,
@@ -226,7 +228,7 @@ export const request = mutation({
         locale: contact.locale,
         templateData: {
           recipientName: contact.name,
-          applicantName: u.name || 'Applicant',
+          applicantName: applicantAlias,
           listingTitle: l.title,
           city: l.city,
           expiryDate: emailDate(now + 7 * 86400000, contact.locale),

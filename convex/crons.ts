@@ -26,6 +26,13 @@ crons.daily(
   {}
 );
 
+crons.daily(
+  'invite consented members without a listing',
+  { hourUTC: 9, minuteUTC: 40 },
+  (internal as any).emailAutomation.queueListingNudges,
+  {}
+);
+
 crons.weekly(
   'queue consented weekly property digests',
   { dayOfWeek: 'monday', hourUTC: 7, minuteUTC: 10 },

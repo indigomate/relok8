@@ -172,3 +172,52 @@ export const queueWeeklyDigests = internalMutation({
     return { queued };
   },
 });
+
+export const queueListingNudges = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const profiles = await ctx.db.query('profiles').collect();
+    const leases = await ctx.db.query('leases').collect();
+    const owners = new Set(leases.map((lease) => lease.ownerId).filter(Boolean));
+    const stages = [
+      { day: 3, number: 1 },
+      { day: 10, number: 2 },
+    ] as const;
+    let queued = 0;
+
+    for (const profile of profiles) {
+      if (
+        !profile.email ||
+        profile.isVerified !== true ||
+        profile.marketingConsent !== true ||
+        owners.has(profile.userId) ||
+        typeof profile.createdAt !== 'number'
+      ) continue;
+      const ageDays = Math.floor((now - profile.createdAt) / DAY_MS);
+      for (const stage of stages) {
+        if (ageDays < stage.day) continue;
+        const locale = emailLocale(profile.locale);
+        const result = await queueEmailDelivery(ctx, {
+          idempotencyKey: `listing-nudge:${keyPart(profile.userId)}:v1:${stage.number}`,
+          userId: profile.userId,
+          recipient: profile.email,
+          template: 'listing_nudge',
+          locale,
+          templateData: {
+            recipientName: profile.fullName,
+            count: stage.number,
+            ctaUrl: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/list`,
+          },
+          relatedId: profile.userId,
+          scheduleDelivery: !profile.email.endsWith('.test'),
+        });
+        if (result.created) {
+          queued += 1;
+          break;
+        }
+      }
+    }
+    return { queued };
+  },
+});

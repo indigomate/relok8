@@ -3,6 +3,7 @@ export const EMAIL_TEMPLATE_KINDS = [
   'sign_in_code',
   'password_reset',
   'welcome',
+  'listing_nudge',
   'landlord_invitation',
   'takeover_request',
   'takeover_approved',
@@ -209,6 +210,28 @@ function contentFor(kind: EmailTemplateKind, locale: EmailLocale, data: EmailTem
         ctaUrl: safeUrl(data.ctaUrl, `${APP_ORIGIN}/`),
         notice: pick(locale, 'Relok8 is a coordination platform. Confirm identity, contract terms, landlord consent, and deposit arrangements directly with the participants.', 'Relok8 jest platformą koordynacyjną. Potwierdź tożsamość, warunki umowy, zgodę wynajmującego i ustalenia dotyczące kaucji bezpośrednio z uczestnikami.'),
       };
+    case 'listing_nudge': {
+      const followUp = d.count >= 2;
+      return {
+        category: 'marketing',
+        eyebrow: pick(locale, 'List your place', 'Dodaj swoje ogłoszenie'),
+        subject: followUp
+          ? pick(locale, 'Your room could help someone move next', 'Twój pokój może pomóc komuś w przeprowadzce')
+          : pick(locale, 'Have a room or lease to hand over?', 'Masz pokój lub najem do przekazania?'),
+        preheader: pick(locale, 'Publish a private-by-default listing on Relok8 for free.', 'Opublikuj bezpłatne ogłoszenie Relok8 z ochroną prywatności.'),
+        title: followUp
+          ? pick(locale, 'Make your move easier for both sides', 'Ułatw przeprowadzkę obu stronom')
+          : pick(locale, 'Turn your move-out into someone’s move-in', 'Twoja wyprowadzka może być czyjąś przeprowadzką'),
+        intro: `${hello} ${pick(locale, 'If you are leaving a room or lease early, a Relok8 listing helps you find an interested person and coordinate the next steps in one place.', 'Jeśli wcześniej opuszczasz pokój lub najem, ogłoszenie Relok8 pomaga znaleźć zainteresowaną osobę i skoordynować kolejne kroki w jednym miejscu.')}`,
+        paragraphs: [
+          pick(locale, 'Publishing is free. Add up to 8 photos, keep the listing active until the current lease end date, and pause it whenever availability changes.', 'Publikacja jest bezpłatna. Dodaj maksymalnie 8 zdjęć, utrzymuj ogłoszenie do końca obecnego najmu i wstrzymaj je, gdy zmieni się dostępność.'),
+          pick(locale, 'Your public page uses an anonymous member label and shows only the district and city—not your name or exact street address.', 'Publiczna strona używa anonimowej nazwy użytkownika i pokazuje tylko dzielnicę oraz miasto, bez imienia i dokładnego adresu.'),
+        ],
+        ctaLabel: pick(locale, 'List your place free', 'Dodaj bezpłatne ogłoszenie'),
+        ctaUrl: safeUrl(data.ctaUrl, `${APP_ORIGIN}/list`),
+        notice: pick(locale, 'Only list a place you are entitled to advertise. Relok8 does not charge a listing fee, approve the transfer, or handle deposits. Confirm landlord permission and contract terms directly.', 'Dodaj tylko lokal, który możesz zgodnie z prawem ogłaszać. Relok8 nie pobiera opłaty za ogłoszenie, nie zatwierdza cesji ani nie obsługuje kaucji. Potwierdź zgodę wynajmującego i warunki umowy bezpośrednio.'),
+      };
+    }
     case 'landlord_invitation':
       return {
         category: 'transactional',
