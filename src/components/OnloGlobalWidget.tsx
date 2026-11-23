@@ -18,6 +18,7 @@ interface ChatMessage {
   sender: 'user' | 'onlo';
   text: string;
   timestamp: number;
+  sources?: Array<{ id: string; label: string; url?: string; kind: 'official' | 'internal' }>;
 }
 
 const EXIT_DURATION = 190;
@@ -160,6 +161,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
         sender: 'onlo',
         text: data.answer || (locale === 'pl' ? 'W czym mogę jeszcze pomóc?' : 'What else can I help with?'),
         timestamp: Date.now(),
+        sources: data.sources,
       }]);
       setWidgetState('happy');
       window.setTimeout(() => setWidgetState('idle'), 1800);
@@ -282,12 +284,31 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                           </time>
                         </div>
                       )}
-                      <div className={`rounded-2xl px-3.5 py-2.5 text-[13px] leading-5 ${isUser
+                      <div className={`whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-5 ${isUser
                         ? 'rounded-br-md bg-indigo-600 text-white shadow-xs'
                         : 'rounded-tl-md bg-slate-100 text-slate-800 border border-slate-200/60'
                       }`}>
                         {message.text}
                       </div>
+                      {!isUser && message.sources && message.sources.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1" aria-label={locale === 'pl' ? 'Źródła odpowiedzi' : 'Answer sources'}>
+                          {message.sources.map((source, index) => source.url ? (
+                            <a
+                              key={`${source.id}-${index}`}
+                              href={source.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex min-h-7 items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50"
+                            >
+                              [{index + 1}] {source.label}
+                            </a>
+                          ) : (
+                            <span key={`${source.id}-${index}`} className="inline-flex min-h-7 items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600">
+                              [{index + 1}] {source.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

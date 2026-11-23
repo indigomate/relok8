@@ -1,6 +1,7 @@
 import { requireSelf } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { leaseHasEnded, validLeaseDates } from '../src/utils/leaseTiming';
 
 /**
  * Get all listing IDs saved/favorited by a user.
@@ -27,6 +28,9 @@ export const addFavorite = mutation({
   },
   handler: async (ctx, args) => {
     await requireSelf(ctx, args.userId);
+    const listingId = ctx.db.normalizeId('leases', args.listingId);
+    const listing = listingId ? await ctx.db.get(listingId) : null;
+    if (!listing || !validLeaseDates(listing.moveInDate, listing.leaseEndDate) || leaseHasEnded(listing.leaseEndDate) || ['PAUSED', 'APPROVED', 'TRANSFERRED', 'LEASED'].includes(listing.status)) throw new Error('Listing unavailable');
     const existing = await ctx.db
       .query("favorites")
       .withIndex("by_user_listing", (q) =>

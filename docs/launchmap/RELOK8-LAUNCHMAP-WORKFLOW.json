@@ -1,0 +1,359 @@
+{
+  "schemaVersion": "launchmap.workflow.v1",
+  "project": "Relok8",
+  "sessionGoal": "Connect production transactional email delivery, signed Resend events, explicit marketing preferences, and Clerk account-email branding.",
+  "publication": {
+    "status": "draft-awaiting-sanitized-screenshots",
+    "approvedScreenshotCount": 0,
+    "privateEvidenceScreenshotCount": 29,
+    "annotationStatus": "Annotations are empty until the planned CAP assets are locally redacted, flattened, and approved.",
+    "credentialRule": "Use placeholders in text. Real credentials belong only in provider secret fields and must never appear in assets or JSON."
+  },
+  "placeholders": [
+    { "name": "{{production_url}}", "source": "Vercel project Domains", "secret": false },
+    { "name": "{{convex_site_url}}", "source": "Convex Settings > General > HTTP Actions URL", "secret": false },
+    { "name": "{{sending_subdomain}}", "source": "Resend Domains", "secret": false },
+    { "name": "{{from_address}}", "source": "Approved sender on the verified Resend subdomain", "secret": false },
+    { "name": "{{support_email}}", "source": "Monitored mail provider account", "secret": false },
+    { "name": "YOUR_RESEND_API_KEY", "source": "Resend API Keys", "secret": true, "exampleOnly": true },
+    { "name": "YOUR_RESEND_WEBHOOK_SECRET", "source": "Resend Webhooks Signing Secret", "secret": true, "exampleOnly": true },
+    { "name": "YOUR_CONVEX_DEPLOY_KEY", "source": "Convex Settings > General > Deploy Keys", "secret": true, "exampleOnly": true },
+    { "name": "YOUR_EMAIL_PREFERENCES_SECRET", "source": "Locally generated cryptographically secure random value of at least 32 bytes", "secret": true, "exampleOnly": true }
+  ],
+  "approvedAssets": [
+    { "id": "ASSET-001", "reference": "files.zip::relok8-logo-pack.zip::logo/png/relok8-mark.png", "purpose": "Clerk logo" },
+    { "id": "ASSET-002", "reference": "files.zip::relok8-favicons.zip::favicons/favicon-32x32.png", "purpose": "Clerk favicon" },
+    { "id": "ASSET-003", "reference": "files.zip::relok8-favicons.zip::favicons/favicon.ico", "purpose": "Alternative Clerk favicon" }
+  ],
+  "annotationSchema": {
+    "screenshotId": "Approved flattened asset ID",
+    "number": "Positive integer matching the visible legend",
+    "targetLabel": "Exact on-screen label",
+    "instruction": "One click, field entry, or status check",
+    "role": "source | destination | action | verification",
+    "normalizedCoordinates": { "x": "0-1", "y": "0-1", "width": "0-1", "height": "0-1" }
+  },
+  "modules": [
+    {
+      "id": "M1",
+      "title": "Prepare the sending identity",
+      "steps": [
+        {
+          "id": "S1",
+          "title": "Verify the sending subdomain",
+          "provider": "Resend and DNS provider",
+          "page": "Resend > Domains",
+          "directLink": "https://resend.com/domains",
+          "actions": [
+            "Open Domains and use the add-domain control.",
+            "Enter {{sending_subdomain}}.",
+            "Add every provider-supplied DNS record using the full copied value.",
+            "For TXT records verify Type, Host/Name/Prefix, Value/Content, TTL, and Save independently.",
+            "Check whether the DNS provider appends the root domain automatically.",
+            "Return to Resend and wait for verified status."
+          ],
+          "success": "Resend reports the sending domain as verified.",
+          "verificationEvidence": { "status": "pending", "checks": ["Saved DNS row", "Resend verified status"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-001", "CAP-002", "CAP-003"],
+          "annotations": []
+        },
+        {
+          "id": "S2",
+          "title": "Create the Resend API key",
+          "provider": "Resend",
+          "page": "API Keys",
+          "directLink": "https://resend.com/api-keys",
+          "actions": [
+            "Create a production-named key with the least required sending scope.",
+            "Copy the generated credential once.",
+            "Paste it only into the Convex RESEND_API_KEY secret field."
+          ],
+          "success": "The key is listed by name and its value is no longer exposed.",
+          "verificationEvidence": { "status": "configured-not-tested-by-this-step" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": [],
+          "annotations": []
+        },
+        {
+          "id": "S3",
+          "title": "Add email configuration to Convex",
+          "provider": "Convex",
+          "page": "Production > Settings > Environment Variables",
+          "directLink": "https://dashboard.convex.dev",
+          "fields": [
+            { "label": "Name", "value": "RESEND_API_KEY", "destinationValue": "YOUR_RESEND_API_KEY", "exampleOnly": true },
+            { "label": "Name", "value": "RESEND_FROM_EMAIL", "destinationValue": "{{from_address}}" },
+            { "label": "Name", "value": "SUPPORT_EMAIL", "destinationValue": "{{support_email}}" },
+            { "label": "Name", "value": "EMAIL_PREFERENCES_SECRET", "destinationValue": "YOUR_EMAIL_PREFERENCES_SECRET", "exampleOnly": true }
+          ],
+          "actions": ["Click Add once per variable.", "Paste secret values directly into Value.", "Save and confirm named rows with concealed values."],
+          "success": "All four variable names exist in the production deployment.",
+          "verificationEvidence": { "status": "configured", "checks": ["Named rows saved", "Values concealed"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-004"],
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "id": "M2",
+      "title": "Connect Vercel deployment to Convex",
+      "steps": [
+        {
+          "id": "S4",
+          "title": "Generate a Convex deploy key",
+          "provider": "Convex",
+          "page": "Production > Settings > General > Deploy Keys",
+          "actions": ["Click Create Deploy Key.", "Complete Name and Expiration.", "Select only deployment-required permissions.", "Click Create and copy the key once."],
+          "success": "A deploy-key row exists by name without revealing the credential.",
+          "verificationEvidence": { "status": "configured" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-005"],
+          "annotations": []
+        },
+        {
+          "id": "S5",
+          "title": "Save the deploy key and redeploy",
+          "provider": "Vercel",
+          "page": "Project > Settings > Environment Variables",
+          "directLink": "https://vercel.com/dashboard",
+          "fields": [
+            { "label": "Key", "value": "CONVEX_DEPLOY_KEY" },
+            { "label": "Value", "value": "YOUR_CONVEX_DEPLOY_KEY", "exampleOnly": true },
+            { "label": "Environment", "value": "Production" }
+          ],
+          "actions": ["Click Add Environment Variable.", "Save the secret.", "Redeploy the latest reviewed main commit.", "Inspect sanitized build logs."],
+          "success": "The production deployment reaches Ready and the Convex deploy command succeeds.",
+          "verificationEvidence": { "status": "tested", "checks": ["Vercel deployment Ready", "Production returned HTTP 200"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-006", "CAP-007"],
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "id": "M3",
+      "title": "Configure signed Resend webhooks",
+      "steps": [
+        {
+          "id": "S6",
+          "title": "Create the webhook",
+          "provider": "Resend",
+          "page": "Webhooks",
+          "directLink": "https://resend.com/webhooks",
+          "fields": [
+            { "label": "Endpoint", "value": "{{convex_site_url}}/resend/webhook" },
+            { "label": "Event", "value": "email.delivered" },
+            { "label": "Event", "value": "email.bounced" },
+            { "label": "Event", "value": "email.complained" }
+          ],
+          "actions": ["Create the webhook.", "Select all three events.", "Save and confirm Enabled."],
+          "success": "An enabled webhook lists the correct HTTPS endpoint and all three events.",
+          "verificationEvidence": { "status": "configured" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-008"],
+          "annotations": []
+        },
+        {
+          "id": "S7",
+          "title": "Store the webhook signing secret",
+          "provider": "Resend to Convex",
+          "page": "Resend Webhook > Signing Secret; Convex > Environment Variables",
+          "fields": [
+            { "label": "Name", "value": "RESEND_WEBHOOK_SECRET" },
+            { "label": "Value", "value": "YOUR_RESEND_WEBHOOK_SECRET", "exampleOnly": true }
+          ],
+          "actions": ["Use the Resend copy control without revealing the secret.", "Click Add in Convex.", "Paste into Value and save."],
+          "success": "The Convex production deployment lists RESEND_WEBHOOK_SECRET with a concealed value.",
+          "verificationEvidence": { "status": "configured" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-009"],
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "id": "M4",
+      "title": "Apply Clerk account-email branding",
+      "steps": [
+        {
+          "id": "S8",
+          "title": "Save global branding",
+          "provider": "Clerk",
+          "page": "Production > Application > Settings",
+          "directLink": "https://dashboard.clerk.com",
+          "fields": [
+            { "label": "Application name", "value": "Relok8" },
+            { "label": "Support email", "value": "{{support_email}}" },
+            { "label": "Logo", "value": "ASSET-001" },
+            { "label": "Favicon", "value": "ASSET-002 or ASSET-003" }
+          ],
+          "actions": ["Confirm Production.", "Save application name and support email.", "Upload the approved logo and favicon.", "Check both previews for clipping."],
+          "success": "The correct mark and favicon appear in the saved Branding card.",
+          "verificationEvidence": { "status": "configured", "checks": ["Logo preview saved", "Favicon preview saved", "Support email saved"] },
+          "approvedAssetReferences": ["ASSET-001", "ASSET-002", "ASSET-003"],
+          "requiredCaptureIds": ["CAP-010"],
+          "annotations": []
+        },
+        {
+          "id": "S9",
+          "title": "Handle the custom-template plan limit",
+          "provider": "Clerk",
+          "page": "Configure > Customization > Emails",
+          "actions": ["Open an active authentication template.", "Use Clerk's variable picker for the action URL.", "Preview.", "Save only on a plan that permits production custom templates.", "Keep Delivered by Clerk enabled unless a replacement sender is fully tested."],
+          "success": "Either the template saves on an eligible plan or the tutorial explicitly records that default Clerk copy remains active.",
+          "verificationEvidence": { "status": "blocked", "checks": ["Current production plan displayed an upgrade requirement", "Edited body is not proven saved"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-011"],
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "id": "M5",
+      "title": "Marketing consent and user control",
+      "steps": [
+        {
+          "id": "S10",
+          "title": "Verify the preference centre",
+          "provider": "Relok8 and Convex",
+          "page": "{{production_url}}/email-preferences",
+          "actions": ["Sign in with a verified test account.", "Confirm marketing is off by default.", "Confirm weekly digest requires explicit marketing consent.", "Save filters and reload.", "Withdraw consent and confirm the digest turns off."],
+          "success": "Consent is explicit, persisted, withdrawable, and separate from product notifications.",
+          "verificationEvidence": { "status": "pending" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-017", "CAP-018"],
+          "annotations": []
+        },
+        {
+          "id": "S11",
+          "title": "Verify one-click unsubscribe",
+          "provider": "Relok8, Resend, and Convex",
+          "page": "Unsubscribe link from a consented weekly digest",
+          "actions": ["Opt in with a test account.", "Receive a weekly digest.", "Click Unsubscribe.", "Confirm success and disabled marketing preferences.", "Confirm a later digest is suppressed."],
+          "success": "One click prevents later marketing while transactional mail remains available.",
+          "verificationEvidence": { "status": "pending" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-019"],
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "id": "M6",
+      "title": "Prove delivery end to end",
+      "steps": [
+        {
+          "id": "S12",
+          "title": "Queue a controlled test",
+          "provider": "Convex",
+          "page": "Functions > emails:queue",
+          "actions": ["Use a dedicated test inbox.", "Enter safe fixture arguments.", "Keep scheduled delivery enabled.", "Click Run mutation.", "Confirm created=true without publishing the delivery ID."],
+          "success": "A new emailDeliveries row is created.",
+          "verificationEvidence": { "status": "tested", "checks": ["Queue mutation succeeded"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-012"],
+          "annotations": []
+        },
+        {
+          "id": "S13",
+          "title": "Check the delivery ledger",
+          "provider": "Convex",
+          "page": "Data > emailDeliveries",
+          "actions": ["Find the fixture row by safe time/idempotency context.", "Confirm attempts=1.", "Confirm sent.", "After webhook delivery, confirm delivered."],
+          "success": "One ledger row progresses from sent to delivered.",
+          "verificationEvidence": { "status": "tested", "checks": ["Sent row observed", "Delivered row observed"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-013", "CAP-016"],
+          "annotations": []
+        },
+        {
+          "id": "S14",
+          "title": "Confirm inbox receipt",
+          "provider": "Test inbox",
+          "page": "Received Relok8 product email",
+          "actions": ["Confirm branded sender and expected subject.", "Check logo, body, CTA, fallback URL, reply address, and footer.", "Open the CTA and confirm its destination."],
+          "success": "The controlled inbox receives a correctly rendered message and working CTA.",
+          "verificationEvidence": { "status": "tested", "checks": ["Message received and rendered"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-014"],
+          "annotations": []
+        },
+        {
+          "id": "S15",
+          "title": "Confirm the signed delivery event",
+          "provider": "Resend and Convex",
+          "page": "Resend Webhooks event; Convex emailDeliveries",
+          "actions": ["Open the email.delivered event.", "Confirm Success, HTTP 200 - OK, and Attempts=1.", "Confirm the Convex row is delivered.", "Confirm one deduplicated event record exists without raw payload retention."],
+          "success": "Resend receives a 200 response and Convex records delivered.",
+          "verificationEvidence": { "status": "tested", "checks": ["email.delivered event", "200 - OK", "Attempts 1", "Ledger delivered"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-015", "CAP-016"],
+          "annotations": []
+        }
+      ]
+    },
+    {
+      "id": "M7",
+      "title": "Test every automation separately",
+      "steps": [
+        {
+          "id": "S16",
+          "title": "Google-signup welcome",
+          "provider": "Clerk, Relok8, Convex, and Resend",
+          "actions": ["Create a new Google test account.", "Complete sign-in.", "Confirm exactly one welcome delivery.", "Sign in again and confirm no duplicate."],
+          "success": "Exactly one welcome email is delivered for the verified account.",
+          "verificationEvidence": { "status": "pending" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-020"],
+          "annotations": []
+        },
+        {
+          "id": "S17",
+          "title": "Unread-message summary",
+          "provider": "Relok8, Convex, and Resend",
+          "actions": ["Create an unread test message.", "Leave it unread past the quiet period.", "Observe the hourly :20 job.", "Confirm one summary without private message body.", "Read the thread and confirm no stale resend."],
+          "success": "One eligible summary is delivered and later suppressed after reading.",
+          "verificationEvidence": { "status": "pending" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-021"],
+          "annotations": []
+        },
+        {
+          "id": "S18",
+          "title": "Listing-expiry reminders",
+          "provider": "Relok8, Convex, and Resend",
+          "actions": ["Create fixture listings seven days and one day from lease end.", "Observe or safely invoke the 06:35 UTC job.", "Confirm one reminder per threshold.", "Confirm ineligible listings are skipped."],
+          "success": "Seven-day and one-day reminders are each delivered once to eligible recipients.",
+          "verificationEvidence": { "status": "pending" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-022"],
+          "annotations": []
+        },
+        {
+          "id": "S19",
+          "title": "Weekly marketing digest",
+          "provider": "Relok8, Convex, and Resend",
+          "actions": ["Use an explicitly consented test account with matching filters.", "Observe or safely invoke the Monday 07:10 UTC job.", "Confirm one digest and unsubscribe controls.", "Repeat with a non-consented user and confirm suppression."],
+          "success": "Only the consented matching user receives the digest.",
+          "verificationEvidence": { "status": "pending" },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-023"],
+          "annotations": []
+        },
+        {
+          "id": "S20",
+          "title": "Bounce, complaint, and replay safety",
+          "provider": "Resend and Convex",
+          "actions": ["Use provider-documented test events.", "Confirm bounced returns 200 and suppresses the test address.", "Confirm complained returns 200 and suppresses the test address.", "Replay the same signed event and confirm no duplicate effect.", "Confirm later delivery to the suppressed address is skipped."],
+          "success": "Bounce and complaint events suppress safely and replay remains idempotent.",
+          "verificationEvidence": { "status": "pending", "alreadyProven": ["email.delivered only"] },
+          "approvedAssetReferences": [],
+          "requiredCaptureIds": ["CAP-024", "CAP-025", "CAP-026"],
+          "annotations": []
+        }
+      ]
+    }
+  ]
+}

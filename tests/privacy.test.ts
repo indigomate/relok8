@@ -77,4 +77,28 @@ describe('public listing identity and contact privacy', () => {
     const threads = await owner.query((api as any).domain.read, { operation: 'threads', input: { placeId: id } });
     expect(threads[0].prospectName).toBe('Interested Person');
   });
+
+  test('a prospect can see the place details without receiving private account identifiers', async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity(identity);
+    const prospect = t.withIdentity({ ...identity, subject: 'prospect', email: 'prospect@example.test' });
+    const id = await owner.mutation((api as any).leases.create, {
+      title: 'Warsaw room', address: 'ul. Jawna 10', city: 'Warsaw', monthlyRent: 2500,
+      deposit: 2500, roomType: 'Private room', areaM2: 18,
+      moveInDate: '2027-01-01', leaseEndDate: '2027-08-31',
+      currentTenant: { name: 'Exact Private Name', status: 'Departing tenant', avatar: '' },
+      amenities: [], images: [], locale: 'en',
+    });
+    await t.run((ctx) => ctx.db.patch(id, { landlordUserId: 'private-landlord-account' }));
+    await prospect.mutation((api as any).domain.write, { operation: 'createThread', input: { placeId: id } });
+
+    const [place] = await prospect.query((api as any).domain.read, { operation: 'places', input: { includeProspects: true } });
+    expect(place.address).toBe('ul. Jawna 10');
+    expect(place.tenantId).toBe('');
+    expect(place.landlordId).toBe('');
+
+    const ownerPlace = await owner.query((api as any).domain.read, { operation: 'place', input: { id } });
+    expect(ownerPlace.tenantId).toBe('private-owner');
+    expect(ownerPlace.landlordId).toBe('private-landlord-account');
+  });
 });

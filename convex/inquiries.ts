@@ -1,6 +1,8 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireIdentity, requireSelf, isLandlord } from "./lib/auth";
+import { consume } from './domain';
+import { leaseHasEnded, validLeaseDates } from '../src/utils/leaseTiming';
 async function canRead(ctx: any, identity: any, inquiry: any) {
   if (inquiry.userId === identity.subject) return true;
   const id = ctx.db.normalizeId("leases", inquiry.listingId);
@@ -20,10 +22,14 @@ export const sendInquiry = mutation({
   args: { listingId: v.string(), userId: v.optional(v.string()), tenantName: v.string(), tenantEmail: v.string(), message: v.string() },
   handler: async (ctx, args) => {
     const identity = await requireSelf(ctx, args.userId);
-    if (!args.message.trim() || args.message.length > 10000 || args.tenantName.length > 150) throw new Error("Invalid inquiry");
+    await consume(ctx, identity, 'legacy-inquiry', 10);
+    if (!args.message.trim() || args.message.length > 10_000 || !args.tenantName.trim() || args.tenantName.length > 150) throw new Error("Invalid inquiry");
     const id = ctx.db.normalizeId("leases", args.listingId);
-    if (!id || !await ctx.db.get(id)) throw new Error("Listing not found");
-    return ctx.db.insert("inquiries", { ...args, userId: identity.subject, tenantEmail: identity.email || "", status: "pending", replies: [], createdAt: Date.now() });
+    const lease = id ? await ctx.db.get(id) : null;
+    if (!lease) throw new Error("Listing not found");
+    if (lease.ownerId === identity.subject || isLandlord(lease, identity)) throw new Error('You cannot inquire about your own listing');
+    if (!validLeaseDates(lease.moveInDate, lease.leaseEndDate) || leaseHasEnded(lease.leaseEndDate) || ['PAUSED', 'APPROVED', 'TRANSFERRED', 'LEASED'].includes(lease.status)) throw new Error('Listing unavailable');
+    return ctx.db.insert("inquiries", { ...args, tenantName: args.tenantName.trim(), message: args.message.trim(), userId: identity.subject, tenantEmail: identity.email || "", status: "pending", replies: [], createdAt: Date.now() });
   },
 });
 export const replyToInquiry = mutation({

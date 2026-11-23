@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
+import { RELOK8_LAUNCH_PRICING } from '../config/pricing';
 
 interface HowItWorksPageProps {
   onBack: () => void;
@@ -23,7 +24,7 @@ export const HowItWorksPage = ({ onBack, onOpenLeaveYourLease, onOpenBrowse, loc
       steps: [
         [say('Explore and compare', 'Przeglądaj i porównuj'), say('Choose your city, budget and dates. Check rent, bills, deposit and registration information on each listing.', 'Wybierz miasto, budżet i daty. Sprawdź czynsz, opłaty, kaucję i informacje o meldunku.')],
         [say('Talk to the departing tenant', 'Porozmawiaj z dotychczasowym najemcą'), say('Sign in to save homes or send a message. Arrange a viewing and discuss dates and terms in Messages.', 'Zaloguj się, aby zapisywać lokale i wysyłać wiadomości. W Wiadomościach ustal oglądanie, daty i warunki.')],
-        [say('Request landlord approval', 'Poproś właściciela o zgodę'), say('Apply from the listing. Follow the decision in My Place. Requests expire after seven days; they do not reserve a room or charge money.', 'Złóż wniosek z ogłoszenia. Śledź decyzję w Moim miejscu. Wniosek wygasa po siedmiu dniach; nie rezerwuje lokalu ani nie pobiera pieniędzy.')],
+        [say('Request landlord approval', 'Poproś właściciela o zgodę'), say(`Apply for free and follow the decision in My Place. Only after approval, pay ${RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN to confirm the reservation.`, `Złóż bezpłatny wniosek i śledź decyzję w Moim miejscu. Dopiero po akceptacji zapłać ${RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN, aby potwierdzić rezerwację.`)],
         [say('Complete the handover together', 'Wspólnie zakończcie przekazanie'), say('After approval, all three people confirm documents, deposit arrangements, then inspection and keys in My Place.', 'Po akceptacji wszystkie trzy strony potwierdzają w Moim miejscu dokumenty, rozliczenie kaucji, a następnie odbiór lokalu i kluczy.')],
       ],
     },
@@ -47,7 +48,7 @@ export const HowItWorksPage = ({ onBack, onOpenLeaveYourLease, onOpenBrowse, loc
       steps: [
         [say('Accept your invitation', 'Przyjmij zaproszenie'), say('Open the link from the listing author and sign in with the intended verified email. Ask for a new link if yours has expired.', 'Otwórz link od autora ogłoszenia i zaloguj się właściwym zweryfikowanym emailem. Jeśli link wygasł, poproś o nowy.')],
         [say('Confirm advertising permission', 'Potwierdź zgodę na ogłoszenie'), say('Review the property in My Place. Permission to advertise is separate from accepting an applicant.', 'Sprawdź lokal w Moim miejscu. Zgoda na ogłoszenie jest niezależna od akceptacji kandydata.')],
-        [say('Review the applicant', 'Rozpatrz wniosek kandydata'), say('Approve or decline the takeover request. Approval starts coordination; it does not confirm a signed agreement or payment.', 'Zatwierdź lub odrzuć wniosek. Akceptacja rozpoczyna ustalenia; nie potwierdza podpisania umowy ani płatności.')],
+        [say('Review the applicant', 'Rozpatrz wniosek kandydata'), say(`Approve or decline the takeover request. The tenant pays ${RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN only after approval; your ${RELOK8_LAUNCH_PRICING.landlordActiveTenancyMonthlyPLN} PLN monthly charge starts at move-in.`, `Zatwierdź lub odrzuć wniosek. Najemca płaci ${RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN dopiero po akceptacji; Twoja miesięczna opłata ${RELOK8_LAUNCH_PRICING.landlordActiveTenancyMonthlyPLN} PLN zaczyna się przy wprowadzeniu.`)],
         [say('Confirm the handover', 'Potwierdź przekazanie'), say('Alongside both tenants, confirm documents, deposit arrangements and inspection with keys. My Place shows who still needs to act.', 'Wraz z oboma najemcami potwierdź dokumenty, rozliczenie kaucji i odbiór lokalu z kluczami. Moje miejsce pokazuje, kto powinien działać.')],
       ],
     },
@@ -61,6 +62,17 @@ export const HowItWorksPage = ({ onBack, onOpenLeaveYourLease, onOpenBrowse, loc
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{say('Your housing journey, step by step', 'Twoja droga do mieszkania, krok po kroku')}</h1>
           <p className="text-slate-600">{say('Choose what you want to do. Follow your listings, requests and handover in My Place.', 'Wybierz swój cel. Śledź ogłoszenia, wnioski i przekazanie w Moim miejscu.')}</p>
         </header>
+        <section aria-labelledby="pricing-heading" className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 sm:p-6 space-y-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{say('Simple launch pricing', 'Prosty cennik startowy')}</p>
+            <h2 id="pricing-heading" className="mt-1 text-2xl font-bold text-slate-950">{say('49 once. 49 monthly.', '49 raz. 49 miesięcznie.')}</h2>
+            <p className="mt-2 text-sm text-slate-600">{say('Nothing else is mandatory. Searching, listing, messaging and live translation are included.', 'Nic więcej nie jest obowiązkowe. Wyszukiwanie, ogłoszenia, wiadomości i tłumaczenie na żywo są w cenie.')}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl bg-white border border-indigo-100 p-4"><p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{say('Incoming tenant', 'Nowy najemca')}</p><p className="mt-1 text-xl font-bold">{RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN {say('once', 'raz')}</p><p className="mt-1 text-sm text-slate-600">{say('Only after landlord approval. No approval, no charge.', 'Tylko po akceptacji właściciela. Bez akceptacji nie ma opłaty.')}</p></div>
+            <div className="rounded-xl bg-white border border-indigo-100 p-4"><p className="text-xs font-bold uppercase tracking-wider text-indigo-700">{say('Landlord', 'Właściciel')}</p><p className="mt-1 text-xl font-bold">{RELOK8_LAUNCH_PRICING.landlordActiveTenancyMonthlyPLN} PLN / {say('month', 'miesiąc')}</p><p className="mt-1 text-sm text-slate-600">{say('Per active tenancy, from move-in until the tenancy ends.', 'Za aktywny najem, od wprowadzenia do zakończenia najmu.')}</p></div>
+          </div>
+        </section>
         <fieldset className="space-y-3">
           <legend className="font-semibold mb-3">{say('What brings you here?', 'Co chcesz zrobić?')}</legend>
           <div className="flex flex-wrap gap-3">{(Object.keys(journeys) as Array<keyof typeof journeys>).map(key => (
@@ -79,7 +91,7 @@ export const HowItWorksPage = ({ onBack, onOpenLeaveYourLease, onOpenBrowse, loc
         <aside className="text-sm text-slate-600 space-y-2">
           <h2 className="font-semibold text-slate-900">{say('What each confirmation means', 'Co oznaczają potwierdzenia')}</h2>
           <p>{say('Published → visible listing. Advertising permission → landlord agrees to advertise. Applicant approved → landlord accepts that candidate. Handover complete → all three participants reported every stage complete.', 'Opublikowane → widoczne ogłoszenie. Zgoda na ogłoszenie → właściciel zezwala na publikację. Kandydat zatwierdzony → właściciel akceptuje kandydata. Przekazanie zakończone → wszystkie trzy strony zgłosiły zakończenie każdego etapu.')}</p>
-          <p>{say('Relok8 records your updates. Agreements and payments are arranged directly between participants. Relok8 does not collect money, hold escrow or independently verify documents and payments.', 'Relok8 zapisuje aktualizacje. Umowy i płatności ustalacie bezpośrednio. Relok8 nie pobiera pieniędzy, nie prowadzi escrow ani nie weryfikuje niezależnie dokumentów i płatności.')}</p>
+          <p>{say('Relok8 records your updates. Rent, deposits and contract payments remain directly between participants; the two Relok8 platform charges are separate. Payment checkout is not yet enabled, and Relok8 does not hold escrow or independently verify documents and payments.', 'Relok8 zapisuje aktualizacje. Czynsz, kaucja i płatności umowne pozostają bezpośrednio między stronami; dwie opłaty platformowe Relok8 są oddzielne. Moduł płatności nie jest jeszcze aktywny, a Relok8 nie prowadzi escrow ani nie weryfikuje niezależnie dokumentów i płatności.')}</p>
         </aside>
       </div>
     </main>

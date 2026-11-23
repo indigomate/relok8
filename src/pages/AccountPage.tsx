@@ -280,8 +280,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({
               </h2>
               <p className="text-xs text-slate-600">
                 {locale === 'pl'
-                  ? 'Zarządzaj lokalami powiązanymi z Twoim adresem e-mail oraz podejmuj decyzje o cesji umowy najmu (Art. 509 KC).'
-                  : 'Manage properties registered under your email and review/approve incoming lease takeovers pursuant to Art. 509 KC.'}
+                  ? 'Zarządzaj lokalami powiązanymi z Twoim adresem e-mail i przeglądaj prośby o zgodę na przejęcie najmu.'
+                  : 'Manage properties registered under your email and review requests for landlord approval of a lease takeover.'}
               </p>
             </div>
           </div>

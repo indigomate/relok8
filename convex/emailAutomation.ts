@@ -1,5 +1,6 @@
 import { internalMutation } from './_generated/server';
 import { queueEmailDelivery } from './emails';
+import { appOrigin } from './lib/appUrl';
 
 const DAY_MS = 86_400_000;
 
@@ -75,7 +76,7 @@ export const queueUnreadMessageSummaries = internalMutation({
             recipientName: profile.fullName,
             listingTitle: lease?.title || (locale === 'pl' ? 'ogłoszenia Relok8' : 'a Relok8 listing'),
             count,
-            ctaUrl: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/messages?thread=${encodeURIComponent(threadRow.key)}`,
+            ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/messages?thread=${encodeURIComponent(threadRow.key)}`,
           },
           relatedId: threadRow.key,
           scheduleDelivery: !profile.email.endsWith('.test'),
@@ -111,7 +112,7 @@ export const queueListingExpiryReminders = internalMutation({
           recipientName: profile.fullName,
           listingTitle: lease.title,
           expiryDate: localizedDate(lease.leaseEndDate, locale),
-          ctaUrl: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/place`,
+          ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/place`,
         },
         relatedId: String(lease._id),
         scheduleDelivery: !profile.email.endsWith('.test'),
@@ -154,14 +155,14 @@ export const queueWeeklyDigests = internalMutation({
         templateData: {
           recipientName: profile.fullName,
           count: matches.length,
-          ctaUrl: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/`,
+          ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/`,
           listings: matches.map((lease) => ({
             title: lease.title,
             location: [lease.district, lease.city].filter(Boolean).join(', '),
             price: `${new Intl.NumberFormat(locale === 'pl' ? 'pl-PL' : 'en-GB').format(lease.monthlyRent)} PLN / ${locale === 'pl' ? 'miesiąc' : 'month'}`,
             meta: `${locale === 'pl' ? 'Dostępne od' : 'Available'} ${localizedDate(lease.moveInDate, locale)}`,
             imageUrl: lease.images?.[0],
-            url: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/listing/${lease._id}`,
+            url: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/listing/${lease._id}`,
           })),
         },
         relatedId: currentWeek,
@@ -207,7 +208,7 @@ export const queueListingNudges = internalMutation({
           templateData: {
             recipientName: profile.fullName,
             count: stage.number,
-            ctaUrl: `https://relok8.online${locale === 'pl' ? '/pl' : ''}/list`,
+            ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/list`,
           },
           relatedId: profile.userId,
           scheduleDelivery: !profile.email.endsWith('.test'),

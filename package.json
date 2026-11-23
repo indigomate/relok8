@@ -12,13 +12,17 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run lint && npm run test && npm run build",
+    "test:onlo": "vitest run tests/onlo-knowledge.test.ts tests/onlo-knowledge-eval.test.ts",
     "emails:preview": "tsx scripts/render-email-previews.ts"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.124",
     "@clerk/react": "^6.17.5",
+    "@convex-dev/rag": "^0.7.9",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "ai": "^7.0.179",
     "convex": "^1.46.0",
     "lucide-react": "^0.546.0",
     "react": "^19.0.1",

@@ -255,7 +255,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 {activeRole === 'prospect'
                   ? (locale === 'pl' ? 'Alerty dla poszukujących pokoju' : 'Room Discovery & Takeover Alerts')
                   : activeRole === 'tenant'
-                  ? (locale === 'pl' ? 'Powiadomienia o zapytaniach studentów' : 'Incoming Inquiries & Response Score')
+                  ? (locale === 'pl' ? 'Powiadomienia o zapytaniach kandydatów' : 'Incoming Inquiries & Response Score')
                   : (locale === 'pl' ? 'Wnioski o cesję i weryfikacja najemców' : 'Takeover Consent & Verification')}
               </div>
               <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
@@ -268,8 +268,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                       ? 'Odpowiadaj sprawnie na zapytania chętnych, aby utrzymać wysoki wynik odpowiedzi i odznakę Szybkiego Kontaktu.'
                       : 'Reply promptly to verified prospect inquiries to maintain your response score and top-rank badge.')
                   : (locale === 'pl'
-                      ? 'Otrzymuj natychmiastowe powiadomienia, gdy lokator zgłasza chęć wcześniejszego przekazania umowy (Art. 509 KC).'
-                      : 'Receive instant notifications when a tenant requests lease takeover consent under Polish Civil Code Art. 509 KC.')}
+                      ? 'Otrzymuj powiadomienia, gdy lokator prosi o zgodę na przejęcie najmu przez inną osobę.'
+                      : 'Receive notifications when a tenant asks you to approve a proposed replacement and lease takeover.')}
               </p>
             </div>
           </div>

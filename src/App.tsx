@@ -378,8 +378,8 @@ function Relok8App() {
 
   // Dynamic SEO Synchronization (Titles, Meta Descriptions, Canonical URLs & OpenGraph)
   useEffect(() => {
-    let pageTitle = 'Relok8 — Student & Expat Housing in Poland | No Broker Fees';
-    let metaDesc = 'Direct lease takeovers under Polish Civil Code Art. 509 KC. Find rooms in Warsaw, Kraków, Wrocław, Gdańsk & Lublin with 0 PLN broker fees and address registration (meldunek) support.';
+    let pageTitle = 'Relok8 — Rooms & Lease Takeovers in Poland | No Broker Fees';
+    let metaDesc = 'Find rooms and coordinate landlord-approved lease takeovers in Warsaw, Kraków, Wrocław, Gdańsk and Lublin, with no agency commission.';
     const canonicalPath = currentRoute.path || (locale === 'pl' ? '/pl' : '/');
     const canonicalUrl = `https://relok8.online${canonicalPath === '/' ? '' : canonicalPath}`;
 
@@ -388,29 +388,29 @@ function Relok8App() {
         ? `Pokoje w ${currentRoute.cityName} · Bez Prowizji Agencyjnej | Relok8`
         : `Rooms in ${currentRoute.cityName} · No Broker Fees · Lease Takeovers | Relok8`;
       metaDesc = locale === 'pl'
-        ? `Wynajmij pokój lub mieszkanie w ${currentRoute.cityName}. Przejęcie aktywnej umowy najmu (Art. 509 KC), 0 zł prowizji i meldunek.`
-        : `Find student and expat rooms for rent in ${currentRoute.cityName}, Poland. Landlord-approved lease transfers with 0 PLN agency commissions.`;
+        ? `Znajdź pokój lub mieszkanie w ${currentRoute.cityName}. Uzgodnij przejęcie najmu za pisemną zgodą wynajmującego, bez prowizji agencyjnej.`
+        : `Find rooms and apartments for rent in ${currentRoute.cityName}, Poland. Landlord-approved lease transfers for local and international renters with 0 PLN agency commissions.`;
     } else if (currentRoute.type === 'listing-detail' && currentRoute.listingId) {
       const found = listings.find((l) => l.id === currentRoute.listingId);
       if (found) {
         pageTitle = `${found.title} · ${found.city} | Relok8`;
-        metaDesc = `${found.roomType} in ${found.district}, ${found.city}. ${formatPLN(found.monthlyRentPLN, locale)}/month. Landlord-approved lease takeover under Art. 509 KC.`;
+        metaDesc = `${found.roomType} in ${found.district}, ${found.city}. ${formatPLN(found.monthlyRentPLN, locale)}/month. Ask the participants to confirm the lease terms and written landlord approval.`;
       }
     } else if (currentRoute.type === 'saved') {
       pageTitle = locale === 'pl' ? 'Zapisane Pokoje i Mieszkania | Relok8' : 'Saved Rooms & Shortlist | Relok8';
-      metaDesc = 'Compare your saved student apartments and lease transfers across Poland.';
+      metaDesc = 'Compare your saved rooms, apartments and lease transfers across Poland.';
     } else if (currentRoute.type === 'how-it-works') {
-      pageTitle = locale === 'pl' ? 'Jak Działa Cesja Umowy Najmu? | Relok8' : 'How a Lease Takeover Works in Poland (Art. 509 KC) | Relok8';
-      metaDesc = 'Step-by-step guide to peer-to-peer lease assignments in Poland. Exit early without deposit loss and move into pre-approved rooms with 0 broker fees.';
+      pageTitle = locale === 'pl' ? 'Jak Działa Przejęcie Najmu? | Relok8' : 'How a Lease Takeover Works in Poland | Relok8';
+      metaDesc = 'Step-by-step guide to discussing a replacement tenant, obtaining written landlord approval and coordinating a handover in Poland.';
     } else if (currentRoute.type === 'help') {
       pageTitle = locale === 'pl' ? 'Centrum Pomocy & FAQ Najemcy | Relok8' : 'Help Center & Renter FAQ · Lease Transfers | Relok8';
-      metaDesc = 'Answers to frequent questions about Art. 509 KC lease assignments, deposit return protocols, meldunek registration, and avoiding early exit penalties.';
+      metaDesc = 'Answers to frequent questions about lease takeovers, deposit arrangements, meldunek registration and planning an early move.';
     } else if (currentRoute.type === 'list') {
-      pageTitle = locale === 'pl' ? 'Dodaj Ogłoszenie · Cesja Umowy Najmu | Relok8' : 'List Your Place · Zero-Penalty Lease Takeover | Relok8';
-      metaDesc = 'Moving out early? List your room in Warsaw, Kraków, or Wrocław for free and transfer your lease without losing your security deposit.';
+      pageTitle = locale === 'pl' ? 'Dodaj Ogłoszenie · Przejęcie Najmu | Relok8' : 'List Your Place · Coordinate a Lease Takeover | Relok8';
+      metaDesc = 'Moving out early? List your place for free, find an interested replacement and ask the landlord to approve the agreed handover.';
     } else if (currentRoute.type === 'leave-your-lease') {
-      pageTitle = locale === 'pl' ? 'Wcześniejsza Wyprowadzka z Mieszkania | Relok8' : 'Leave Your Lease Early in Poland · Zero Penalties | Relok8';
-      metaDesc = 'Learn how to legally exit a fixed-term lease in Poland without penalty fees using Article 509 KC lease assignment.';
+      pageTitle = locale === 'pl' ? 'Wcześniejsza Wyprowadzka z Mieszkania | Relok8' : 'Plan an Early Move from Your Lease | Relok8';
+      metaDesc = 'Learn how to find a replacement, discuss your contract with the landlord and document a mutually agreed handover.';
     } else if (currentRoute.type === 'savings-calculator') {
       pageTitle = locale === 'pl' ? 'Kalkulator Kar i Oszczędności Najmu | Relok8' : 'Lease Break Penalty & Savings Calculator | Relok8';
       metaDesc = 'Calculate exact financial liabilities avoided by executing a lease handover instead of breaking your contract unilaterally in Poland.';
@@ -421,20 +421,19 @@ function Relok8App() {
       pageTitle = locale === 'pl' ? 'Zasady Bezpiecznego Najmu w Polsce | Relok8' : 'Renter Safety Guide & Anti-Scam Checklist | Relok8';
       metaDesc = 'How to verify rental contracts, avoid deposit scams, and secure landlord approvals in Poland.';
     } else if (currentRoute.type === 'cesja-template') {
-      pageTitle = locale === 'pl' ? 'Wzór Umowy Cesji Najmu (Art. 509 KC) | Relok8' : 'Tripartite Lease Assignment Template (Art. 509 KC) | Relok8';
-      metaDesc = 'Download verified bilingual Polish-English lease takeover contract template compliant with Article 509 of the Polish Civil Code.';
+      pageTitle = locale === 'pl' ? 'Wzór Uzgodnienia Przejęcia Najmu | Relok8' : 'Lease Takeover Agreement Template | Relok8';
+      metaDesc = 'Prepare a bilingual draft for the participants to review. The appropriate legal structure depends on the lease and circumstances.';
     } else if (currentRoute.type === 'account') {
       pageTitle = locale === 'pl' ? 'Konto Użytkownika | Relok8' : 'User Account & Profile | Relok8';
       metaDesc = 'Manage your saved rooms, lease transfer listings, and account settings on Relok8.';
     } else if (currentRoute.type === 'sign-up') {
       pageTitle = locale === 'pl' ? 'Zarejestruj się | Relok8' : 'Create Account | Relok8';
-      metaDesc = 'Create your Relok8 account to browse student rooms or transfer your active lease across Poland.';
+      metaDesc = 'Create your Relok8 account to find a home or transfer your active lease across Poland, whether you are moving locally or internationally.';
     } else if (currentRoute.type === 'sign-in') {
       pageTitle = locale === 'pl' ? 'Zaloguj się | Relok8' : 'Sign In | Relok8';
       metaDesc = 'Sign in to your Relok8 account to manage saved apartments, inquiries, and lease transfers.';
     }
 
-    pageTitle = pageTitle.replace(/Zero-Penalty|Zero Penalties/gi, 'Landlord-approved');
     metaDesc = locale === 'pl' ? 'Znajdź pokój lub nowego najemcę w Polsce. Ustal szczegóły, uzyskaj zgodę właściciela i koordynuj przekazanie.' : 'Find a room or a replacement tenant in Poland. Discuss details, ask for landlord approval and coordinate the handover.';
     document.title = pageTitle;
 
@@ -553,7 +552,7 @@ function Relok8App() {
             'name': 'What is a lease transfer (Cesja umowy najmu) under Polish law?',
             'acceptedAnswer': {
               '@type': 'Answer',
-              'text': 'A Cesja umowy najmu is a legal contract assignment pursuant to Article 509 of the Polish Civil Code (Kodeks Cywilny) transferring tenant obligations to a replacement tenant with landlord consent.'
+              'text': 'A lease takeover is an arrangement that must be agreed with the landlord and documented by the participants. The appropriate legal structure depends on the contract and circumstances.'
             }
           },
           {
@@ -577,7 +576,7 @@ function Relok8App() {
     } else if (currentRoute.type === 'how-it-works' || currentRoute.type === 'leave-your-lease') {
       schemaGraph.push({
         '@type': 'HowTo',
-        'name': 'How to Transfer a Residential Lease in Poland (Art. 509 KC)',
+        'name': 'How to Coordinate a Residential Lease Takeover in Poland',
         'description': 'Discuss the terms, ask the landlord to approve the replacement and coordinate the handover.',
         'step': [
           {
@@ -595,14 +594,14 @@ function Relok8App() {
           {
             '@type': 'HowToStep',
             'position': 3,
-            'name': 'Execute Tripartite Cesja Protocol',
-            'text': 'Sign the bilingual tripartite agreement under Polish Civil Code Art. 509.'
+            'name': 'Review and sign the agreed documents',
+            'text': 'Have all participants review the written agreement and obtain legal advice when needed.'
           },
           {
             '@type': 'HowToStep',
             'position': 4,
             'name': 'Deposit Handover Inspection',
-            'text': 'The incoming tenant reimburses your security deposit upon key handover.'
+            'text': 'Record the property condition, keys and any deposit arrangement agreed by the participants.'
           }
         ]
       });

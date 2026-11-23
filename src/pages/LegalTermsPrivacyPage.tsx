@@ -35,7 +35,7 @@ export const LegalTermsPrivacyPage: React.FC<LegalTermsPrivacyPageProps> = ({
             {isTerms ? 'Terms of Service & Lease Assignment Policy' : 'Privacy Policy & RODO / GDPR Compliance'}
           </h1>
           <p className="text-xs text-slate-500">
-            Last updated: September 2026 · Governed under Polish Civil Code (Kodeks Cywilny)
+            Last updated: 23 November 2026 · Polish law applies where specified below
           </p>
         </div>
 
@@ -46,21 +46,21 @@ export const LegalTermsPrivacyPage: React.FC<LegalTermsPrivacyPageProps> = ({
               <section className="space-y-2">
                 <h2 className="text-base font-bold text-slate-900">1. Nature of the Platform</h2>
                 <p>
-                  Relok8 (relok8.online) is a technological platform facilitating peer-to-peer lease assignments (cesja umowy najmu) between outgoing tenants and replacement tenants in Poland under Article 509 of the Polish Civil Code (Kodeks Cywilny). Relok8 does not act as an unlicensed real estate agency or depository escrow bank.
+                  Relok8 (relok8.online) is a technology platform that helps outgoing tenants, prospective replacement tenants and landlords communicate about a possible lease takeover in Poland. Relok8 is not a party to the lease, does not provide legal advice, does not act as a real estate agency and does not hold deposits or other client funds.
                 </p>
               </section>
 
               <section className="space-y-2">
                 <h2 className="text-base font-bold text-slate-900">2. Landlord Consent Requirement</h2>
                 <p>
-                  All lease assignments require explicit written consent from the legal property owner or their authorized property management representative. No lease transfer is legally binding on the landlord without this mutual tri-party agreement.
+                  Users must review their lease and obtain the written approval required from the landlord or an authorised representative before relying on any takeover arrangement. The legal form and effect of an arrangement depend on the contract and circumstances; users should obtain professional advice when unsure.
                 </p>
               </section>
 
               <section className="space-y-2">
                 <h2 className="text-base font-bold text-slate-900">3. Security Deposits & Inspection Protocol</h2>
                 <p>
-                  Tenants are obligated to execute a formal handover inspection protocol (protokół zdawczo-odbiorczy) recording utility meters and state of furnishings prior to the settlement or release of the security deposit (kaucja).
+                  Participants should document the property condition, keys, utility readings and their agreed deposit arrangement. Relok8 does not guarantee a deposit refund or decide any dispute between participants.
                 </p>
               </section>
             </>
@@ -69,21 +69,21 @@ export const LegalTermsPrivacyPage: React.FC<LegalTermsPrivacyPageProps> = ({
               <section className="space-y-2">
                 <h2 className="text-base font-bold text-slate-900">1. Data Controller (Administrator Danych Osobowych)</h2>
                 <p>
-                  Relok8 (relok8.online) operates as an independent peer-to-peer web service connecting student flatmates and landlords in Poland, operating in compliance with Regulation (EU) 2016/679 (GDPR / RODO) and the Polish Personal Data Protection Act.
+                  Relok8 (relok8.online) operates as an independent peer-to-peer web service connecting incoming renters, outgoing tenants and landlords in Poland. The platform is open to local and international users. This notice explains how the service is designed to handle personal data under Regulation (EU) 2016/679 (GDPR / RODO) and applicable Polish law.
                 </p>
               </section>
 
               <section className="space-y-2">
                 <h2 className="text-base font-bold text-slate-900">2. Data Processed for Tenant & Landlord Matching</h2>
                 <p>
-                  We collect strictly necessary verification data, including tenant name, university or employment credentials, contact email, and active tenancy documentation solely for executing the lease transfer protocol. Data is never sold to third-party advertising brokers.
+                  Depending on the features you use, we process account identifiers, name, verified email, optional phone and profile details, listing descriptions and addresses, uploaded listing photos, messages, preferences, consent records and technical security logs. We use this information to operate, secure and improve the service and do not sell it to advertising brokers.
                 </p>
               </section>
 
               <section className="space-y-2">
                 <h2 className="text-base font-bold text-slate-900">3. Your Rights Under RODO</h2>
                 <p>
-                  You retain the right to inspect, correct, export, or request the immediate deletion of your personal data by contacting privacy@relok8.online.
+                  Subject to the conditions and exceptions in applicable law, you may request access, correction, export, restriction, objection or erasure by contacting privacy@relok8.online. We may need to verify your identity and retain limited records where law or security requirements apply.
                 </p>
               </section>
             </>

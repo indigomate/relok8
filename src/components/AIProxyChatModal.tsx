@@ -213,7 +213,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     setLastUserPrompt(userText);
 
     try {
-      await convex.sendAIMessage(listing.id, userText);
+      await convex.sendAIMessage(listing.id, userText, locale === 'pl' ? 'pl' : 'en');
     } catch (err) {
       console.error('Error generating AI response:', err);
       setHasError(true);
@@ -347,7 +347,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         <span className="text-xs font-bold text-slate-900">Onlo</span>
                         <span className="text-[11px] text-slate-400 font-medium">· {locale === 'pl' ? 'lokalny przewodnik' : 'local guide'}</span>
                       </div>
-                      <div className="text-[15px] leading-[22px] text-slate-900">
+                      <div className="whitespace-pre-wrap text-[15px] leading-[22px] text-slate-900">
                         {cleanedContent}
                       </div>
 
@@ -389,11 +389,17 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         </div>
                       )}
 
-                      {/* Factual Answer Source Chip */}
-                      <div className="pt-0.5">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                          Source: Relok8 listings
-                        </span>
+                      {/* Sources used for this answer */}
+                      <div className="pt-0.5 flex flex-wrap gap-1.5" aria-label={locale === 'pl' ? 'Źródła odpowiedzi' : 'Answer sources'}>
+                        {(msg.sources?.length ? msg.sources : [{ id: 'listing', label: locale === 'pl' ? 'Dane ogłoszenia Relok8' : 'Relok8 listing data', kind: 'internal' as const }]).map((source, sourceIndex) => source.url ? (
+                          <a key={`${source.id}-${sourceIndex}`} href={source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-indigo-700 hover:bg-indigo-50">
+                            [{sourceIndex}] {source.label}
+                          </a>
+                        ) : (
+                          <span key={`${source.id}-${sourceIndex}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+                            [{sourceIndex}] {source.label}
+                          </span>
+                        ))}
                       </div>
 
                       {/* Disclaimer under last answer */}

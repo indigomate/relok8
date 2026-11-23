@@ -16,8 +16,10 @@ import {
   rememberEmailContact,
   type EmailContact,
 } from './lib/emailContacts';
+import { RELOK8_LAUNCH_PRICING } from '../src/config/pricing';
+import { appOrigin } from './lib/appUrl';
 
-const APP_ORIGIN = 'https://relok8.online';
+const APP_ORIGIN = appOrigin();
 
 function emailDate(timestamp: number, locale: 'en' | 'pl') {
   return new Intl.DateTimeFormat(locale === 'pl' ? 'pl-PL' : 'en-GB', {
@@ -333,6 +335,16 @@ export const decide = mutation({
         reason: a.reason.trim(),
         updatedAt: Date.now(),
         decidedBy: u.subject,
+        ...(a.decision === 'approved' ? {
+          pricingSnapshot: {
+            currency: RELOK8_LAUNCH_PRICING.currency,
+            tenantReservationConfirmationGrosze: RELOK8_LAUNCH_PRICING.tenantReservationConfirmationGrosze,
+            landlordActiveTenancyMonthlyGrosze: RELOK8_LAUNCH_PRICING.landlordActiveTenancyMonthlyGrosze,
+            tenantTrigger: 'after_landlord_approval',
+            landlordBillingStarts: 'move_in',
+            capturedAt: Date.now(),
+          },
+        } : {}),
       },
     });
     await event(ctx, l._id, u.subject, "application " + a.decision);

@@ -80,12 +80,12 @@ const FAQS: FAQItem[] = [
     id: 'scam-prevention',
     category: 'scams',
     question: {
-      en: 'How does Relok8 protect students and expats from rental scams?',
+      en: 'How does Relok8 help local and international renters avoid rental scams?',
       pl: 'Jak Relok8 chroni najemców przed oszustwami mieszkaniowymi?'
     },
     answer: {
-      en: '1) We never charge agency commissions or upfront reservation deposits. 2) Outgoing tenants supply active lease and landlord contact details for formal transfer. 3) You never transfer money to private unverified foreign accounts before an in-person or live video walk-through and signed handover protocol. 4) All Cesja contracts require formal landlord counter-signature.',
-      pl: '1) Nie pobieramy żadnych prowizji agencyjnych. 2) Najemcy przekazują dane aktualnej umowy oraz kontakt do właściciela. 3) Przestrzegamy przed przelewaniem środków na niezweryfikowane konta przed obejrzeniem lokalu i podpisaniem protokołu. 4) Wszystkie umowy cesji wymagają formalnego podpisu właściciela nieruchomości.'
+      en: '1) We do not charge agency commissions. The 49 PLN reservation confirmation fee becomes due only after landlord approval. 2) Outgoing tenants supply active lease and landlord contact details for formal transfer. 3) Never transfer rent or deposits to an unverified private account before a viewing and signed handover protocol. 4) Every lease assignment requires formal landlord consent.',
+      pl: '1) Nie pobieramy prowizji agencyjnych. Opłata 49 PLN za potwierdzenie rezerwacji jest należna dopiero po akceptacji właściciela. 2) Najemcy przekazują dane aktualnej umowy oraz kontakt do właściciela. 3) Nie przelewaj czynszu ani kaucji na niezweryfikowane konto przed obejrzeniem lokalu i podpisaniem protokołu. 4) Każda cesja wymaga formalnej zgody właściciela.'
     },
     relatedLink: {
       text: { en: 'Read Relok8 tenant safety rules & checklist', pl: 'Zasady bezpieczeństwa i weryfikacji lokalu' },
@@ -149,8 +149,8 @@ export const HelpPage: React.FC<HelpPageProps> = ({
       metaDesc.setAttribute(
         'content',
         locale === 'pl'
-          ? 'Odpowiedzi na najczęstsze pytania o cesję umowy najmu w Polsce (Art. 509 KC), rozliczanie kaucji, meldunek dla obcokrajowców oraz uniknięcie kar za wcześniejsze rozwiązanie umowy.'
-          : 'Answers to frequently asked questions about lease transfers in Poland (Art. 509 KC), security deposit settlement, address registration (meldunek), and planning an early exit.'
+          ? 'Odpowiedzi na najczęstsze pytania o przejęcie najmu w Polsce, uzgodnienia dotyczące kaucji, meldunek oraz planowanie wcześniejszej wyprowadzki.'
+          : 'Answers to frequently asked questions about lease takeovers in Poland, security deposit arrangements, address registration (meldunek), and planning an early move.'
       );
     }
   }, [locale]);
@@ -204,7 +204,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
       {/* Schema.org FAQPage JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, '\\u003c') }}
       />
 
       <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
@@ -237,8 +237,8 @@ export const HelpPage: React.FC<HelpPageProps> = ({
           </h1>
           <p className="text-xs sm:text-base text-slate-600 leading-relaxed">
             {locale === 'pl'
-              ? 'Wszystko o cesji umowy najmu (Art. 509 KC), legalnym meldunku dla obcokrajowców, rozliczeniach kaucji oraz unikaniu kar za wcześniejszą wyprowadzkę.'
-              : 'Everything you need to know about peer-to-peer lease transfers in Poland (Art. 509 KC), meldunek address registration, security deposit handovers, and avoiding lease penalties.'}
+              ? 'Praktyczne informacje o przejęciu najmu, meldunku, uzgodnieniach dotyczących kaucji i planowaniu wcześniejszej wyprowadzki.'
+              : 'Practical information about lease takeovers, meldunek address registration, deposit arrangements and planning an early move.'}
           </p>
         </div>
 
@@ -436,8 +436,8 @@ export const HelpPage: React.FC<HelpPageProps> = ({
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
               {locale === 'pl'
-                ? 'Nasz zespół odpowiada na zapytania studentów i ekspatów w ciągu 1-2 godzin w godzinach roboczych.'
-                : 'Our team assists international students and expats with lease handovers, contract questions, and landlord communications.'}
+                ? 'Nasz zespół pomaga lokalnym i zagranicznym najemcom w przekazaniu najmu, pytaniach dotyczących umowy i komunikacji z właścicielem.'
+                : 'Our team assists local and international renters with lease handovers, contract questions and landlord communication.'}
             </p>
           </div>
 

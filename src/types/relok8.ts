@@ -48,7 +48,7 @@ export interface Place {
   exitNotes?: string;
   replacementProspectId?: string;
   handoverChecklist?: HandoverChecklist;
-  landlordBedPricePLN?: number; // 39 PLN per bed per month (display only)
+  landlordMonthlyFeePLN?: number; // launch price snapshot; currently 49 PLN per active tenancy month
 }
 
 type ThreadStatus = 'open' | 'needs_human' | 'reserved' | 'closed';

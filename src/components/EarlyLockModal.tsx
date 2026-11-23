@@ -5,6 +5,7 @@ import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Listing } from '../types';
 import type { SupportedLocale } from '../utils/formatters';
+import { RELOK8_LAUNCH_PRICING } from '../config/pricing';
 interface Props { isOpen: boolean; onClose: () => void; listing: Listing; locale: SupportedLocale; currentUser: any; onRequireLogin?: (reason: string) => void }
 export function EarlyLockModal({ isOpen, onClose, locale, currentUser, listing, onRequireLogin }: Props) {
   const dialogRef=useDialogFocus(isOpen,onClose);
@@ -26,7 +27,9 @@ export function EarlyLockModal({ isOpen, onClose, locale, currentUser, listing, 
   return <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4" role="presentation" onClick={onClose}>
     <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="payment-status-title" className="bg-white text-slate-900 rounded-2xl p-6 max-w-md" onClick={e => e.stopPropagation()}>
       <h2 id="payment-status-title" className="text-xl font-bold">{locale === 'pl' ? 'Wniosek o przejęcie najmu' : 'Request a lease takeover'}</h2>
-      <p className="my-4">{locale === 'pl' ? 'Nie pobraliśmy żadnych środków. Skontaktuj się z najemcą, aby ustalić warunki przejęcia najmu i kaucji.' : 'No money has been charged or held. Contact the tenant to discuss the lease takeover and deposit arrangements.'}</p>
+      <p className="my-4">{locale === 'pl'
+        ? `Złożenie wniosku jest bezpłatne. Jeśli właściciel go zaakceptuje, opłata za potwierdzenie rezerwacji wyniesie ${RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN. Nie blokujemy teraz żadnych środków.`
+        : `Applying is free. If the landlord accepts, the reservation confirmation fee will be ${RELOK8_LAUNCH_PRICING.tenantReservationConfirmationPLN} PLN. No money is charged or held now.`}</p>
       {!canRequestTakeover(listing) && <p className="mb-3 text-sm text-amber-800">{locale === 'pl' ? 'Zaktualizowane daty są wymagane przed złożeniem wniosku.' : 'Updated dates or an open listing are required before applying.'}</p>}
       <p role="status" className="my-3 text-sm">{status}</p>
       <button disabled={!canRequestTakeover(listing) || pending || (status.startsWith("Request received") || status.startsWith("Wniosek otrzymany"))} onClick={submit} className="px-4 py-2 rounded-lg bg-indigo-600 text-white mr-2">{pending ? (locale==='pl'?'Wysyłanie…':'Sending…') : (locale==='pl'?'Poproś właściciela o zgodę':'Request landlord approval')}</button>

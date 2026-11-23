@@ -214,6 +214,23 @@ describe('expiry, quotas, and data integrity', () => {
     expect(await a.query(api.favorites.getUserFavorites, { userId: 'a' })).toEqual([placeId]);
     expect(await read(b, 'saved')).toEqual([]);
   });
+  test('legacy inquiry and favorite endpoints reject self, missing and closed listings', async () => {
+    const { t, owner, a } = setup();
+    const placeId = await owner.mutation(api.leases.create, listing);
+    await expect(owner.mutation(api.inquiries.sendInquiry, { listingId: placeId, tenantName: 'Owner', tenantEmail: 'ignored@example.test', message: 'Mine' })).rejects.toThrow('own listing');
+    await expect(a.mutation(api.favorites.addFavorite, { userId: 'a', listingId: 'not-a-listing' })).rejects.toThrow('unavailable');
+    await t.run((ctx) => ctx.db.patch(placeId, { status: 'PAUSED' }));
+    await expect(a.mutation(api.inquiries.sendInquiry, { listingId: placeId, tenantName: 'Applicant', tenantEmail: 'ignored@example.test', message: 'Viewing?' })).rejects.toThrow('unavailable');
+    await expect(a.mutation(api.favorites.addFavorite, { userId: 'a', listingId: placeId })).rejects.toThrow('unavailable');
+  });
+  test('takeover and profile inputs are bounded and validated', async () => {
+    const { owner, a } = setup();
+    const placeId = await owner.mutation(api.leases.create, listing);
+    await expect(a.mutation(api.leases.requestTakeover, { leaseId: placeId, studentName: ' '.repeat(3) })).rejects.toThrow('Invalid takeover request');
+    await expect(a.mutation(api.profiles.upsertProfile, { userId: 'a', fullName: 'x'.repeat(151) })).rejects.toThrow('Invalid name');
+    await expect(a.mutation(api.profiles.upsertProfile, { userId: 'a', avatarUrl: 'javascript:alert(1)' })).rejects.toThrow('Invalid avatar URL');
+    await expect(a.mutation(api.profiles.upsertProfile, { userId: 'a', phoneNumber: 'not-a-phone' })).rejects.toThrow('Invalid phone number');
+  });
   test('exit notifications are visible only to the verified landlord recipient', async () => {
     const { owner, a, landlord } = setup(); const placeId = await owner.mutation(api.leases.create, listing);
     await write(owner, 'requestExit', { placeId, leaveDate: '2027-02-01' });

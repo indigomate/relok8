@@ -2,6 +2,7 @@ import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
 import { internal } from './_generated/api';
 import { verifyEmailPreferenceToken } from './lib/emailPreferenceTokens';
+import { appOrigin } from './lib/appUrl';
 
 const http = httpRouter();
 
@@ -147,9 +148,9 @@ const emailUnsubscribeGet = httpAction(async (_ctx, request) => {
   const url = new URL(request.url);
   const token = url.searchParams.get('token') || '';
   try {
-    const payload = await verifyEmailPreferenceToken(token);
-    const prefix = 'https://relok8.online/email-preferences';
-    return Response.redirect(`${prefix}?token=${encodeURIComponent(token)}&email=${encodeURIComponent(payload.email)}`, 303);
+    await verifyEmailPreferenceToken(token);
+    const prefix = `${appOrigin()}/email-preferences`;
+    return Response.redirect(`${prefix}?token=${encodeURIComponent(token)}`, 303);
   } catch {
     return new Response('This email preference link is invalid or has expired.', { status: 400 });
   }

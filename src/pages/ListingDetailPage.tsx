@@ -442,7 +442,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                 3. <strong>Address Registration (Meldunek)</strong>: You receive a signed agreement directly from the landlord for your residence and PESEL.
               </p>
               <p className="pt-1 text-[11px] text-slate-500 italic">
-                Relok8 is a student housing connection platform. Tenancy contracts and deposits are settled directly between tenants and landlords.
+                Relok8 connects incoming renters, outgoing tenants and landlords. The platform is open to local and international users. Tenancy contracts and deposits are settled directly between participants.
               </p>
             </div>
           )}

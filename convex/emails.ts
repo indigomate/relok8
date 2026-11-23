@@ -9,6 +9,7 @@ import {
   type RenderedEmail,
 } from '../src/emails/templates';
 import { createEmailPreferenceToken } from './lib/emailPreferenceTokens';
+import { appOrigin, convexSiteOrigin } from './lib/appUrl';
 
 const MAX_ATTEMPTS = 3;
 const RETRY_DELAYS_MS = [60_000, 5 * 60_000] as const;
@@ -236,8 +237,8 @@ export const deliver = internalAction({
           expiresAt: Date.now() + 180 * 86_400_000,
         });
         const appPrefix = delivery.locale === 'pl' ? '/pl' : '';
-        const preferencesUrl = `https://relok8.online${appPrefix}/email-preferences?token=${encodeURIComponent(token)}`;
-        const siteUrl = process.env.CONVEX_SITE_URL || 'https://modest-anteater-459.convex.site';
+        const preferencesUrl = `${appOrigin()}${appPrefix}/email-preferences?token=${encodeURIComponent(token)}`;
+        const siteUrl = convexSiteOrigin();
         const unsubscribeUrl = `${siteUrl}/email/unsubscribe?token=${encodeURIComponent(token)}`;
         templateData = { ...templateData, preferencesUrl, unsubscribeUrl };
         if (delivery.category === 'marketing') {

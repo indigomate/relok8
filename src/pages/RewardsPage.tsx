@@ -80,7 +80,7 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
             </h1>
             <p className="text-xs text-slate-500 hidden sm:block truncate">
               {locale === 'pl'
-                ? 'Odpowiadaj sprawnie na pytania studentów, aby zdobyć odznakę i wyróżnienie ogłoszenia.'
+                ? 'Odpowiadaj sprawnie na pytania kandydatów, aby zdobyć odznakę i wyróżnienie ogłoszenia.'
                 : 'Answer prospects promptly to earn points, unlock the Fast Responder badge, and boost your room.'}
             </p>
           </div>
@@ -152,8 +152,8 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
             </div>
             <p className="text-xs text-amber-900 leading-relaxed">
               {locale === 'pl'
-                ? 'Wynajmujący nie zbierają punktów lokatorskich. Zamiast tego możesz monitorować wskaźnik odpowiedzi lokatorów w swoim pulpicie właściciela, aby upewnić się, że zapytania studentów są obsługiwane sprawnie.'
-                : 'Landlords do not accrue response points. You can track your tenants’ responsiveness in your Landlord Portal to ensure prospective student takeovers are handled smoothly.'}
+                ? 'Wynajmujący nie zbierają punktów lokatorskich. Zamiast tego możesz monitorować wskaźnik odpowiedzi lokatorów w swoim pulpicie właściciela, aby upewnić się, że zapytania kandydatów są obsługiwane sprawnie.'
+                : 'Landlords do not accrue response points. You can track your tenants’ responsiveness in your Landlord Portal to ensure prospective takeovers are handled smoothly.'}
             </p>
           </div>
         )}
@@ -226,7 +226,7 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
                   <p className="text-xs text-indigo-900/80 leading-relaxed">
                     {locale === 'pl'
                       ? 'Pokoje aktywnych lokatorów otrzymują wyróżniającą odznakę zaufania i są wyświetlane na początku wyników wyszukiwania.'
-                      : 'Listings from responsive tenants receive a priority badge and are placed at the top of student searches.'}
+                      : 'Listings from responsive tenants receive a priority badge and are placed higher in relevant searches.'}
                   </p>
                 </div>
 
@@ -297,7 +297,7 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     {locale === 'pl'
-                      ? 'Odpowiedz na wiadomość zweryfikowanego studenta w ciągu 12h (min. 20 znaków). Max 3 pkt na wątek.'
+                      ? 'Odpowiedz na wiadomość zweryfikowanego kandydata w ciągu 12h (min. 20 znaków). Max 3 pkt na wątek.'
                       : 'Reply to a verified prospect within 12 hours (min 20 characters). Maximum 3 points per thread.'}
                   </p>
                 </div>
@@ -312,7 +312,7 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
                   </div>
                   <p className="text-xs text-slate-500 leading-relaxed">
                     {locale === 'pl'
-                      ? 'Gdy student umówi prezentację osobistą lub wideo przez wątek czatu.'
+                      ? 'Gdy kandydat umówi prezentację osobistą lub wideo przez wątek czatu.'
                       : 'When a prospective tenant schedules an in-person or video walk-through.'}
                   </p>
                 </div>
@@ -348,8 +348,8 @@ export const RewardsPage: React.FC<RewardsPageProps> = ({
             {/* Platform Trust & Legal Notice */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 leading-relaxed">
               {locale === 'pl'
-                ? 'Relok8 to platforma łącząca studentów, ekspatów i wynajmujących. Nie świadczymy usług ubezpieczeniowych, depozytowych ani pośrednictwa finansowego.'
-                : 'Relok8 is a peer-to-peer community platform connecting students, expats, and landlords. Relok8 does not provide insurance policies, depository escrow, or regulated financial services.'}
+                ? 'Relok8 to platforma łącząca lokalnych i zagranicznych najemców, osoby wyprowadzające się oraz wynajmujących. Nie świadczymy usług ubezpieczeniowych, depozytowych ani pośrednictwa finansowego.'
+                : 'Relok8 is a peer-to-peer platform connecting local and international renters, outgoing tenants and landlords. Relok8 does not provide insurance policies, depository escrow, or regulated financial services.'}
             </div>
 
           </div>

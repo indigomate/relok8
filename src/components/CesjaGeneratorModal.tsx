@@ -106,7 +106,7 @@ export const CesjaGeneratorModal: React.FC<CesjaGeneratorModalProps> = ({
                   {locale === 'pl' ? 'Wzór cesji umowy najmu' : 'Bilingual Cesja Agreement'}
                 </span>
                 <span className="text-[11px] font-mono text-[var(--r8-success)] bg-[var(--r8-surface-2)] px-2 py-0.5 rounded-[6px] border border-[var(--r8-border)]">
-                  Art. 509 & 519 KC
+                  Review before signing
                 </span>
               </div>
             </div>

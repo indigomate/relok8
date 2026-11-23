@@ -127,7 +127,7 @@ export const Footer: React.FC<FooterProps> = ({
                   onClick={(e) => handleLink('/cesja-template', e)}
                   className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
                 >
-                  {locale === 'pl' ? 'Wzór cesji (Art. 509 KC)' : 'Cesja Contract Template'}
+                  {locale === 'pl' ? 'Wzór uzgodnienia przejęcia' : 'Takeover Agreement Template'}
                 </a>
               </li>
               <li>
@@ -212,7 +212,7 @@ export const Footer: React.FC<FooterProps> = ({
         <div className="pt-6 border-t border-slate-200/80 text-[11px] text-slate-500 leading-relaxed">
           <p>{strings.footerLegalNotice}</p>
           <p className="mt-1 text-slate-400">
-            Relok8 · Peer-to-peer student & expat housing directory in Poland · Direct tenant and landlord matching · info@relok8.online
+            Relok8 · Peer-to-peer rental transitions for local and international movers in Poland · Direct tenant and landlord matching · info@relok8.online
           </p>
         </div>
 

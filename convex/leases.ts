@@ -5,6 +5,7 @@ import { rememberEmailContact } from './lib/emailContacts';
 import { queueEmailDelivery } from './emails';
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { appOrigin } from './lib/appUrl';
 
 /**
  * Fetch all lease takeover listings, with optional city & roomType filtering.
@@ -144,7 +145,7 @@ export const create = mutation({
           listingTitle: args.title,
           city: args.city,
           expiryDate,
-          ctaUrl: `https://relok8.online${contact.locale === 'pl' ? '/pl' : ''}/listing/${leaseId}`,
+          ctaUrl: `${appOrigin()}${contact.locale === 'pl' ? '/pl' : ''}/listing/${leaseId}`,
         },
         relatedId: String(leaseId),
         scheduleDelivery: !contact.email.endsWith('.test'),
@@ -399,6 +400,9 @@ export const requestTakeover = mutation({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     await consume(ctx, identity, "takeover", 10);
+    const studentName = args.studentName.trim();
+    const message = args.message?.trim();
+    if (!studentName || studentName.length > 150 || (message && message.length > 10_000) || (args.studentPhone && (!/^\+?[0-9 ()-]{7,25}$/.test(args.studentPhone) || args.studentPhone.length > 25))) throw new Error('Invalid takeover request');
     const lease = await ctx.db
       .query("leases")
       .filter((q) => q.eq(q.field("_id"), args.leaseId))
@@ -407,22 +411,22 @@ export const requestTakeover = mutation({
     if (!lease) throw new Error("Lease not found");
 
     const now = Date.now();
-    if (lease.ownerId === identity.subject || ["APPROVED", "TRANSFERRED", "LEASED"].includes(lease.status) || (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now && lease.lockedByUserId !== identity.subject)) throw new Error("Listing unavailable");
+    if (lease.ownerId === identity.subject || isLandlord(lease, identity) || !validLeaseDates(lease.moveInDate, lease.leaseEndDate) || leaseHasEnded(lease.leaseEndDate) || ["PAUSED", "APPROVED", "TRANSFERRED", "LEASED"].includes(lease.status) || (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now && lease.lockedByUserId !== identity.subject)) throw new Error("Listing unavailable");
     await ctx.db.patch(lease._id, {
       status: "PENDING_HOLD",
       isLocked: true,
       lockedUntil: lease.lockedByUserId === identity.subject && lease.lockedUntil && lease.lockedUntil > now ? lease.lockedUntil : now + 15 * 60 * 1000,
-      reservedByName: args.studentName,
+      reservedByName: studentName,
       lockedByUserId: identity.subject,
     });
 
     // Record an inquiry for the landlord to review
     await ctx.db.insert("inquiries", {
       listingId: args.leaseId,
-      tenantName: args.studentName,
+      tenantName: studentName,
       tenantEmail: identity.email || "",
       userId: identity.subject,
-      message: args.message || "Requesting lease assignment pursuant to Art. 509 KC. Verified student documentation ready.",
+      message: message || "I would like to discuss taking over this lease and the required landlord approval.",
       status: "pending",
       createdAt: now,
     });

@@ -349,7 +349,7 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
       return {
         title: locale === 'pl' ? 'Krok 2: Pokaż miejsce do nauki i pracy' : 'Step 2: Capture the study workspace',
         tip: locale === 'pl'
-          ? 'Zrób zdjęcie biurka, krzesła i gniazdek zasilających, przy których student będzie się uczyć.'
+          ? 'Zrób zdjęcie biurka, krzesła i gniazdek zasilających, z których będzie korzystać nowy najemca.'
           : 'Frame the desk, study chair, and outlets where an applicant will study.'
       };
     }

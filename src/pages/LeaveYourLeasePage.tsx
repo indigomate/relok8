@@ -50,7 +50,7 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
           <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
             {locale === 'pl'
               ? 'Wyprowadź się przed końcem umowy bez utraty kaucji i kar'
-              : 'Exit Your Rental Lease Early in Poland with Zero Penalties'}
+              : 'Plan an Early Move from Your Rental in Poland'}
           </h1>
           <p className="text-base text-slate-600 leading-relaxed">
             {locale === 'pl'
@@ -74,7 +74,7 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
             {
               step: '2',
               title: locale === 'pl' ? 'Dodaj pokój' : 'List on Relok8',
-              desc: locale === 'pl' ? 'Wstaw darmowe ogłoszenie w 2 minuty i odbieraj zapytania od studentów i ekspatów.' : 'Post your room for free in 2 minutes to reach students and expats looking to move in.'
+              desc: locale === 'pl' ? 'Wstaw darmowe ogłoszenie w 2 minuty i odbieraj zapytania od osób przeprowadzających się lokalnie i z zagranicy.' : 'Post your room for free in 2 minutes to reach people moving locally or from abroad.'
             },
             {
               step: '3',

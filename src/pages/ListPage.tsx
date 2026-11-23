@@ -234,7 +234,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
               <p className="text-sm text-slate-600 max-w-md mx-auto">
                 {locale === 'pl'
                   ? 'Zainteresowani studenci i ekspaci mogą teraz przeglądać Twoją ofertę i wysyłać zapytania o przejęcie umowy.'
-                  : 'International students and expats searching in your city can now contact you to arrange viewings and coordinate the lease takeover.'}
+                  : 'Local and international renters searching in your city can now contact you to arrange viewings and coordinate the lease takeover.'}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
@@ -303,7 +303,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                     <span>{locale === 'pl' ? 'Krok 1: Gdzie znajduje się pokój?' : 'Step 1: Where is your room located?'}</span>
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {locale === 'pl' ? 'Wybierz jedno z 6 obsługiwanych miast studenckich w Polsce.' : 'Select one of our primary student university cities in Poland.'}
+                    {locale === 'pl' ? 'Wybierz jedno z 6 głównych miast startowych Relok8 w Polsce.' : 'Select one of Relok8’s six primary launch cities in Poland.'}
                   </p>
                 </div>
 
@@ -685,7 +685,7 @@ if(typeof saved.photos === typeof photos) setPhotos(saved.photos);}}catch{if(act
                       <span className="text-slate-700 font-medium">
                         {locale === 'pl'
                           ? 'Właściciel wyraża zgodę na meldunek czasowy nowego najemcy w urzędzie (PESEL).'
-                          : 'The landlord permits address registration (meldunek) for foreign students/workers.'}
+                          : 'The landlord permits address registration (meldunek) for tenants who need it.'}
                       </span>
                     </label>
                   </div>

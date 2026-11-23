@@ -5,6 +5,7 @@ import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
 import { DEFAULT_REWARD_CONFIG, DEFAULT_INSURANCE_CONFIG } from "../src/types/relok8";
 import { queueEmailDelivery } from './emails';
 import { rememberEmailContact } from './lib/emailContacts';
+import { appOrigin } from './lib/appUrl';
 
 const text = (value: unknown, max = 10000): string => {
   if (typeof value !== 'string' || !value.trim() || value.length > max) throw new Error('Invalid text');
@@ -35,7 +36,8 @@ async function put(ctx: any, kind: string, key: string, ownerId: string, data: a
 }
 function toPlace(lease: any, identity: any) {
   const state = lease.placeState || {};
-  return { ...(owns(lease, identity) || landlord(lease, identity) ? state : {}), id: lease._id, occupancyStatus: lease.occupancyStatus, leaseEndDate: lease.leaseEndDate, tenantId: lease.ownerId || '', landlordId: landlord(lease, identity) ? identity.subject : lease.landlordUserId || '', title: lease.title, city: lease.city, district: lease.district || '', address: lease.address, rentPLN: lease.monthlyRent, czynszPLN: lease.czynszAdmin || 0, depositPLN: lease.deposit, availableFrom: lease.moveInDate, roomType: lease.roomType, flatmates: lease.flatmatesCount || 0, furnished: !!lease.isFurnished, billsIncluded: !!lease.billsIncluded, billsMode: lease.billsMode, fixedBillsPLN: lease.fixedBillsPLN, meldunekOk: !!lease.meldunekAllowed, commuteNote: lease.distanceToCampus || '', nearInstitutions: lease.universitiesNearby || [], photos: lease.images || [], rules: lease.description || '', status: state.status || 'available_for_takeover' };
+  const participant = owns(lease, identity) || landlord(lease, identity);
+  return { ...(participant ? state : {}), id: lease._id, occupancyStatus: lease.occupancyStatus, leaseEndDate: lease.leaseEndDate, tenantId: participant ? lease.ownerId || '' : '', landlordId: participant ? lease.landlordUserId || '' : '', title: lease.title, city: lease.city, district: lease.district || '', address: lease.address, rentPLN: lease.monthlyRent, czynszPLN: lease.czynszAdmin || 0, depositPLN: lease.deposit, availableFrom: lease.moveInDate, roomType: lease.roomType, flatmates: lease.flatmatesCount || 0, furnished: !!lease.isFurnished, billsIncluded: !!lease.billsIncluded, billsMode: lease.billsMode, fixedBillsPLN: lease.fixedBillsPLN, meldunekOk: !!lease.meldunekAllowed, commuteNote: lease.distanceToCampus || '', nearInstitutions: lease.universitiesNearby || [], photos: lease.images || [], rules: lease.description || '', status: state.status || 'available_for_takeover' };
 }
 async function notify(ctx: any, recipient: string | undefined, placeId: string, body: string) {
   if (!recipient) return;
@@ -233,7 +235,7 @@ export const write = mutation({
           listingTitle: lease.title,
           city: lease.city,
           expiryDate,
-          ctaUrl: `https://relok8.online${localePrefix}/place?invite=${input.token}`,
+          ctaUrl: `${appOrigin()}${localePrefix}/place?invite=${input.token}`,
         },
         relatedId: String(lease._id),
         scheduleDelivery: !skipTestDelivery,

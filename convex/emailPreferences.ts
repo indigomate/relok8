@@ -5,6 +5,7 @@ import { requireIdentity } from './lib/auth';
 import { emailLocale, rememberEmailContact } from './lib/emailContacts';
 import { queueEmailDelivery } from './emails';
 import { verifyEmailPreferenceToken } from './lib/emailPreferenceTokens';
+import { appOrigin } from './lib/appUrl';
 
 const CONSENT_VERSION = 'email-marketing-v1-2026-11-20';
 
@@ -56,7 +57,7 @@ export const syncAccount = mutation({
       locale: contact.locale,
       templateData: {
         recipientName: contact.name,
-        ctaUrl: `https://relok8.online${contact.locale === 'pl' ? '/pl' : ''}/`,
+        ctaUrl: `${appOrigin()}${contact.locale === 'pl' ? '/pl' : ''}/`,
       },
       relatedId: identity.subject,
       scheduleDelivery: !contact.email.endsWith('.test'),
@@ -179,6 +180,8 @@ export const updatePublic = action({
     digestMaxMonthlyRent: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<any> => {
+    if (args.weeklyDigest && !args.marketingConsent) throw new Error('Marketing consent is required for the weekly digest');
+    if (args.digestMaxMonthlyRent !== undefined && (!Number.isFinite(args.digestMaxMonthlyRent) || args.digestMaxMonthlyRent < 500 || args.digestMaxMonthlyRent > 100_000)) throw new Error('Invalid maximum rent');
     const payload = await verifyEmailPreferenceToken(args.token);
     return ctx.runMutation((internal as any).emailPreferences.updateByTokenInternal, {
       userId: payload.userId,

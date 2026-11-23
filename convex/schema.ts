@@ -14,6 +14,32 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_hash_locale", ["sourceHash", "targetLocale"]),
+  onloKnowledge: defineTable({
+    slug: v.string(),
+    category: v.string(),
+    jurisdiction: v.string(),
+    titleEn: v.string(),
+    titlePl: v.string(),
+    answerEn: v.string(),
+    answerPl: v.string(),
+    keywords: v.array(v.string()),
+    sourceLabelEn: v.string(),
+    sourceLabelPl: v.string(),
+    sourceUrl: v.optional(v.string()),
+    sourceKind: v.union(v.literal("official"), v.literal("internal")),
+    legalDisclaimer: v.boolean(),
+    lastVerifiedAt: v.number(),
+    active: v.boolean(),
+    version: v.number(),
+    ragVersion: v.optional(v.number()),
+    ragEntryId: v.optional(v.string()),
+    ragSyncedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_active", ["active"])
+    .index("by_category", ["category"]),
   // Relok8 Leases table (for live lease takeover listings)
   leases: defineTable({
     occupancyStatus: v.optional(v.union(v.literal("occupied"), v.literal("vacant"))),
@@ -204,6 +230,12 @@ export default defineSchema({
     listingId: v.string(),
     sender: v.string(), // "user" | "ai"
     content: v.string(),
+    sources: v.optional(v.array(v.object({
+      id: v.string(),
+      label: v.string(),
+      url: v.optional(v.string()),
+      kind: v.union(v.literal("official"), v.literal("internal")),
+    }))),
     functionExecuted: v.optional(v.string()),
     timestamp: v.number(),
   }),

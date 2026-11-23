@@ -45,7 +45,7 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
             <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">
               {locale === 'pl' 
                 ? 'Twoja lista zapisanych ofert cesji i pokoi studenckich w Polsce.'
-                : 'Your shortlisted student housing and expat lease assignments across Poland.'}
+                : 'Your shortlisted rooms, apartments and lease assignments across Poland.'}
             </p>
           </div>
 

@@ -55,6 +55,7 @@ export interface ConvexAIMessageDoc {
   listingId: string;
   sender: 'user' | 'ai';
   content: string;
+  sources?: Array<{ id: string; label: string; url?: string; kind: 'official' | 'internal' }>;
   functionExecuted?: string;
   timestamp: number;
 }
@@ -115,7 +116,7 @@ export function mapConvexListingToAppListing(doc: ConvexListingDoc, translation?
 // Reactive Convex Context
 interface ConvexContextValue {
   db: ConvexDBState;
-  sendAIMessage: (listingId: string, userPrompt: string) => Promise<{
+  sendAIMessage: (listingId: string, userPrompt: string, locale?: 'en' | 'pl') => Promise<{
     userMsg: ConvexAIMessageDoc;
     aiMsg: ConvexAIMessageDoc;
   }>;
@@ -130,11 +131,11 @@ export const ConvexProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const history = useRemoteQuery(api.aiMessages.mine, isAuthenticated ? {} : 'skip') || [];
   const value = useMemo<ConvexContextValue>(() => ({
     db: { listings: listings as any, aiMessages: history as any },
-    sendAIMessage: async (listingId, userPrompt) => {
+    sendAIMessage: async (listingId, userPrompt, locale) => {
       if (!isAuthenticated) throw new Error('Sign in to use the listing assistant.');
-      const result = await client.action(api.aiMessages.generateAIProxyResponse, { listingId, userPrompt });
+      const result = await client.action(api.aiMessages.generateAIProxyResponse, { listingId, userPrompt, locale });
       const now = Date.now();
-      return { userMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'user', content: userPrompt }, aiMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'ai', content: (result as any).replyText || (result as any).content || 'Please contact the tenant for confirmation.' } };
+      return { userMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'user', content: userPrompt }, aiMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'ai', content: (result as any).replyText || (result as any).content || 'Please contact the tenant for confirmation.', sources: (result as any).sources } };
     },
   }), [client, listings, isAuthenticated, history]);
   return <ConvexContext.Provider value={value}>{children}</ConvexContext.Provider>;

@@ -23,7 +23,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
   const traditionalPenaltyCost = numRent * penaltyMonths;
   const totalTraditionalLoss = traditionalPenaltyCost + numDeposit;
   const brokerCommissionSaved = numRent; // 1 month rent typically charged by agencies in Poland
-  const relok8Fee = 0; // 0 PLN agency fee
+  const relok8Fee = 0; // the departing tenant has no mandatory Relok8 fee
   const netSavings = totalTraditionalLoss - relok8Fee + brokerCommissionSaved;
 
   return (
@@ -165,7 +165,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
                 <span className="font-bold text-emerald-400 font-mono">+{formatPLN(brokerCommissionSaved, locale)}</span>
               </div>
               <div className="flex justify-between items-center text-slate-300 pt-2 border-t border-indigo-900/60">
-                <span>{locale === 'pl' ? 'Opłata Relok8:' : 'Relok8 fee:'}</span>
+                <span>{locale === 'pl' ? 'Opłata od wyprowadzającego się najemcy:' : 'Departing-tenant Relok8 fee:'}</span>
                 <span className="font-bold text-white font-mono">0 PLN</span>
               </div>
             </div>
@@ -189,7 +189,7 @@ export const SavingsCalculatorPage: React.FC<SavingsCalculatorPageProps> = ({
                 className="w-full py-3 rounded-xl bg-indigo-900/50 hover:bg-indigo-900/80 border border-indigo-700/50 text-indigo-100 text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <FileCheck className="w-4 h-4" />
-                <span>{locale === 'pl' ? 'Pobierz wzór cesji (Art. 509 KC)' : 'Bilingual Cesja template (Art. 509 KC)'}</span>
+                <span>{locale === 'pl' ? 'Otwórz wzór uzgodnienia przejęcia' : 'Open the bilingual takeover agreement draft'}</span>
               </button>
             </div>
           </div>
