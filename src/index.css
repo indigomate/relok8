@@ -532,6 +532,14 @@ textarea:focus-visible {
 .r8-notifications h2 { font-size: 1rem; line-height: 1.4; }
 .r8-notifications h3 { font-size: 0.75rem; line-height: 1.4; }
 
+/* Messages is an operational workspace, so its title remains compact even
+   though the global editorial heading scale is intentionally larger. */
+.r8-messages h1 { font-size: 1.375rem; line-height: 1.25; }
+
+@media (min-width: 640px) {
+  .r8-messages h1 { font-size: 1.5rem; }
+}
+
 /* Keep the photo status readable without covering the Save control. */
 .r8-availability-compact p { font-size: 0.75rem; line-height: 1.4; }
 .r8-availability-compact strong { font-size: 1rem; line-height: 1.3; }

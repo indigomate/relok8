@@ -74,6 +74,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const [filter, setFilter] = useState<'all' | 'unread' | 'needs_human' | 'onlo'>('all');
   const [threadSearch, setThreadSearch] = useState('');
   const [isThreadListExpanded, setIsThreadListExpanded] = useState(true);
+  const [isComposerToolsExpanded, setIsComposerToolsExpanded] = useState(false);
 
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
 
@@ -325,9 +326,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   };
 
   return (
-    <div className="min-h-dvh md:h-screen bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans md:overflow-hidden">
+    <div className="r8-messages min-h-dvh md:h-screen bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans md:overflow-hidden">
       {/* 1. Compact Title Row */}
-      <header className="px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0 bg-transparent">
+      <header className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 bg-transparent">
         {/* Left: Back button + Title + Subtitle */}
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -339,14 +340,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-tight">
+            <h1 className="font-bold text-slate-900 tracking-tight">
               {locale === 'pl' ? 'Wiadomości' : 'Messages'}
             </h1>
-            <p className="text-xs text-slate-500 truncate">
+            <div className="text-xs leading-4 text-slate-500 truncate">
               {isTenant || isLandlord
                 ? 'Shared inbox for your home. You and the landlord see prospect threads together.'
                 : 'Direct messaging with verified tenants and landlords · Powered by Onlo.'}
-            </p>
+            </div>
           </div>
         </div>
 
@@ -409,9 +410,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       </header>
 
       {/* 2. Main Rounded-3xl Card (holds the 3 panes and fills viewport height) */}
-      {(!isAuthenticated || inboxError) && <p role="status" className="px-6 py-2 text-sm">{inboxError || (isLoading ? 'Loading inbox…' : 'Sign in to see your messages.')}</p>}
+      {(!isAuthenticated || inboxError) && <div role="status" className="px-6 py-2 text-sm">{inboxError || (isLoading ? 'Loading inbox…' : 'Sign in to see your messages.')}</div>}
       <main className="flex-1 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 overflow-y-auto md:overflow-hidden min-h-0">
-        <div className={`${mobilePane === 'list' ? 'h-auto' : 'h-[calc(100dvh-8.75rem)]'} md:h-full bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row`}>
+        <div className="h-auto md:h-full bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row">
           
           {/* PANE 1: Thread List (340px) */}
           <section
@@ -432,9 +433,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] leading-4 text-slate-500">
+                  <div className="text-[11px] leading-4 text-slate-500">
                     {threads.length} {locale === 'pl' ? (threads.length === 1 ? 'rozmowa' : 'rozmowy') : (threads.length === 1 ? 'conversation' : 'conversations')}
-                  </p>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -515,7 +516,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               {filteredThreads.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 space-y-2">
                   <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
-                  <p className="text-xs font-medium">No threads matching filter.</p>
+                  <div className="text-xs font-medium">No threads matching filter.</div>
                 </div>
               ) : (
                 filteredThreads.map((t) => {
@@ -613,7 +614,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
           {/* PANE 2: Conversation (Flexible) */}
           <section
             aria-label="Conversation"
-            className={`flex-1 min-w-0 flex flex-col h-full bg-white ${
+            className={`flex-1 min-w-0 flex flex-col h-auto md:h-full bg-white ${
               mobilePane === 'list' ? 'hidden md:flex' : 'flex'
             }`}
           >
@@ -669,8 +670,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               {/* Status pill & Landlord Approve button */}
               <div className="flex items-center gap-2 shrink-0">
                 {activeTab === 'place_room' ? (
-                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    Private channel
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200" title={locale === 'pl' ? 'Prywatny kanał domu' : 'Private home channel'}>
+                    <span className="sm:hidden">{locale === 'pl' ? 'Prywatny' : 'Private'}</span>
+                    <span className="hidden sm:inline">{locale === 'pl' ? 'Prywatny kanał' : 'Private channel'}</span>
                   </span>
                 ) : (
                   <>
@@ -749,20 +751,32 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             <div
               ref={messagesContainerRef}
               onScroll={handleContainerScroll}
-              className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-slate-50/30"
+              className="min-h-40 max-h-[calc(100dvh-22rem)] md:min-h-0 md:max-h-none md:flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-slate-50/30 overscroll-contain transition-[min-height] duration-200"
             >
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 space-y-3 p-4">
-                  <OnloAvatar size={80} variant="avatar" state="hello" title="Start the conversation! Onlo is ready to assist" />
+                <div className="min-h-32 flex flex-col items-center justify-center text-center text-slate-400 space-y-2.5 px-4 py-5">
+                  {activeTab === 'place_room' ? (
+                    <div className="w-11 h-11 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center" aria-hidden="true">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                  ) : (
+                    <OnloAvatar size={48} variant="avatar" state="hello" title="Start the conversation! Onlo is ready to assist" />
+                  )}
                   <div className="space-y-1 max-w-sm">
-                    <p className="text-sm font-bold text-slate-800">
-                      {activeTab === 'place_room' ? 'Private Place Room' : 'Start the conversation!'}
-                    </p>
-                    <p className="text-xs text-slate-500">
+                    <div className="text-sm leading-5 font-bold text-slate-800">
                       {activeTab === 'place_room'
-                        ? 'Private Place Room between tenant and landlord.'
-                        : 'Onlo is ready to assist if you are away. Ask about lease takeovers, viewings, or flat specs.'}
-                    </p>
+                        ? (locale === 'pl' ? 'Brak prywatnych wiadomości' : 'No private messages yet')
+                        : (locale === 'pl' ? 'Rozpocznij rozmowę' : 'Start the conversation')}
+                    </div>
+                    <div className="text-xs leading-[1.125rem] text-slate-500">
+                      {activeTab === 'place_room'
+                        ? (locale === 'pl'
+                          ? `Tylko ${placeRoomMemberNames.join(' i ') || 'uczestnicy domu'} mogą czytać ten kanał.`
+                          : `Only ${placeRoomMemberNames.join(' and ') || 'the people in this home'} can read this channel.`)
+                        : (locale === 'pl'
+                          ? 'Napisz pierwszą wiadomość. Onlo może pomóc, gdy jesteś niedostępny.'
+                          : 'Send the first message. Onlo can help when you are unavailable.')}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -901,30 +915,44 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
             {/* 3. Composer (Always docked at the bottom, never covered by any floating panel) */}
             <div className="p-3 sm:p-4 border-t border-slate-200/90 bg-white space-y-2.5 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              {/* Chips above input: 'Suggest a reply' and 'Ask Onlo now' */}
-              <div className="flex items-center justify-between text-xs gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
+              {/* Inquiry helpers stay collapsed until requested and never act on the private room. */}
+              {activeTab === 'prospects' && (
+                <div className="text-xs space-y-2">
                   <button
                     type="button"
-                    disabled={isHelperLoading}
-                    onClick={handleSuggestReply}
-                    className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    onClick={() => setIsComposerToolsExpanded((expanded) => !expanded)}
+                    className="min-h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                    aria-expanded={isComposerToolsExpanded}
+                    aria-controls="message-writing-tools"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Suggest a reply</span>
+                    <span>{locale === 'pl' ? 'Narzędzia pisania' : 'Writing tools'}</span>
+                    {isComposerToolsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
-
-                  <button
-                    type="button"
-                    disabled={isHelperLoading}
-                    onClick={handleAskOnloNow}
-                    className="px-3 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <OnloAvatar size={16} variant="avatar" state="idle" />
-                    <span>Ask Onlo now</span>
-                  </button>
+                  {isComposerToolsExpanded && (
+                    <div id="message-writing-tools" className="flex items-center gap-2 flex-wrap" role="group" aria-label={locale === 'pl' ? 'Narzędzia pisania wiadomości' : 'Message writing tools'}>
+                      <button
+                        type="button"
+                        disabled={isHelperLoading}
+                        onClick={handleSuggestReply}
+                        className="min-h-8 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>{locale === 'pl' ? 'Zaproponuj odpowiedź' : 'Suggest a reply'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isHelperLoading}
+                        onClick={handleAskOnloNow}
+                        className="min-h-8 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      >
+                        <OnloAvatar size={16} variant="avatar" state="idle" />
+                        <span>{locale === 'pl' ? 'Poproś Onlo' : 'Ask Onlo now'}</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
 
               {/* Pill input with round indigo send button */}
               <form onSubmit={handleSend} className="flex items-center gap-2">
@@ -949,10 +977,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 </button>
               </form>
 
-              {/* One-line note: Onlo never agrees to prices, dates or viewings */}
+              {/* One-line safety/privacy note follows the active conversation type. */}
               <div className="text-[11px] text-slate-600 text-center flex items-center justify-center gap-1.5">
-                <Shield className="w-3 h-3 text-slate-600 shrink-0" />
-                <span>Onlo never agrees to prices, dates or viewings.</span>
+                {activeTab === 'place_room' ? <Lock className="w-3 h-3 text-slate-600 shrink-0" /> : <Shield className="w-3 h-3 text-slate-600 shrink-0" />}
+                <span>{activeTab === 'place_room'
+                  ? (locale === 'pl' ? 'Prywatna rozmowa najemcy i wynajmującego.' : 'Private conversation between tenant and landlord.')
+                  : (locale === 'pl' ? 'Onlo nie uzgadnia cen, terminów ani oględzin.' : 'Onlo never agrees to prices, dates or viewings.')}</span>
               </div>
             </div>
           </section>

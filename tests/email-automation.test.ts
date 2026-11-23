@@ -13,7 +13,11 @@ const identity = (subject: string) => ({
 });
 
 function isoDate(daysFromNow: number): string {
-  const date = new Date(Date.now() + daysFromNow * 86_400_000);
+  const todayInWarsaw = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Warsaw',
+  }).format(new Date());
+  const date = new Date(`${todayInWarsaw}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + daysFromNow);
   return date.toISOString().slice(0, 10);
 }
 
