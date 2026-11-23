@@ -1,1 +1,127 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="author" content="indigomate"><meta http-equiv="refresh" content="0; url=https://relok8.online"></head><body>Relok8</body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Relok8 — 20-second pixel story</title>
+<meta name="author" content="indigomate"><meta name="description" content="An interactive 20-second pixel story about housing and lease takeovers with Relok8.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+:root{--bg:#0A0A0C;--panel:#14141C;--line:#2A2A44;--ink:#FFFFFF;--mut:#A9A9C4;--v:#8B5CF6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100dvh;background:var(--bg);color:var(--ink);font:10px/1.8 "Press Start 2P",ui-monospace,monospace;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px}
+.stage{position:relative;width:min(100%,960px);aspect-ratio:16/9;border:4px solid var(--line);box-shadow:0 0 0 4px #000,0 0 40px #6d4aff55;background:var(--bg)}
+canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+.bar{width:min(100%,960px);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,a.l{font:inherit;color:var(--ink);background:var(--panel);border:3px solid var(--line);padding:8px 10px;cursor:pointer;text-decoration:none;box-shadow:0 3px 0 #000}
+button:hover,a.l:hover{border-color:var(--v)}button:focus-visible,a.l:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+button[aria-pressed=true]{background:#3B2A8A;border-color:var(--v)}
+input[type=range]{flex:1;min-width:160px;accent-color:var(--v)}
+#cap{width:min(100%,960px);margin:0;color:var(--mut);min-height:3.6em}
+#tm{color:var(--mut)}
+</style></head><body>
+<div class="stage"><canvas id="c" width="320" height="180" role="img" aria-label="Pixel art story: a student stressed by broker fees finds a room on Relok8, takes over a lease and gets the keys."></canvas></div>
+<div class="bar"><button id="pp" aria-label="Pause">❚❚</button><button id="rs" aria-label="Restart">⏮</button>
+<button class="sc" data-i="0">1</button><button class="sc" data-i="1">2</button><button class="sc" data-i="2">3</button><button class="sc" data-i="3">4</button>
+<input id="sl" type="range" min="0" max="1999" value="0" aria-label="Timeline"><span id="tm">00:00</span><a class="l" href="https://relok8.online" target="_blank" rel="noopener">relok8.online ↗</a></div>
+<p id="cap"></p>
+<!-- Project maintainer: indigomate (https://github.com/indigomate) -->
+<script>
+const c=document.getElementById('c'),g=c.getContext('2d'),W=320,H=180,BG='#0A0A0C';
+const R=(a,b,w,h,f)=>{g.fillStyle=f;g.fillRect(Math.round(a),Math.round(b),w,h)};
+const T=(s,a,b,f)=>{g.fillStyle=f;g.fillText(s,Math.round(a),Math.round(b))};
+const TC=(s,b,f)=>T(s,160-s.length*4,b,f);
+const cl=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const eob=t=>{t=cl(t);const k=1.70158;return 1+(k+1)*Math.pow(t-1,3)+k*Math.pow(t-1,2)};
+const hs=(a,b)=>(((a*73856093)^(b*19349663))>>>0)%1000/1000;
+function P(px,py,o){const sh=o.sh,hr=o.hr||'#2B1B3D',sk=o.sk||'#F1C9A5',ink='#0A0A0C',lg=o.w?Math.round(Math.sin(o.w)):0,l=lg>0?-1:0,r=lg<0?-1:0;
+ if(o.bk)R(px+11,py+10,5,10,'#3B3B5C');
+ R(px+4,py+20,3,8+l,'#2A2A44');R(px+9,py+20,3,8+r,'#2A2A44');R(px+3,py+28+l,4,2,'#0F0F18');R(px+9,py+28+r,4,2,'#0F0F18');
+ R(px+3,py+8,10,12,sh);R(px+5,py+8,6,2,'#ffffff33');
+ const ay=o.arm?py+1:py+9,hy=o.arm?ay-1:ay+9;R(px+1,ay,2,9,sh);R(px+13,ay,2,9,sh);R(px+1,hy,2,2,sk);R(px+13,hy,2,2,sk);
+ R(px+4,py,8,8,sk);R(px+3,py-1,10,3,hr);R(px+3,py+2,2,4,hr);R(px+11,py+2,2,4,hr);
+ if(o.m=='s'){R(px+5,py+3,3,1,ink);R(px+9,py+3,3,1,ink);R(px+6,py+4,1,2,ink);R(px+10,py+4,1,2,ink);R(px+7,py+6,3,2,'#7A2E2E')}
+ else if(o.m=='h'){R(px+6,py+4,2,1,ink);R(px+9,py+4,2,1,ink);R(px+5,py+5,1,1,ink);R(px+11,py+5,1,1,ink);R(px+6,py+6,5,1,ink)}
+ else{R(px+6,py+4,1,2,ink);R(px+10,py+4,1,2,ink);R(px+7,py+7,3,1,'#7A2E2E')}}
+function key(a,b){R(a,b,4,4,'#FDE047');R(a+1,b+1,2,2,'#0A0A0C');R(a+4,b+1,7,2,'#FDE047');R(a+8,b+3,2,2,'#FDE047');R(a+10,b+3,1,2,'#FDE047')}
+function s1(s){
+ R(0,0,W,120,'#15151D');for(let i=0;i<W;i+=16)R(i,0,8,120,'#181822');R(0,116,W,4,'#0F0F16');
+ for(let j=0;j<4;j++)for(let i=0;i<20;i++)R(i*16,120+j*15,16,15,(i+j)%2?'#1F1F2E':'#242438');
+ R(16,52,52,48,'#6D4AFF');R(19,55,46,42,'#0C0C24');
+ for(let k=0;k<6;k++)R(24+k*7,60+(k*13%30),2,2,(Math.floor(s*3)+k)%4?'#FFFFFF':'#6D4AFF');
+ R(41,55,2,42,'#6D4AFF');R(19,74,46,2,'#6D4AFF');
+ R(268,52,34,44,'#6D4AFF');R(270,54,30,40,'#1B1B2E');T('?',281,69,'#A78BFA');
+ R(226,104,84,5,'#3A3A5C');R(230,109,4,19,'#2A2A44');R(302,109,4,19,'#2A2A44');
+ R(246,88,28,16,'#2A2A44');R(248,90,24,12,s%1<.5?'#8B5CF6':'#6D4AFF');R(254,104,16,2,'#3A3A5C');
+ const jx=s>1.5?(Math.floor(s*12)%2?1:-1):0;P(146+jx,98,{sh:'#6D4AFF',m:'s',arm:1});
+ for(let k=0;k<2;k++)R(163+k*3,100+((s*18+k*7)%14),1,2,'#7DD3FC');
+ if(s>1&&Math.floor(s*4)%2)T('!!',146,84,'#FF5C5C');
+ const B=[['BROKER FEE: $$$',8,10,.3],['BROKER FEE: $$$',170,18,1],['LEASE PENALTY: $$$',64,40,1.7]];
+ B.forEach((b,i)=>{if(s<b[3])return;const a=eob((s-b[3])/.4),w=b[0].length*8+22,sk=s>3?(Math.floor(s*14+i)%2?1:-1):0,bx=b[1]+sk,by=b[2]-(1-a)*24+Math.sin(s*2+i)*2;
+  R(bx,by,w,20,Math.floor(s*4+i)%2?'#FF5C5C':'#FFFFFF');R(bx+2,by+2,w-4,16,'#1A0F14');R(bx+4,by+4,12,12,'#FF5C5C');T('!',bx+8,by+6,'#FFFFFF');T(b[0],bx+20,by+6,'#FFFFFF')});
+}
+function s2(s){
+ R(0,0,W,H,'#0E0E16');for(let i=0;i<20;i++)for(let j=0;j<12;j++)R(i*16+8,j*16+8,1,1,'#26263E');
+ for(let k=0;k<14;k++)if(Math.floor(s*2+k)%3)R((k*53)%W,(k*29)%H,2,2,k%2?'#A78BFA':'#FFFFFF');
+ const dy=Math.round((1-eob(s/.7))*170);g.save();g.translate(0,dy);
+ R(100,10,120,164,'#000');R(104,14,112,156,'#6D4AFF');R(106,16,108,152,'#23233A');R(108,20,104,144,'#0F0F1A');R(148,21,24,3,'#000');
+ T('RELOK8',114,28,'#FFFFFF');R(194,27,10,10,'#8B5CF6');
+ R(114,42,92,13,'#1E1E30');R(114,42,92,1,'#34344F');
+ const city=s<2.4?'WARSAW':'LUBLIN',n=cl(Math.floor((s<2.4?s-.8:s-2.4)*8),0,6);T(city.slice(0,n)+(Math.floor(s*3)%2?'_':''),118,45,'#FFFFFF');
+ const card=(y,ct,pr,t0,hl)=>{if(s<t0)return;const o=Math.round((1-eob((s-t0)/.4))*100);R(114+o,y,92,40,hl?'#8B5CF6':'#34344F');R(115+o,y+1,90,38,'#1A1A2A');
+  R(118+o,y+4,30,32,'#2A2A44');R(122+o,y+8,10,8,'#6D4AFF');R(120+o,y+24,26,8,'#8B5CF6');R(120+o,y+22,8,4,'#FFFFFF');
+  T(ct,152+o,y+6,'#FFFFFF');T(pr,152+o,y+18,'#A78BFA');R(152+o,y+29,10,7,'#34D399');R(154+o,y+32,2,2,'#FFFFFF');R(156+o,y+33,2,2,'#FFFFFF');R(158+o,y+31,2,2,'#FFFFFF');
+  if(hl&&Math.floor(s*5)%2){R(192,y+6,2,2,'#FF5C8A');R(196,y+6,2,2,'#FF5C8A');R(191,y+8,8,2,'#FF5C8A');R(192,y+10,6,2,'#FF5C8A');R(194,y+12,2,2,'#FF5C8A')}};
+ card(58,'WARSAW','2350 PLN',1.2,false);card(104,'LUBLIN','1350 PLN',1.6,s>3.8);
+ if(s>4.2){const by=146+Math.round((1-eob((s-4.2)/.5))*20);R(114,by,92,14,'#8B5CF6');T('CONTACT',132,by+3,'#FFFFFF')}
+ g.restore();
+ if(s>.8){const q=Math.round(Math.sin(s*3)*2);[[28,66,'WARSAW'],[268,106,'LUBLIN']].forEach(p=>{const a=p[0],b=p[1]+q;R(a+1,b,5,1,'#8B5CF6');R(a,b+1,7,3,'#8B5CF6');R(a+1,b+4,5,1,'#8B5CF6');R(a+2,b+5,3,1,'#8B5CF6');R(a+3,b+6,1,2,'#8B5CF6');R(a+2,b+2,3,2,'#FFFFFF');T(p[2],a-20,b+16,'#A78BFA')})}
+ if(s>2.6){const p=cl((s-2.6)/1),cx=Math.round(190-12*eob(p)),cy=Math.round(170-48*eob(p))+(s>3.6&&Math.floor(s*6)%2?2:0);for(let i=0;i<10;i++)R(cx,cy+i,Math.min(i+1,6),1,'#FFFFFF');R(cx+2,cy+8,2,5,'#FFFFFF')}
+}
+function s3(s){
+ ['#0B0B1E','#12122E','#1B1642','#2A1D5A','#3B2478'].forEach((f,i)=>R(0,i*24,W,24,f));
+ for(let k=0;k<26;k++)if(Math.floor(s*2+k)%4)R((k*47)%W,(k*19)%90,k%5?1:2,k%5?1:2,'#FFFFFF');
+ for(let dy=-10;dy<=10;dy++){const w=Math.floor(Math.sqrt(100-dy*dy))*2;R(270-w/2,28+dy,w,1,'#E9E5FF')}
+ R(86,22,148,108,'#2A2540');R(82,18,156,6,'#3B3560');R(86,24,148,2,'#14102A');
+ for(let r=0;r<3;r++)for(let q=0;q<5;q++){const lit=hs(q,r)>.35;R(98+q*26,34+r*24,14,16,lit?'#FFD166':'#14102A');if(lit)R(98+q*26,34+r*24,14,2,'#FFF1B8')}
+ R(148,98,24,32,'#14102A');R(150,100,20,30,'#FFD166');R(152,102,16,28,'#7A4B14');R(164,114,2,2,'#FDE047');R(130,88,60,8,'#6D4AFF');T('RELOK8',136,89,'#FFFFFF');
+ R(0,130,W,50,'#2C2C3C');R(0,130,W,3,'#44445E');for(let i=0;i<20;i++)R(i*16+4,164,8,2,'#55557A');
+ R(46,70,3,60,'#3A3A5C');R(40,66,15,6,'#3A3A5C');R(42,72,11,4,'#FDE047');
+ const d=cl(s/2),aX=40+78*d,bX=290-104*d,w=s<2?s*14:0,jm=s>3.6?Math.abs(Math.sin((s-3.6)*5))*5:0,m=s>3.3?'h':'n';
+ P(aX,104-jm,{sh:'#6D4AFF',w,m});P(bX,104-jm,{sh:'#F5F5FF',hr:'#5A3A22',w,m,bk:1});
+ if(s>=2){R(aX+13,114-jm,8,2,'#6D4AFF');R(bX-5,114-jm,8,2,'#F5F5FF')}
+ if(s>=1.9&&s<2.4)key(aX+20,111);
+ if(s>=2.4&&s<3.2){const p=(s-2.4)/.8;key(aX+20+(bX-aX-28)*p,111-Math.sin(p*Math.PI)*14)}
+ if(s>=3.2)key(bX-10,111-jm);
+ if(s>3.3){const a=eob((s-3.3)/.5),cx=160,cy=Math.round(54-(1-a)*24);
+  for(let dy=-14;dy<=14;dy++){const w2=Math.floor(Math.sqrt(196-dy*dy))*2;R(cx-w2/2,cy+dy,w2,1,'#34D399')}
+  [[-7,0],[-5,2],[-3,4],[-1,2],[1,0],[3,-2],[5,-4]].forEach(p=>R(cx+p[0]-1,cy+p[1]-1,3,3,'#FFFFFF'));
+  for(let k=0;k<6;k++){const an=s*2+k*1.05,sx=cx+Math.cos(an)*24,sy=cy+Math.sin(an)*20;if(Math.floor(s*6+k)%2){R(sx-1,sy,3,1,'#FFFFFF');R(sx,sy-1,1,3,'#FFFFFF')}}}
+}
+const LG={R:['####.','#...#','#...#','####.','#.#..','#..#.','#...#'],E:['#####','#....','#....','####.','#....','#....','#####'],L:['#....','#....','#....','#....','#....','#....','#####'],O:['.###.','#...#','#...#','#...#','#...#','#...#','.###.'],K:['#...#','#..#.','#.#..','##...','#.#..','#..#.','#...#'],8:['.###.','#...#','#...#','.###.','#...#','#...#','.###.']};
+function G(ch,px,py,sc,col){LG[ch].forEach((row,r)=>{for(let k=0;k<5;k++)if(row[k]=='#')R(px+k*sc,py+r*sc,sc,sc,typeof col=='function'?col(r):col)})}
+function s4(s){
+ R(0,0,W,H,BG);for(let i=0;i<20;i++)for(let j=0;j<12;j++)R(i*16+8,j*16+8,1,1,'#1A1A2C');
+ const L='RELOK8',x0=88,gr=['#6366F1','#7C6CFA','#8B5CF6','#A78BFA','#8B5CF6','#7C6CFA','#6366F1'];
+ g.shadowColor='#8B5CF6';g.shadowBlur=s>1.6?12+6*Math.sin(s*3):0;
+ L.split('').forEach((ch,k)=>{const t0=.3+k*.25;if(s<t0)return;const a=eob((s-t0)/.4),px=x0+k*24,py=Math.round(48-(1-a)*60);
+  if(ch=='8'){G(ch,px,py,4,gr)}else{G(ch,px+3,py+3,4,'#4B34B8');G(ch,px,py,4,'#FFFFFF')}});
+ g.shadowBlur=0;
+ if(s>1.7&&s<3){const r=(s-1.7)*70,al=1-(s-1.7)/1.3;g.globalAlpha=al;[[160-r,76-r,2*r,2],[160-r,76+r,2*r,2],[160-r,76-r,2,2*r],[160+r,76-r,2,2*r]].forEach(q=>R(q[0],q[1],q[2],q[3],'#A78BFA'));g.globalAlpha=1}
+ if(s>2){const t='TAKE OVER A LEASE. NO BROKER FEES.';TC(t.slice(0,cl(Math.floor((s-2)*22),0,t.length)),100,'#E5E7EB')}
+ if(s>2.8){const a=eob((s-2.8)/.5),p=Math.floor(s*2)%2?2:0,by=Math.round(128+(1-a)*40);
+  R(100,by+3,120,26,'#2A1D66');R(100,by+p,120,26,'#FFFFFF');R(102,by+2+p,116,22,'#6D4AFF');TC('relok8.online',by+9+p,'#FFFFFF');
+  if(Math.floor(s*3)%2){R(82,by+8,2,10,'#FFFFFF');R(84,by+10,2,6,'#FFFFFF');R(86,by+12,2,2,'#FFFFFF')}}
+ if(s>3.4)TC('STUDENT LEASE TAKEOVERS IN POLAND',166,'#8A8AA8');
+ for(let k=0;k<10;k++)if(Math.floor(s*3+k)%3==0){const sx=(k*61)%W,sy=(k*37)%110;R(sx,sy,2,2,'#A78BFA')}
+}
+const SC=[s1,s2,s3,s4],CAP=['Scene 1 · Stuck: broker fees and lease penalties pile up.','Scene 2 · Relok8: browse landlord-approved rooms in Warsaw and Lublin.','Scene 3 · Handover: the new tenant takes the keys, with the landlord’s approval.','Scene 4 · Relok8: take over a lease, skip the broker fee.'];
+function wipe(a){if(a<=0)return;for(let cy=0;cy<23;cy++)for(let cx=0;cx<40;cx++)if(hs(cx,cy)<a)R(cx*8,cy*8,8,8,BG)}
+function render(t){g.font='8px "Press Start 2P", monospace';g.textBaseline='top';const i=Math.min(3,Math.floor(t/5)),s=t-i*5;SC[i](s);wipe(Math.max(cl((s-4.4)/.6),cl(1-s/.5)));return i}
+const pp=document.getElementById('pp'),sl=document.getElementById('sl'),tm=document.getElementById('tm'),cap=document.getElementById('cap'),chips=[...document.querySelectorAll('.sc')];
+let t=0,play=!matchMedia('(prefers-reduced-motion: reduce)').matches,last=performance.now(),cur=-1;if(!play)t=4.2;
+function ui(i){pp.textContent=play?'❚❚':'▶';pp.setAttribute('aria-label',play?'Pause':'Play');tm.textContent='00:'+String(Math.floor(t)).padStart(2,'0');sl.value=Math.round(t*100);if(i!=cur){cur=i;cap.textContent=CAP[i];chips.forEach((b,k)=>b.setAttribute('aria-pressed',k==i))}}
+function frame(now){const d=Math.min(.1,(now-last)/1000);last=now;if(play){t+=d;if(t>=20)t-=20}ui(render(t));requestAnimationFrame(frame)}
+pp.onclick=()=>{play=!play};document.getElementById('rs').onclick=()=>{t=0};
+chips.forEach((b,k)=>b.onclick=()=>{t=k*5});sl.oninput=()=>{t=sl.value/100};
+addEventListener('keydown',e=>{if(e.target.tagName=='INPUT')return;if(e.code=='Space'){e.preventDefault();play=!play}if(e.code=='ArrowRight')t=Math.min(19.9,t+1);if(e.code=='ArrowLeft')t=Math.max(0,t-1)});
+(document.fonts&&document.fonts.load('8px "Press Start 2P"')||Promise.resolve()).finally(()=>requestAnimationFrame(frame));
+</script></body></html>
