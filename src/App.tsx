@@ -263,7 +263,8 @@ function Relok8App() {
   useEffect(() => {
     let cancelled = false;
     setListingTranslations({});
-    if (!liveConvexLeases?.length) return () => { cancelled = true; };
+    const routeUsesListingContent = ['home', 'city', 'listing-detail', 'saved'].includes(currentRoute.type);
+    if (!routeUsesListingContent || !liveConvexLeases?.length) return () => { cancelled = true; };
     const run = async () => {
       try {
         const next: Record<string, { title?: string; description?: string; distanceToCampus?: string; transitNearby?: string }> = {};
@@ -282,7 +283,7 @@ function Relok8App() {
     };
     void run();
     return () => { cancelled = true; };
-  }, [liveConvexLeases, locale, translatePublicListings]);
+  }, [liveConvexLeases, locale, translatePublicListings, currentRoute.type]);
 
   // Synchronize live Convex backend leases with reactive listings state
   useEffect(() => {

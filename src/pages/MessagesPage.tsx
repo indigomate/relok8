@@ -1,7 +1,7 @@
 import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { Thread, Message, Place, Relok8User } from '../types/relok8';
 import {
@@ -72,6 +72,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeTab, setActiveTab] = useState<'prospects' | 'place_room'>('prospects');
   const [filter, setFilter] = useState<'all' | 'unread' | 'needs_human' | 'onlo'>('all');
+  const [threadSearch, setThreadSearch] = useState('');
+  const [isThreadListExpanded, setIsThreadListExpanded] = useState(true);
 
   const [showOriginal, setShowOriginal] = useState<Record<string, boolean>>({});
 
@@ -184,26 +186,48 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const isLandlord = Boolean(devUser && activePlace?.landlordId === devUser.id);
   const isTenant = Boolean(devUser && activePlace?.tenantId === devUser.id);
 
-  // Covered tenant name for Onlo banner
-  const tenantCoveredName = currentUser?.name || 'the tenant';
+  const unavailableName = locale === 'pl' ? 'Imię niedostępne' : 'Name unavailable';
+  const tenantName = activePlace?.tenantName || (isTenant ? currentUser?.name || devUser?.name : '') || unavailableName;
+  const landlordName = activePlace?.landlordName || (isLandlord ? currentUser?.name || devUser?.name : '') || unavailableName;
+  const placeRoomMemberNames = [...new Set([tenantName, landlordName].filter((name) => name !== unavailableName))];
 
-  // Resolve prospect names
-  const getProspectName = (prospectId: string): string => (threads.find(t => t.prospectId === prospectId) as any)?.prospectName || 'Prospective tenant';
-  const getThreadPreview = (_t: Thread): string => 'Open conversation';
+  // Resolve the person's profile name rather than displaying a generated alias.
+  const getProspectName = (prospectId: string): string => threads.find((thread) => thread.prospectId === prospectId)?.prospectName?.trim() || unavailableName;
+  const getMessageAuthorName = (message: Message): string => {
+    if (message.authorName?.trim()) return message.authorName.trim();
+    if (message.authorId === devUser?.id) return currentUser?.name || devUser.name || unavailableName;
+    if (message.authorType === 'prospect') return getProspectName(activeThread?.prospectId || message.authorId);
+    if (message.authorType === 'tenant') return tenantName;
+    if (message.authorType === 'landlord') return landlordName;
+    if (message.authorType === 'system') return 'Relok8';
+    return unavailableName;
+  };
+  const getThreadPreview = (thread: Thread): string => {
+    if (thread.status === 'needs_human') return locale === 'pl' ? 'Czeka na Twoją odpowiedź' : 'Waiting for your reply';
+    if (thread.handledBy === 'onlo') return locale === 'pl' ? 'Onlo prowadzi rozmowę' : 'Onlo is covering this conversation';
+    if (thread.status === 'reserved') return locale === 'pl' ? 'Następca wybrany' : 'Replacement selected';
+    return locale === 'pl' ? 'Otwórz rozmowę' : 'Open conversation';
+  };
 
   // Filtered threads list
-  const filteredThreads = threads.filter((t) => {
-    if (filter === 'unread') {
-      return t.unreadFor && devUser && t.unreadFor.includes(devUser.id);
-    }
-    if (filter === 'needs_human') {
-      return t.status === 'needs_human';
-    }
-    if (filter === 'onlo') {
-      return t.handledBy === 'onlo';
-    }
-    return true;
-  });
+  const unreadThreadCount = useMemo(
+    () => threads.filter((thread) => Boolean(devUser && thread.unreadFor?.includes(devUser.id))).length,
+    [threads, devUser],
+  );
+  const filteredThreads = useMemo(() => {
+    const query = threadSearch.trim().toLocaleLowerCase(locale === 'pl' ? 'pl-PL' : 'en-US');
+    return threads
+      .filter((thread) => {
+        if (filter === 'unread' && !(devUser && thread.unreadFor?.includes(devUser.id))) return false;
+        if (filter === 'needs_human' && thread.status !== 'needs_human') return false;
+        if (filter === 'onlo' && thread.handledBy !== 'onlo') return false;
+        if (!query) return true;
+        const place = places.find((item) => item.id === thread.placeId);
+        const prospectName = thread.prospectName?.trim() || unavailableName;
+        return `${prospectName} ${place?.title || ''} ${place?.address || ''}`.toLocaleLowerCase(locale === 'pl' ? 'pl-PL' : 'en-US').includes(query);
+      })
+      .sort((left, right) => right.lastMessageAt - left.lastMessageAt);
+  }, [threads, filter, devUser, threadSearch, places, locale, unavailableName]);
 
   // Handle Send Message
   const handleSend = async (e: React.FormEvent) => {
@@ -301,9 +325,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   };
 
   return (
-    <div className="h-screen bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans overflow-hidden">
+    <div className="min-h-dvh md:h-screen bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans md:overflow-hidden">
       {/* 1. Compact Title Row */}
-      <header className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0 bg-transparent">
+      <header className="px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shrink-0 bg-transparent">
         {/* Left: Back button + Title + Subtitle */}
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -315,7 +339,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-tight">
               {locale === 'pl' ? 'Wiadomości' : 'Messages'}
             </h1>
             <p className="text-xs text-slate-500 truncate">
@@ -326,8 +350,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
           </div>
         </div>
 
-        {/* Right: Availability Toggle & Prospects/Place room Segmented Control */}
-        <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
+        {/* Right: Availability Toggle & Inquiries/Place room Segmented Control */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
           {devUser && (isTenant || isLandlord) && (
             <button
               type="button"
@@ -335,7 +359,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 const updated = await updateUserAvailability(!devUser.isAvailable, devUser.quietHours);
                 setDevUser(updated);
               }}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs ${
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors cursor-pointer flex items-center gap-1.5 ${
                 devUser.isAvailable
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
                   : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
@@ -347,14 +371,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             </button>
           )}
 
-          {/* Prospects / Place room segmented control */}
+          {/* Inquiries / Place room segmented control */}
           {(isTenant || isLandlord) && (
-            <div className="flex rounded-full bg-slate-200/70 p-1 border border-slate-300/60 text-xs font-semibold">
+            <div className="flex rounded-full bg-slate-200/70 p-1 border border-slate-300/60 text-xs font-semibold min-w-0">
               <button
                 type="button"
                 onClick={() => {
                   setActiveTab('prospects');
-                  setMobilePane('chat');
+                  setMobilePane('list');
                 }}
                 className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
                   activeTab === 'prospects'
@@ -362,7 +386,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Prospects
+                {locale === 'pl' ? 'Zapytania' : 'Inquiries'}
               </button>
               <button
                 type="button"
@@ -386,23 +410,58 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
       {/* 2. Main Rounded-3xl Card (holds the 3 panes and fills viewport height) */}
       {(!isAuthenticated || inboxError) && <p role="status" className="px-6 py-2 text-sm">{inboxError || (isLoading ? 'Loading inbox…' : 'Sign in to see your messages.')}</p>}
-      <main className="flex-1 px-3 sm:px-6 pb-4 sm:pb-6 overflow-hidden min-h-0">
-        <div className="h-full bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row">
+      <main className="flex-1 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 overflow-y-auto md:overflow-hidden min-h-0">
+        <div className={`${mobilePane === 'list' ? 'h-auto' : 'h-[calc(100dvh-8.75rem)]'} md:h-full bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row`}>
           
           {/* PANE 1: Thread List (340px) */}
           <section
             aria-label="Thread list"
-            className={`w-full md:w-[340px] shrink-0 border-r border-slate-200/90 flex flex-col h-full bg-white ${
+            className={`w-full md:w-[340px] shrink-0 md:border-r border-slate-200/90 flex flex-col h-auto md:h-full bg-white ${
               mobilePane === 'chat' ? 'hidden md:flex' : 'flex'
             }`}
           >
             {/* Filter chips on top */}
-            <div className="p-3.5 border-b border-slate-100 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                <span>{locale === 'pl' ? 'Wątki zapytań' : 'Inquiries'}</span>
-                <span className="text-[11px] font-medium text-slate-400">{filteredThreads.length} threads</span>
+            <div className="border-b border-slate-100 bg-slate-50/60">
+              <div className="min-h-14 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <span>{locale === 'pl' ? 'Wątki zapytań' : 'Inquiries'}</span>
+                    {unreadThreadCount > 0 && (
+                      <span className="min-w-5 h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-[#F2705A] text-[10px] font-bold text-white" aria-label={`${unreadThreadCount} unread threads`}>
+                        {unreadThreadCount > 99 ? '99+' : unreadThreadCount}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] leading-4 text-slate-500">
+                    {threads.length} {locale === 'pl' ? (threads.length === 1 ? 'rozmowa' : 'rozmowy') : (threads.length === 1 ? 'conversation' : 'conversations')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsThreadListExpanded((expanded) => !expanded)}
+                  className="md:hidden min-w-11 h-9 px-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                  aria-expanded={isThreadListExpanded}
+                  aria-controls="mobile-thread-list"
+                >
+                  <span>{isThreadListExpanded ? (locale === 'pl' ? 'Zwiń' : 'Collapse') : (locale === 'pl' ? 'Rozwiń' : 'Expand')}</span>
+                  {isThreadListExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
               </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-xs no-scrollbar">
+              <div className={`${isThreadListExpanded ? 'block' : 'hidden'} md:block px-3 pb-3 space-y-2`}>
+              {threads.length >= 4 && (
+                <label className="relative block">
+                  <span className="sr-only">{locale === 'pl' ? 'Szukaj rozmów' : 'Search conversations'}</span>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="search"
+                    value={threadSearch}
+                    onChange={(event) => setThreadSearch(event.target.value)}
+                    placeholder={locale === 'pl' ? 'Szukaj osoby lub mieszkania' : 'Search person or place'}
+                    className="w-full h-9 rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                  />
+                </label>
+              )}
+              <div className="flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar" aria-label={locale === 'pl' ? 'Filtry rozmów' : 'Conversation filters'}>
                 <button
                   type="button"
                   onClick={() => setFilter('all')}
@@ -412,7 +471,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  All
+                  {locale === 'pl' ? 'Wszystkie' : 'All'}
                 </button>
                 <button
                   type="button"
@@ -423,7 +482,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  Unread
+                  {locale === 'pl' ? 'Nieprzeczytane' : 'Unread'}
                 </button>
                 <button
                   type="button"
@@ -434,7 +493,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  Needs a human
+                  {locale === 'pl' ? 'Wymaga odpowiedzi' : 'Needs a human'}
                 </button>
                 <button
                   type="button"
@@ -448,10 +507,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                   Onlo
                 </button>
               </div>
+              </div>
             </div>
 
             {/* Thread Rows */}
-            <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+            <div id="mobile-thread-list" className={`${isThreadListExpanded ? 'block' : 'hidden'} md:block md:flex-1 max-h-[min(58dvh,34rem)] md:max-h-none overflow-y-auto divide-y divide-slate-100 overscroll-contain`}>
               {filteredThreads.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 space-y-2">
                   <MessageSquare className="w-8 h-8 mx-auto text-slate-300" />
@@ -476,7 +536,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                         setActiveTab('prospects');
                         setMobilePane('chat');
                       }}
-                      className={`w-full p-3.5 text-left transition-colors flex items-start gap-3 cursor-pointer ${
+                      aria-current={isSelected ? 'true' : undefined}
+                      className={`w-full px-4 py-3 text-left transition-colors flex items-start gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-600 ${
                         isSelected
                           ? 'bg-indigo-50/70 border-l-[3px] border-indigo-600'
                           : 'hover:bg-slate-50 border-l-[3px] border-transparent'
@@ -492,8 +553,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="text-xs font-bold text-slate-900 truncate">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-semibold text-slate-900 truncate">
                             {prospectName}
                           </span>
                           <span className="text-[10px] text-slate-400 shrink-0">
@@ -505,26 +566,26 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                         </div>
 
                         {/* Place name in small indigo */}
-                        <div className="text-[11px] font-semibold text-indigo-600 truncate mt-0.5">
+                        <div className="text-xs font-medium text-indigo-600 truncate mt-0.5">
                           {place?.title || 'Place in Lublin'}
                         </div>
 
                         {/* One-line preview */}
-                        <div className="text-xs text-slate-500 truncate mt-0.5 leading-snug">
+                        <div className={`text-xs truncate mt-0.5 leading-snug ${isNeedsHuman ? 'font-medium text-amber-700' : 'text-slate-500'}`}>
                           {preview}
                         </div>
 
                         {/* Badges: unread count, Needs a human, Onlo */}
-                        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                        {(isUnread || isNeedsHuman || isOnlo || t.status === 'reserved') && <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                           {isUnread && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#F2705A] text-white">
-                              1
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F2705A] text-white">
+                              {locale === 'pl' ? 'Nowa' : 'New'}
                             </span>
                           )}
 
                           {isNeedsHuman && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                              Needs a human
+                              {locale === 'pl' ? 'Wymaga odpowiedzi' : 'Needs a human'}
                             </span>
                           )}
 
@@ -537,10 +598,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
                           {t.status === 'reserved' && (
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Reserved
+                              {locale === 'pl' ? 'Wybrano następcę' : 'Replacement selected'}
                             </span>
                           )}
-                        </div>
+                        </div>}
                       </div>
                     </button>
                   );
@@ -571,21 +632,21 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
                 {activeTab === 'place_room' ? (
                   <>
-                    <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                      PR
+                    <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs" aria-hidden="true">
+                      {placeRoomMemberNames.length > 0 ? placeRoomMemberNames.map(getInitials).join('').slice(0, 2) : 'R8'}
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                        Private Place Room
+                        {placeRoomMemberNames.length > 0 ? placeRoomMemberNames.join(' & ') : unavailableName}
                       </div>
                       <div className="text-[11px] text-slate-500 truncate">
-                        about {activePlace?.address || 'Lublin'} · Tenant & Landlord Channel
+                        {activePlace?.address || 'Lublin'} · {locale === 'pl' ? 'Prywatny kanał domu' : 'Private home channel'}
                       </div>
                     </div>
                   </>
                 ) : (
                   <>
-                    {/* Prospect Avatar & Name */}
+                    {/* Profile avatar and real name */}
                     <div
                       className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 select-none ${getAvatarStyle(
                         getProspectName(activeThread?.prospectId || '')
@@ -649,7 +710,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 <div className="flex items-center gap-2">
                   <OnloAvatar size={22} variant="avatar" state="idle" title="Onlo is active" className="shrink-0" />
                   <span>
-                    Onlo is answering for <span className="font-bold">{tenantCoveredName}</span>. Take over to reply yourself.
+                    Onlo is answering for <span className="font-bold">{tenantName}</span>. Take over to reply yourself.
                   </span>
                 </div>
                 {(isTenant || isLandlord) && (
@@ -708,6 +769,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 messages.map((m, idx) => {
                   const isMe = m.authorId === devUser?.id;
                   const isOnlo = m.authorType === 'onlo';
+                  const authorName = getMessageAuthorName(m);
                   const translatedBody = liveTranslations[`message:${m.id}`];
                   const hasTranslation = Boolean(translatedBody && translatedBody !== m.body);
                   const visibleBody = hasTranslation && !showOriginal[m.id] ? translatedBody : m.body;
@@ -736,22 +798,26 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                         {isOnlo && (
                           <div className="flex items-center gap-2 text-[12px] font-semibold text-indigo-700 mb-1.5 px-1">
                             <OnloAvatar size={20} variant="avatar" state="idle" className="shrink-0 shadow-xs" />
-                            <span>Onlo for <span className="font-bold">{tenantCoveredName}</span> · {locale === 'pl' ? 'Lokalny przewodnik' : 'Local Guide'}</span>
+                            <span>Onlo for <span className="font-bold">{tenantName}</span> · {locale === 'pl' ? 'Lokalny przewodnik' : 'Local Guide'}</span>
                           </div>
                         )}
 
-                        {!isOnlo && !isMe && (
-                          <div className="text-[10px] font-semibold text-slate-400 mb-1 px-1">
-                            {m.authorType === 'tenant'
-                              ? 'Current tenant'
-                              : m.authorType === 'landlord'
-                              ? 'Landlord'
-                              : 'Prospect'}
+                        {!isOnlo && (
+                          <div className={`text-[10px] font-semibold text-slate-500 mb-1 px-1 ${isMe ? 'text-right' : 'text-left'}`}>
+                            <span className="text-slate-700">{authorName}</span>
+                            <span aria-hidden="true"> · </span>
+                            <span>{isMe
+                              ? (locale === 'pl' ? 'Ty' : 'You')
+                              : m.authorType === 'tenant'
+                                ? (locale === 'pl' ? 'Obecny najemca' : 'Current tenant')
+                                : m.authorType === 'landlord'
+                                  ? (locale === 'pl' ? 'Wynajmujący' : 'Landlord')
+                                  : (locale === 'pl' ? 'Osoba zainteresowana' : 'Interested person')}</span>
                           </div>
                         )}
 
                         {/* Message Bubble:
-                            - Prospect on left in white
+                            - Other participants on left in white
                             - Current user on right in indigo
                             - Onlo in light indigo
                         */}
@@ -963,31 +1029,35 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             {/* People in this home */}
             <div className="space-y-2">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                People in this home
+                {locale === 'pl' ? 'Osoby w tym domu' : 'People in this home'}
               </div>
               <div className="bg-white rounded-2xl border border-slate-200/80 p-3 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center">
-                      AK
+                {[
+                  {
+                    name: tenantName,
+                    role: locale === 'pl' ? 'Obecny najemca' : 'Current tenant',
+                    avatarClass: 'bg-emerald-100 text-emerald-700',
+                    badgeClass: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+                  },
+                  {
+                    name: landlordName,
+                    role: locale === 'pl' ? 'Wynajmujący' : 'Landlord',
+                    avatarClass: 'bg-amber-100 text-amber-700',
+                    badgeClass: 'text-amber-700 bg-amber-50 border-amber-200',
+                  },
+                ].map((person) => (
+                  <div key={person.role} className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-6 h-6 rounded-full font-bold text-[10px] flex items-center justify-center shrink-0 ${person.avatarClass}`} aria-hidden="true">
+                        {getInitials(person.name)}
+                      </div>
+                      <span className="font-semibold text-slate-800 truncate">{person.name}</span>
                     </div>
-                    <span className="font-semibold text-slate-800">Anna (Current tenant)</span>
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${person.badgeClass}`}>
+                      {person.role}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
-                    Verified
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 font-bold text-[10px] flex items-center justify-center">
-                      JM
-                    </div>
-                    <span className="font-semibold text-slate-800">Judy M. (Landlord)</span>
-                  </div>
-                  <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">
-                    Verified
-                  </span>
-                </div>
+                ))}
               </div>
             </div>
 

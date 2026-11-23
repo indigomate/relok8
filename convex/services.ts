@@ -123,6 +123,21 @@ async function translateTexts(ctx: any, values: string[], targetLocale: Translat
   return hashes.map((hash) => byHash.get(hash) || texts[hashes.indexOf(hash)]);
 }
 
+export async function translatePublicTextsWithFallback(
+  texts: string[],
+  translate: () => Promise<string[]>,
+): Promise<string[]> {
+  try {
+    const translated = await translate();
+    return translated.length === texts.length ? translated : texts;
+  } catch {
+    // Public browsing must remain available when the optional translation
+    // provider is unconfigured or temporarily unavailable. Explicit,
+    // authenticated translation requests continue to surface provider errors.
+    return texts;
+  }
+}
+
 function bounded(value: string, maximum = 10000) {
   if (!value.trim() || value.length > maximum) throw new Error('Invalid input');
   return value.trim();
@@ -246,7 +261,11 @@ export const translatePublicListings = action({
     const output: Record<string, { title: string; description?: string; distanceToCampus?: string; transitNearby?: string }> = {};
     for (let start = 0; start < fields.length; start += 25) {
       const batch = fields.slice(start, start + 25);
-      const translated = await translateTexts(ctx, batch.map((item) => item.text), args.targetLocale);
+      const sourceTexts = batch.map((item) => item.text);
+      const translated = await translatePublicTextsWithFallback(
+        sourceTexts,
+        () => translateTexts(ctx, sourceTexts, args.targetLocale),
+      );
       batch.forEach((item, index) => {
         output[item.listingId] ||= { title: '' };
         output[item.listingId][item.field] = translated[index];

@@ -21,6 +21,8 @@ export interface Place {
   id: string;
   landlordId: string;
   tenantId: string;
+  landlordName?: string;
+  tenantName?: string;
   title: string;
   city: string;
   district: string;
@@ -58,6 +60,7 @@ export interface Thread {
   id: string;
   placeId: string;
   prospectId: string;
+  prospectName?: string;
   status: ThreadStatus;
   handledBy: HandledBy;
   lastMessageAt: number;
@@ -71,6 +74,7 @@ export interface Message {
   threadId: string;
   authorType: MessageAuthorType;
   authorId: string;
+  authorName?: string;
   onBehalfOf?: 'tenant' | 'landlord'; // only when authorType === 'onlo'
   body: string;
   createdAt: number;

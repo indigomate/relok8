@@ -37,7 +37,27 @@ async function put(ctx: any, kind: string, key: string, ownerId: string, data: a
 function toPlace(lease: any, identity: any) {
   const state = lease.placeState || {};
   const participant = owns(lease, identity) || landlord(lease, identity);
-  return { ...(participant ? state : {}), id: lease._id, occupancyStatus: lease.occupancyStatus, leaseEndDate: lease.leaseEndDate, tenantId: participant ? lease.ownerId || '' : '', landlordId: participant ? lease.landlordUserId || '' : '', title: lease.title, city: lease.city, district: lease.district || '', address: lease.address, rentPLN: lease.monthlyRent, czynszPLN: lease.czynszAdmin || 0, depositPLN: lease.deposit, availableFrom: lease.moveInDate, roomType: lease.roomType, flatmates: lease.flatmatesCount || 0, furnished: !!lease.isFurnished, billsIncluded: !!lease.billsIncluded, billsMode: lease.billsMode, fixedBillsPLN: lease.fixedBillsPLN, meldunekOk: !!lease.meldunekAllowed, commuteNote: lease.distanceToCampus || '', nearInstitutions: lease.universitiesNearby || [], photos: lease.images || [], rules: lease.description || '', status: state.status || 'available_for_takeover' };
+  return { ...(participant ? state : {}), id: lease._id, occupancyStatus: lease.occupancyStatus, leaseEndDate: lease.leaseEndDate, tenantId: participant ? lease.ownerId || '' : '', landlordId: participant ? lease.landlordUserId || '' : '', tenantName: lease.currentTenant?.name || '', landlordName: lease.landlordName || '', title: lease.title, city: lease.city, district: lease.district || '', address: lease.address, rentPLN: lease.monthlyRent, czynszPLN: lease.czynszAdmin || 0, depositPLN: lease.deposit, availableFrom: lease.moveInDate, roomType: lease.roomType, flatmates: lease.flatmatesCount || 0, furnished: !!lease.isFurnished, billsIncluded: !!lease.billsIncluded, billsMode: lease.billsMode, fixedBillsPLN: lease.fixedBillsPLN, meldunekOk: !!lease.meldunekAllowed, commuteNote: lease.distanceToCampus || '', nearInstitutions: lease.universitiesNearby || [], photos: lease.images || [], rules: lease.description || '', status: state.status || 'available_for_takeover' };
+}
+
+async function messagesWithAuthorNames(ctx: any, messages: any[], lease: any, prospectName?: string) {
+  const authorIds = [...new Set(messages.map((message) => message.authorId).filter(Boolean))];
+  const profiles = await Promise.all(authorIds.map((authorId) => (
+    ctx.db.query('profiles').withIndex('by_userId', (query: any) => query.eq('userId', authorId)).unique()
+  )));
+  const names = new Map(profiles.filter(Boolean).map((profile: any) => [profile.userId, profile.fullName?.trim()]));
+  return messages.map((message) => {
+    const profileName = names.get(message.authorId);
+    const roleName = message.authorType === 'tenant'
+      ? lease.currentTenant?.name
+      : message.authorType === 'landlord'
+        ? lease.landlordName
+        : message.authorType === 'prospect'
+          ? prospectName
+          : undefined;
+    const authorName = profileName || roleName?.trim();
+    return authorName ? { ...message, authorName } : message;
+  });
 }
 async function notify(ctx: any, recipient: string | undefined, placeId: string, body: string) {
   if (!recipient) return;
@@ -70,7 +90,7 @@ export const read = query({
         const settings = (await record(ctx, 'settings', identity.subject))?.data || {};
         const leases = await ctx.db.query('leases').collect();
         const role = leases.some(l => landlord(l, identity)) ? 'landlord' : leases.some(l => owns(l, identity)) ? 'tenant' : 'prospect';
-        return { id: identity.subject, name: identity.name || 'User', email: identity.email || '', avatar: identity.pictureUrl || '', role, isVerified: false, isAvailable: true, ...settings };
+        return { id: identity.subject, name: identity.name || 'Name unavailable', email: identity.email || '', avatar: identity.pictureUrl || '', role, isVerified: false, isAvailable: true, ...settings };
       }
       case 'places': {
         const leases = await ctx.db.query('leases').collect();
@@ -103,12 +123,15 @@ export const read = query({
         return { ...row.data, prospectName: profile?.fullName || row.data.prospectName };
       }
       case 'messages': {
-        const { row } = await authorizedThread(ctx, text(input.threadId, 100), identity);
-        return (await records(ctx, 'message')).filter(r => r.data.threadId === row.key).map(r => r.data).sort((a, b) => a.createdAt - b.createdAt);
+        const { row, lease } = await authorizedThread(ctx, text(input.threadId, 100), identity);
+        const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', row.data.prospectId)).unique();
+        const messages = (await records(ctx, 'message')).filter(r => r.data.threadId === row.key).map(r => r.data).sort((a, b) => a.createdAt - b.createdAt);
+        return messagesWithAuthorNames(ctx, messages, lease, profile?.fullName || row.data.prospectName);
       }
       case 'roomMessages': {
         const lease = await leaseFor(ctx, text(input.placeId, 100)); allow(lease, identity);
-        return (await records(ctx, 'message')).filter(r => r.data.threadId === `place-room-${lease._id}`).map(r => r.data).sort((a, b) => a.createdAt - b.createdAt);
+        const messages = (await records(ctx, 'message')).filter(r => r.data.threadId === `place-room-${lease._id}`).map(r => r.data).sort((a, b) => a.createdAt - b.createdAt);
+        return messagesWithAuthorNames(ctx, messages, lease);
       }
       case 'notifications': {
         const mine = await ctx.db.query('domainRecords').withIndex('by_owner', q => q.eq('kind', 'notification').eq('ownerId', identity.subject)).collect();
@@ -140,7 +163,7 @@ export const write = mutation({
       const key = `${lease._id}:${uid}`;
       const existing = await record(ctx, 'thread', key);
       if (existing) return existing.data;
-      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Prospect', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
+      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Name unavailable', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
     }
     if (operation === 'sendMessage' || operation === 'takeover' || operation === 'askOnlo' || operation === 'markThreadRead') {
       const { row, lease } = await authorizedThread(ctx, text(input.threadId, 200), identity);
@@ -191,7 +214,7 @@ export const write = mutation({
       if (quiet && (typeof quiet.enabled !== 'boolean' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(quiet.start) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(quiet.end))) throw new Error('Invalid quiet hours');
       const settings = { isAvailable: input.isAvailable, ...(quiet ? { quietHours: { enabled: quiet.enabled, start: quiet.start, end: quiet.end } } : {}) };
       await put(ctx, 'settings', uid, uid, settings);
-      return { id: uid, name: identity.name || 'User', email: identity.email || '', role: 'prospect', avatar: identity.pictureUrl || '', isVerified: false, ...settings };
+      return { id: uid, name: identity.name || 'Name unavailable', email: identity.email || '', role: 'prospect', avatar: identity.pictureUrl || '', isVerified: false, ...settings };
     }
     if (operation === 'acceptInvitation') {
       await rememberEmailContact(ctx, identity, input.locale);

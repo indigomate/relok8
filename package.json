@@ -12,6 +12,7 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run lint && npm run test && npm run build",
+    "smoke:production": "node scripts/smoke-public-routes.mjs --base-url https://relok8.online",
     "test:onlo": "vitest run tests/onlo-knowledge.test.ts tests/onlo-knowledge-eval.test.ts",
     "emails:preview": "tsx scripts/render-email-previews.ts"
   },
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19.3.0",
     "convex-test": "^0.0.38",
     "esbuild": "^0.28.0",
+    "playwright": "^1.65.1",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",

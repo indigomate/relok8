@@ -76,6 +76,11 @@ describe('public listing identity and contact privacy', () => {
 
     const threads = await owner.query((api as any).domain.read, { operation: 'threads', input: { placeId: id } });
     expect(threads[0].prospectName).toBe('Interested Person');
+
+    await prospect.mutation((api as any).domain.write, { operation: 'sendMessage', input: { threadId: thread.id, body: 'Is this still available?' } });
+    await owner.mutation((api as any).domain.write, { operation: 'sendMessage', input: { threadId: thread.id, body: 'Yes, it is available.' } });
+    const messages = await owner.query((api as any).domain.read, { operation: 'messages', input: { threadId: thread.id } });
+    expect(messages.map((message: any) => message.authorName)).toEqual(['Interested Person', 'Exact Private Name']);
   });
 
   test('a prospect can see the place details without receiving private account identifiers', async () => {
