@@ -31,14 +31,23 @@
 - `evidence/step-01-baseline/S01-07-help-desktop.png`
 - `evidence/step-01-baseline/S01-contact-sheet.jpg`
 
-## Required next captures
+## Step 02 production stability evidence
+
+| Screenshot ID | Route/screen | Viewport | State | Publication status | Evidence/notes |
+|---|---|---:|---|---|---|
+| S02-01 | Home `/` | 1440×1000 | Public default | approved-public | Post-deployment capture; smoke check passed with zero unexpected console errors. |
+| S02-02 | Polish home `/pl` | 390×844 | Public default | approved-public | Source-language fallback remains available when the translation provider is unavailable; no runtime error. |
+| S02-03 | How it works `/how-it-works` | 1440×1000 | Public default | approved-public | Post-deployment capture; smoke check passed. |
+| S02-04 | List your place `/list` | 390×844 | Signed out, draft start | approved-public | Post-deployment capture; smoke check passed. |
+| S02-05 | Messages `/messages` | 390×844 | Signed out | approved-public | Post-deployment capture; private data remains inaccessible. |
+| S02-06 | Help `/help` | 1440×1000 | Public default | approved-public | Post-deployment capture; smoke check passed. |
+
+## Remaining Step 02 captures
 
 | Screenshot ID | Required screen/state | Status |
 |---|---|---|
-| S02-01 | Polish home after translation stability fix | missing |
-| S02-02 | How it works with clean browser console | missing |
-| S02-03 | List page mobile after clean-console verification | missing |
-| S02-04 | Signed-in Messages with sanitized test users | missing |
-| S02-05 | Messages collapsed list on mobile | missing |
-| S02-06 | Messages with 10+ threads and internal scroll | missing |
-| S02-07 | Message bubbles showing real participant names | missing |
+| S02-07 | Signed-in Messages with sanitized test users, desktop | missing |
+| S02-08 | Messages collapsed list, mobile | missing |
+| S02-09 | Messages with 10+ test threads and internal scroll | missing |
+| S02-10 | Message bubbles showing controlled test participants' real names | missing |
+| S02-11 | Signed-in Messages, tablet | missing |

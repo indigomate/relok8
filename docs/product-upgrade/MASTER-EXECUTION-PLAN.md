@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-23  
 **Execution rule:** Complete, test, capture evidence, review, and approve one step before starting the next.  
-**Current step:** Step 01 — Baseline and evidence system  
+**Current step:** Step 02 — Production stability and release hygiene
 **Primary stack:** React/Vite, Convex, Clerk, Vercel, Resend, Google AI, WhatsApp/Meta, Stripe (planned)
 
 ## Definition of done for every step
@@ -243,6 +243,13 @@ No task is complete because code was written. Every task must satisfy all of the
 5. Existing user data and unrelated working changes are preserved.
 6. New features must support English and Polish at launch and must not block future locales.
 
-## Immediate next step after Step 01 approval
+## Current release status
 
-Begin Step 02 by reproducing and fixing the production `services:translatePublicListings` error, then capture the same routes again to prove the error is gone.
+Step 01 is complete. Step 02 public production stability is verified on deployment `DvG5J1jQDxU9jJqJoDP1vm8vYeas` for commit `44644d8`:
+
+- all six public route smoke checks pass;
+- the recurring `services:translatePublicListings` console failure is gone;
+- type checking, 186 automated tests, and the production build pass;
+- Messages identity, search, and retractable-list changes are deployed and covered by source-level tests.
+
+Step 02 remains open only for sanitized signed-in Messages screenshots at mobile, tablet, and desktop widths. Do not start Step 03 until those controlled-account captures are recorded or the evidence exception is explicitly accepted.
