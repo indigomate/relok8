@@ -51,3 +51,29 @@
 | S02-09 | Messages with 10+ test threads and internal scroll | missing |
 | S02-10 | Message bubbles showing controlled test participants' real names | missing |
 | S02-11 | Signed-in Messages, tablet | missing |
+
+## Step 03A design foundation evidence
+
+| Screenshot ID | Route/screen | Viewport | State | Publication status | Evidence/notes |
+|---|---|---:|---|---|---|
+| S03-01 | Home `/` | 320×700 | Public default, consent open | approved-public | Narrow header fits after `e5ed0f9`; compact cookie panel clears the bottom navigation. |
+| S03-02 | Polish home `/pl` | 390×844 | Public default, consent open | approved-public | Polish navigation and consent labels fit; no horizontal clipping. |
+| S03-03 | Home `/` | 768×1024 | Public default | approved-public | Tablet evidence from the verified production deployment. |
+| S03-04 | Home `/` | 1024×900 | Public default | approved-public | Small-desktop evidence from the verified production deployment. |
+| S03-05 | Home `/` | 1440×1000 | Public default | approved-public | Desktop evidence from the verified production deployment. |
+| S03-06 | How it works `/how-it-works` | 1440×1000 | Public default | approved-public | Production smoke check passed. |
+| S03-07 | List your place `/list` | 390×844 | Signed out | approved-public | Production smoke check passed; no private data. |
+| S03-08 | Messages `/messages` | 390×844 | Signed out | approved-public | Production smoke check passed; private data remains inaccessible. |
+| S03-09 | Help `/help` | 1440×1000 | Public default | approved-public | Production smoke check passed. |
+
+## Step 03A files
+
+- `evidence/step-03-design-foundation/S03-01-home-mobile-320.png`
+- `evidence/step-03-design-foundation/S03-02-home-polish-mobile-390.png`
+- `evidence/step-03-design-foundation/S03-03-home-tablet-768.png`
+- `evidence/step-03-design-foundation/S03-04-home-desktop-1024.png`
+- `evidence/step-03-design-foundation/S03-05-home-desktop-1440.png`
+- `evidence/step-03-design-foundation/S03-06-how-it-works-desktop-1440.png`
+- `evidence/step-03-design-foundation/S03-07-list-place-mobile-390.png`
+- `evidence/step-03-design-foundation/S03-08-messages-signed-out-mobile-390.png`
+- `evidence/step-03-design-foundation/S03-09-help-desktop-1440.png`

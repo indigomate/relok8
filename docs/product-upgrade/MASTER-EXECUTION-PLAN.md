@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-23  
 **Execution rule:** Complete, test, capture evidence, review, and approve one step before starting the next.  
-**Current step:** Step 02 — Production stability and release hygiene
+**Current step:** Step 03B — Shared component adoption and accessibility states
 **Primary stack:** React/Vite, Convex, Clerk, Vercel, Resend, Google AI, WhatsApp/Meta, Stripe (planned)
 
 ## Definition of done for every step
@@ -252,4 +252,15 @@ Step 01 is complete. Step 02 public production stability is verified on deployme
 - type checking, 186 automated tests, and the production build pass;
 - Messages identity, search, and retractable-list changes are deployed and covered by source-level tests.
 
-Step 02 remains open only for sanitized signed-in Messages screenshots at mobile, tablet, and desktop widths. Do not start Step 03 until those controlled-account captures are recorded or the evidence exception is explicitly accepted.
+Step 02 remains open only for sanitized signed-in Messages screenshots at mobile, tablet, and desktop widths. The user explicitly continued to Step 03 with this controlled-account evidence deferred.
+
+Step 03A is verified on deployment `Am2kKcWgvtfp9JYabzc64uw3jFjz` for commits `171d79b` and `e5ed0f9`:
+
+- shared button, icon-button, badge, surface, empty-state, and form-field primitives are available;
+- navigation targets and popup keyboard behaviour were normalized;
+- the cookie consent panel is compact and clears the mobile bottom navigation;
+- the 320px and 390px headers fit without clipping;
+- type checking, 186 automated tests, and the production build pass;
+- all nine production smoke checks pass at 320, 390, 768, 1024, and 1440px widths.
+
+Step 03B is next: adopt the shared primitives in the highest-use forms and operational panels, then capture loading, empty, validation-error, provider-error, success, focus, keyboard, contrast, and reduced-motion evidence.
