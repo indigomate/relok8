@@ -342,7 +342,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   };
 
   return (
-    <div className="r8-messages min-h-dvh md:h-screen bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans md:overflow-hidden">
+    <div className="r8-messages flex-1 min-h-0 bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans overflow-hidden">
       {/* 1. Compact Title Row */}
       <header className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:py-3 flex flex-row items-center justify-between gap-2 shrink-0 bg-transparent">
         {/* Left: Back button + Title + Subtitle */}
@@ -388,13 +388,13 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
       {/* 2. Main Rounded-3xl Card (holds the 3 panes and fills viewport height) */}
       {(!isAuthenticated || inboxError) && <div role="status" className="px-6 py-2 text-sm">{inboxError || (isLoading ? 'Loading inbox…' : 'Sign in to see your messages.')}</div>}
-      <main className="flex-1 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6 overflow-y-auto md:overflow-hidden min-h-0">
-        <div className="h-auto md:h-full bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row">
+      <main className="flex-1 px-3 sm:px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-3 overflow-hidden min-h-0">
+        <div className="h-full min-h-0 bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-row">
           
           {/* PANE 1: Thread List (340px) */}
           <section
             aria-label="Thread list"
-            className={`w-full md:w-[340px] shrink-0 md:border-r border-slate-200/90 flex flex-col h-auto md:h-full bg-white ${
+            className={`w-full md:w-[340px] shrink-0 md:border-r border-slate-200/90 flex flex-col h-full min-h-0 bg-white ${
               mobilePane === 'chat' ? 'hidden md:flex' : 'flex'
             }`}
           >
@@ -467,7 +467,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             </div>
 
             {/* Thread Rows */}
-            <div id="mobile-thread-list" className={`${isThreadListExpanded ? 'block' : 'hidden'} md:block md:flex-1 max-h-[min(58dvh,34rem)] md:max-h-none overflow-y-auto divide-y divide-slate-100 overscroll-contain`}>
+            <div id="mobile-thread-list" className={`${isThreadListExpanded ? 'block' : 'hidden'} md:block flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100 overscroll-contain`}>
               {filter === 'all' && privatePlaces.filter(p => !threadSearch.trim() || (p.title + ' ' + p.address + ' My Home Chat Rozmowa domowa').toLowerCase().includes(threadSearch.trim().toLowerCase())).map(p => (
                 <button key={p.id} type="button" disabled={isSending || isHelperLoading} onClick={() => { setInputText(''); setComposerStatus(null); setIsComposerToolsExpanded(false); setShowDetails(false); setRoomPlaceId(p.id); setActiveTab('place_room'); setMobilePane('chat'); }} className={`w-full px-4 py-3 flex items-center gap-3 text-left border-l-[3px] ${activeTab === 'place_room' && roomPlaceId === p.id ? 'bg-indigo-100 border-indigo-600' : 'bg-indigo-50/80 border-indigo-300 hover:bg-indigo-100'}`}>
                   <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0"><House className="w-5 h-5" /></div>
@@ -577,7 +577,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
           {/* PANE 2: Conversation (Flexible) */}
           <section
             aria-label="Conversation"
-            className={`flex-1 min-w-0 flex flex-col h-auto md:h-full bg-white ${
+            className={`flex-1 min-w-0 flex flex-col h-full min-h-0 bg-white ${
               mobilePane === 'list' ? 'hidden md:flex' : 'flex'
             }`}
           >
@@ -641,7 +641,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             <div
               ref={messagesContainerRef}
               onScroll={handleContainerScroll}
-              className="min-h-40 max-h-[calc(100dvh-22rem)] md:min-h-0 md:max-h-none md:flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-slate-50/30 overscroll-contain transition-[min-height] duration-200"
+              className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-slate-50/30 overscroll-contain transition-[min-height] duration-200"
             >
               {messages.length === 0 ? (
                 <div className="min-h-32 flex flex-col items-center justify-center text-center text-slate-400 space-y-2.5 px-4 py-5">
