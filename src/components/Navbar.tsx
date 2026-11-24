@@ -169,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={onNavigateSaved}
             label={`${strings.saved} (${savedCount})`}
             aria-current={currentPath === 'saved' ? 'page' : undefined}
-            className="relative"
+            className="relative max-[359px]:hidden"
           >
             <Heart className="w-5 h-5" />
             {savedCount > 0 && (
