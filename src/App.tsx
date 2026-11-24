@@ -255,13 +255,13 @@ function Relok8App() {
   useEffect(() => { if (ownLeases) localStorage.setItem('r8_my_listing_ids', JSON.stringify(ownLeases.map(lease => lease._id))); }, [ownLeases]);
   const remoteFavorites = useQuery(api.favorites.getUserFavorites, isBackendAuthenticated && currentUser ? { userId: currentUser.id } : "skip");
   useEffect(() => {
-    if (!isBackendAuthenticated || !currentUser?.email) return;
+    if (!isBackendAuthenticated || !currentUser?.id) return;
     const verifiedProfileName = clerkUser?.fullName || [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || undefined;
     syncEmailAccount({
       locale: locale === 'pl' ? 'pl' : 'en',
       ...(verifiedProfileName ? { fullName: verifiedProfileName } : {}),
-    }).catch(() => {});
-  }, [currentUser?.email, clerkUser?.firstName, clerkUser?.fullName, clerkUser?.lastName, isBackendAuthenticated, locale, syncEmailAccount]);
+    }).then((result: { synced: boolean }) => { if (!result.synced) console.warn('Relok8 email account sync incomplete'); }).catch(() => { console.warn('Relok8 email account sync failed'); });
+  }, [currentUser?.id, currentUser?.email, clerkUser?.firstName, clerkUser?.fullName, clerkUser?.lastName, isBackendAuthenticated, locale, syncEmailAccount]);
   useEffect(() => { if (remoteFavorites) setSavedIds(remoteFavorites); }, [remoteFavorites]);
 
   useEffect(() => {
