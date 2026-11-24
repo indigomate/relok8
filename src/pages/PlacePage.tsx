@@ -20,7 +20,7 @@ interface PlacePageProps {
 export function PlacePage({ onRequireLogin, onBack, locale = 'en', onDeleteListing, onOpenIntake }: PlacePageProps) {
   const pl = locale === 'pl';
   return (
-    <main className="r8-place min-h-screen bg-slate-50 text-slate-900 pb-32">
+    <main className="r8-motion-page r8-place min-h-screen bg-slate-50 text-slate-900 pb-32">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
         <button type="button" onClick={onBack} className="inline-flex min-h-11 items-center gap-2 text-sm text-slate-600 hover:text-indigo-700"><ArrowLeft size={16} aria-hidden="true" />{pl ? 'Wróć do ogłoszeń' : 'Back to Explore'}</button>
         <header className="flex flex-wrap items-start justify-between gap-4">
