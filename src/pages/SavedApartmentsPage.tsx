@@ -23,7 +23,7 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-5 sm:space-y-6">
+      <div className="r8-motion-page max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-5 sm:space-y-6">
         
         {/* Header with back button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-slate-200">
