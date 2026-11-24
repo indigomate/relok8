@@ -24,7 +24,7 @@ export const LeaveYourLeasePage: React.FC<LeaveYourLeasePageProps> = ({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
+      <div className="r8-motion-page max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
         
         {/* Back navigation */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
