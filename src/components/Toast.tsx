@@ -47,7 +47,7 @@ export const Toast: React.FC<ToastProps> = ({
     <div
       role="status"
       aria-live="polite"
-      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[420px] w-[calc(100%-32px)] bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-[var(--r-lg)] shadow-[var(--shadow-pop)] p-3.5 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 duration-[180ms] ${className}`}
+      className={`r8-motion-toast fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-[420px] w-[calc(100%-32px)] bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] rounded-[var(--r-lg)] shadow-[var(--shadow-pop)] p-3.5 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 duration-[180ms] ${className}`}
     >
       <div className="flex items-center gap-2.5 min-w-0">
         {icons[type]}
