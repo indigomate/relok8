@@ -794,7 +794,7 @@ function Relok8App() {
   }, [listings, activeCityConfig, searchState.city, searchState.minRent, filterValues, listingToday]);
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+    <div className={`${currentRoute.type === 'messages' && isClerkSignedIn ? 'h-dvh min-h-0 overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900`}>
       
       {(currentRoute.type === 'home' || currentRoute.type === 'city') && (
         <a className="r8-home-skip" href="#rooms-grid">
@@ -1292,14 +1292,14 @@ function Relok8App() {
         </main>
       )}
 
-      {/* Footer (§4.6) */}
-      <Footer
+      {/* Public website footer; messaging uses a bounded workspace. */}
+      {currentRoute.type !== 'messages' && <Footer
         onOpenReportListing={() => {
           showToast(locale === 'pl' ? 'Zgłoszenie oferty: info@relok8.online' : 'Open a listing and choose Report a problem, or email info@relok8.online.');
         }}
         locale={locale}
         theme={theme}
-      />
+      />}
 
       {/* Mobile Bottom Navigation (active on browse/saved/account/list, hidden on listing-detail & messages to prevent covering sticky CTA and chat composer) */}
       {currentRoute.type !== 'listing-detail' && currentRoute.type !== 'messages' && (
