@@ -12,7 +12,6 @@ export const takeOverThread = (threadId: string): Promise<Thread> => write('take
 export const askOnloNow = (threadId: string, locale: 'en' | 'pl' = 'en'): Promise<{ reply: Message; thread: Thread }> => backend().action((api as any).services.threadAssistant, { threadId, locale });
 export const getPlaceRoomMessages = (placeId: string): Promise<Message[]> => read('roomMessages', { placeId });
 export const sendPlaceRoomMessage = (placeId: string, body: string): Promise<Message> => write('roomMessage', { placeId, body });
-export const onloSuggestReply = (threadId: string): Promise<string> => backend().action(api.services.helper, { action: 'suggest', threadId });
 export const onloTranslate = (text: string, targetLang: 'en' | 'pl'): Promise<string> => backend().action(api.services.helper, { action: 'translate', text, targetLang });
 export const getNotifications = (): Promise<Notification[]> => read('notifications');
 export const markNotificationRead = (id: string): Promise<void> => write('markRead', { id });
