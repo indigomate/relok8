@@ -90,7 +90,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
     : `${resultsCount} ${strings.roomsCount}`;
 
   return (
-    <div className="w-full space-y-3">
+    <div className="r8-motion-filters w-full space-y-3">
       {/* Horizontal Filter Row (Scrollable on mobile without wrapping awkwardly, Screenshot 6) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1 scrollbar-none no-scrollbar">
         {/* Furnished Pill */}
@@ -208,7 +208,7 @@ export const FiltersBar: React.FC<FiltersBarProps> = ({
 
       {/* Mobile Filter Fullscreen Sheet */}
       {mobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col p-4 overflow-y-auto animate-in fade-in slide-in-from-bottom">
+        <div className="r8-motion-panel fixed inset-0 z-50 bg-white flex flex-col p-4 overflow-y-auto animate-in fade-in slide-in-from-bottom">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <h3 className="text-base font-bold text-slate-900">
               {locale === 'pl' ? 'Filtry pokoi' : 'Room filters'}
