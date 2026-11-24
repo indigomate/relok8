@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { Globe, Menu, User, Heart, HelpCircle, MessageSquare, Home, Settings, LogOut, Check, LogIn, Bell, Award, GraduationCap } from 'lucide-react';
 import { Show, useClerk } from '@clerk/react';
 import { Relok8Logo } from './BrandLogo';
@@ -6,6 +6,7 @@ import { SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
 import { SearchBar, SearchState } from './SearchBar';
 import { getNotifications, getRewards, getThreads } from '../lib/api';
+import { IconButton } from './ui/IconButton';
 
 export interface UserProfile {
   id: string;
@@ -33,6 +34,7 @@ interface NavbarProps {
   onSearchChange: (newState: Partial<SearchState>) => void;
   onExpandSearch?: () => void;
   isCompactSearchVisible?: boolean;
+  currentPath?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -49,7 +51,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   searchState,
   onSearchChange,
   onExpandSearch,
-  isCompactSearchVisible = true
+  isCompactSearchVisible = true,
+  currentPath,
 }) => {
   const strings = t[locale === 'pl' ? 'pl' : 'en'];
   const clerk = useClerk();
@@ -58,6 +61,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
+  const languageButtonRef = useRef<HTMLButtonElement>(null);
+  const accountMenuId = useId();
+  const languageMenuId = useId();
 
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -83,6 +90,21 @@ export const Navbar: React.FC<NavbarProps> = ({
     const interval = setInterval(loadCounts, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      if (isLangMenuOpen) {
+        setIsLangMenuOpen(false);
+        languageButtonRef.current?.focus();
+      } else if (isDropdownOpen) {
+        setIsDropdownOpen(false);
+        accountButtonRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isDropdownOpen, isLangMenuOpen]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -112,6 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           }}
           className="shrink-0 flex items-center focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none rounded-lg"
           aria-label="Relok8 Home"
+          aria-current={currentPath === 'home' || currentPath === 'city' ? 'page' : undefined}
         >
           <Relok8Logo height={30} theme={theme} />
         </a>
@@ -142,11 +165,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Saved */}
-          <button
-            type="button"
+          <IconButton
             onClick={onNavigateSaved}
-            aria-label={`${strings.saved} (${savedCount})`}
-            className="relative min-w-[40px] min-h-[40px] p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
+            label={`${strings.saved} (${savedCount})`}
+            aria-current={currentPath === 'saved' ? 'page' : undefined}
+            className="relative"
           >
             <Heart className="w-5 h-5" />
             {savedCount > 0 && (
@@ -154,40 +177,46 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {savedCount}
               </span>
             )}
-          </button>
+          </IconButton>
 
           {/* Notifications bell (§2 & §7) */}
-          <button
-            type="button"
+          <IconButton
             onClick={() => {
               const target = locale === 'pl' ? '/pl/notifications' : '/notifications';
               window.history.pushState({}, '', target);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            aria-label={`Notifications (${unreadNotifications})`}
-            className="relative min-w-[40px] min-h-[40px] p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
+            label={`${locale === 'pl' ? 'Powiadomienia' : 'Notifications'} (${unreadNotifications})`}
+            aria-current={currentPath === 'notifications' ? 'page' : undefined}
+            className="relative"
           >
             <Bell className="w-5 h-5" />
             {unreadNotifications > 0 && (
               <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#F2705A] ring-2 ring-white animate-pulse" />
             )}
-          </button>
+          </IconButton>
 
           {/* Language Switch */}
           <div className="relative" ref={langRef}>
-            <button
-              type="button"
-              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              className="min-w-[40px] min-h-[40px] p-2 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 rounded-full transition-colors flex items-center justify-center gap-1 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
-              aria-label="Change language"
+            <IconButton
+              ref={languageButtonRef}
+              onClick={() => {
+                setIsLangMenuOpen((open) => !open);
+                setIsDropdownOpen(false);
+              }}
+              label={locale === 'pl' ? 'Zmień język' : 'Change language'}
+              aria-expanded={isLangMenuOpen}
+              aria-controls={languageMenuId}
+              aria-haspopup={true}
+              className="gap-1"
             >
               <Globe className="w-5 h-5" />
               <span className="text-xs font-bold uppercase">{locale}</span>
-            </button>
+            </IconButton>
 
 
             {isLangMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
+              <div id={languageMenuId} className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
                 {[
                   { code: 'en', label: 'English (EN)' },
                   { code: 'pl', label: 'Polski (PL)' }
@@ -199,6 +228,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       onSelectLocale(item.code as any);
                       setIsLangMenuOpen(false);
                     }}
+                    aria-pressed={locale === item.code}
                     className={`w-full px-3 py-2 text-left text-xs font-medium flex items-center justify-between hover:bg-slate-50 cursor-pointer ${
                       locale === item.code ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'
                     }`}
@@ -227,10 +257,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Account Menu (Dropdown) */}
           <div className="relative" ref={dropdownRef}>
             <button
+              ref={accountButtonRef}
               type="button"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border border-slate-200 hover:shadow-md transition-all text-slate-700 hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
+              onClick={() => {
+                setIsDropdownOpen((open) => !open);
+                setIsLangMenuOpen(false);
+              }}
+              className="min-h-11 flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border border-slate-200 hover:shadow-md transition-all text-slate-700 hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
               aria-label="Account menu"
+              aria-expanded={isDropdownOpen}
+              aria-controls={accountMenuId}
+              aria-haspopup={true}
+              aria-current={currentPath === 'account' ? 'page' : undefined}
             >
               <Menu className="w-4 h-4" />
               <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 overflow-hidden">
@@ -244,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Dropdown panel - account items only (§4.5) */}
             {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 text-left">
+              <div id={accountMenuId} className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 text-left">
                 {/* User section */}
                 {!currentUser ? (
                   /* GUEST MENU (§4.5): Log in · Sign up · Saved · Help · Theme */

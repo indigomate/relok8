@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Heart, PlusCircle, MessageSquare, User } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
+import { classNames } from './ui/classNames';
 
 interface MobileBottomNavProps {
   currentPath: string;
@@ -36,6 +37,11 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const isList = currentPath === 'list';
   const isMessages = currentPath === 'messages';
   const isProfile = currentPath === 'account';
+  const itemClassName = (active: boolean) => classNames(
+    'flex min-h-11 min-w-[52px] flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1',
+    active ? 'font-semibold text-indigo-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
+  );
 
   const handleListClick = () => {
     if (onOpenListRoom) onOpenListRoom();
@@ -71,17 +77,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   return (
     <nav 
       aria-label="Mobile navigation" 
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-3 py-2 flex items-center justify-around shadow-sm pb-[max(0.6rem,env(safe-area-inset-bottom))]"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 flex items-center justify-around shadow-[var(--shadow-raised)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >
       {/* 1. Explore */}
       <button
         type="button"
         onClick={handleHomeClick}
-        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
-          isExplore ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
-        }`}
+        className={itemClassName(isExplore)}
+        aria-current={isExplore ? 'page' : undefined}
       >
-        <Search className={`w-5 h-5 ${isExplore ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <Search aria-hidden="true" className={`w-5 h-5 ${isExplore ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
         <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Szukaj' : 'Explore'}</span>
       </button>
 
@@ -89,14 +94,14 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleSavedClick}
-        className={`relative flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
-          isSaved ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
-        }`}
+        className={classNames('relative', itemClassName(isSaved))}
+        aria-current={isSaved ? 'page' : undefined}
+        aria-label={`${locale === 'pl' ? 'Zapisane' : 'Saved'}${savedCount > 0 ? ` (${savedCount})` : ''}`}
       >
         <div className="relative">
-          <Heart className={`w-5 h-5 ${isSaved ? 'fill-indigo-600 text-indigo-600 stroke-[2.4]' : 'stroke-[1.8]'}`} />
+          <Heart aria-hidden="true" className={`w-5 h-5 ${isSaved ? 'fill-indigo-600 text-indigo-600 stroke-[2.4]' : 'stroke-[1.8]'}`} />
           {savedCount > 0 && (
-            <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+            <span aria-hidden="true" className="absolute -top-1.5 -right-2 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
               {savedCount}
             </span>
           )}
@@ -108,11 +113,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleListClick}
-        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
-          isList ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
-        }`}
+        className={itemClassName(isList)}
+        aria-current={isList ? 'page' : undefined}
       >
-        <PlusCircle className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <PlusCircle aria-hidden="true" className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
         <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Dodaj' : 'List'}</span>
       </button>
 
@@ -120,11 +124,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleMessagesClick}
-        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
-          isMessages ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
-        }`}
+        className={itemClassName(isMessages)}
+        aria-current={isMessages ? 'page' : undefined}
       >
-        <MessageSquare className={`w-5 h-5 ${isMessages ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <MessageSquare aria-hidden="true" className={`w-5 h-5 ${isMessages ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
         <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Wiadomości' : 'Messages'}</span>
       </button>
 
@@ -132,11 +135,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <button
         type="button"
         onClick={handleProfileClick}
-        className={`flex flex-col items-center gap-0.5 min-w-[50px] py-1 cursor-pointer transition-colors ${
-          isProfile ? 'text-indigo-600 font-semibold' : 'text-slate-500 hover:text-slate-900'
-        }`}
+        className={itemClassName(isProfile)}
+        aria-current={isProfile ? 'page' : undefined}
       >
-        <User className={`w-5 h-5 ${isProfile ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <User aria-hidden="true" className={`w-5 h-5 ${isProfile ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
         <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Profil' : 'Profile'}</span>
       </button>
     </nav>

@@ -14,8 +14,11 @@ const systemChromium = ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/
 const executablePath = process.env.CHROMIUM_PATH || systemChromium || undefined;
 
 const routes = [
+  { id: 'home-mobile-narrow', path: '/', viewport: { width: 320, height: 700 } },
   { id: 'home-desktop', path: '/', viewport: { width: 1440, height: 1000 } },
   { id: 'home-polish-mobile', path: '/pl', viewport: { width: 390, height: 844 } },
+  { id: 'home-tablet', path: '/', viewport: { width: 768, height: 1024 } },
+  { id: 'home-small-desktop', path: '/', viewport: { width: 1024, height: 900 } },
   { id: 'how-it-works-desktop', path: '/how-it-works', viewport: { width: 1440, height: 1000 } },
   { id: 'list-place-mobile', path: '/list', viewport: { width: 390, height: 844 } },
   { id: 'messages-signed-out-mobile', path: '/messages', viewport: { width: 390, height: 844 } },

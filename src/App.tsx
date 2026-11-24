@@ -832,6 +832,7 @@ function Relok8App() {
         }}
         searchState={searchState}
         onSearchChange={handleSearchChange}
+        currentPath={currentRoute.type}
         onExpandSearch={() => {
           const el = document.getElementById('search-hero');
           if (el) {
