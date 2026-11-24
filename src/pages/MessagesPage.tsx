@@ -344,7 +344,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   return (
     <div className="r8-messages min-h-dvh md:h-screen bg-[#f8fafc] text-[#0f172a] text-left flex flex-col font-sans md:overflow-hidden">
       {/* 1. Compact Title Row */}
-      <header className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 bg-transparent">
+      <header className="px-4 sm:px-6 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2 sm:py-3 flex flex-row items-center justify-between gap-2 shrink-0 bg-transparent">
         {/* Left: Back button + Title + Subtitle */}
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -361,34 +361,29 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             </h1>
             <div className="text-xs leading-4 text-slate-500 truncate">
               {isTenant || isLandlord
-                ? 'Shared inbox for your home. You and the landlord see prospect threads together.'
-                : 'Direct messaging with verified tenants and landlords · Powered by Onlo.'}
+                ? 'Your home and rental conversations.'
+                : 'Your rental conversations.'}
             </div>
           </div>
         </div>
 
-        {/* Right: Availability Toggle & Inquiries/Place room Segmented Control */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
-          {devUser && (isTenant || isLandlord) && (
-            <button
-              type="button"
-              onClick={async () => {
+        {devUser && (isTenant || isLandlord) && (
+          <button type="button" aria-pressed={devUser.isAvailable}
+            aria-label={locale === 'pl' ? 'Zmień dostępność' : 'Change availability'}
+            title={devUser.isAvailable ? 'Available' : 'Away'}
+            onClick={async () => {
+              try {
                 const updated = await updateUserAvailability(!devUser.isAvailable, devUser.quietHours);
                 setDevUser(updated);
-              }}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors cursor-pointer flex items-center gap-1.5 ${
-                devUser.isAvailable
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'
-                  : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-              }`}
-              title={devUser.isAvailable ? "Available · Onlo auto-covers after 2m" : "Away · Onlo auto-covers immediately"}
-            >
-              <span className={`w-2 h-2 rounded-full ${devUser.isAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-              <span>{devUser.isAvailable ? "I'm available" : "Away (Covered)"}</span>
-            </button>
-          )}
-
-        </div>
+              } catch {
+                setComposerStatus({ tone: 'error', message: locale === 'pl' ? 'Nie udało się zmienić dostępności.' : 'Could not update availability.' });
+              }
+            }}
+            className="inline-flex items-center gap-1.5 min-h-11 px-2 text-xs text-slate-500 hover:text-slate-800 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-600 shrink-0">
+            <span className={`w-2 h-2 rounded-full ${devUser.isAvailable ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+            {devUser.isAvailable ? (locale === 'pl' ? 'Dostępny' : 'Available') : (locale === 'pl' ? 'Poza zasięgiem' : 'Away')}
+          </button>
+        )}
       </header>
 
       {/* 2. Main Rounded-3xl Card (holds the 3 panes and fills viewport height) */}
