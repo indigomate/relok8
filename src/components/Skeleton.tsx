@@ -36,7 +36,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
       style={inlineStyles}
       {...props}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-shimmer" />
+      <div className="r8-motion-skeleton absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full animate-shimmer" />
     </div>
   );
 };
