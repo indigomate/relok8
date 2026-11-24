@@ -247,7 +247,7 @@ function Relok8App() {
     transitNearby?: string;
   }>>({});
   const createConvexLease = useMutation(api.leases?.create);
-  const syncEmailAccount = useMutation((api as any).emailPreferences.syncAccount);
+  const syncEmailAccount = useAction((api as any).emailPreferences.syncAccountVerified);
   const deleteConvexLease = useMutation(api.leases?.deleteLease);
   const saveRemote = useMutation(api.favorites.addFavorite);
   const removeRemote = useMutation(api.favorites.removeFavorite);
