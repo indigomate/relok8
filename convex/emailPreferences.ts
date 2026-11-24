@@ -212,6 +212,7 @@ export const getDeliveryPolicy = internalQuery({
     return {
       suppressed: Boolean(suppression),
       preferenceLinkAllowed: emailMatchesUser,
+      unreadMessagesAllowed: Boolean(emailMatchesUser && profile?.emailUnreadMessages !== false),
       marketingAllowed: Boolean(emailMatchesUser && profile?.marketingConsent === true),
     };
   },
