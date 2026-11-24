@@ -748,3 +748,33 @@ textarea:focus-visible {
   .r8-motion-card, .r8-motion-favorite, .r8-motion-favorite svg, .r8-motion-panel, .r8-motion-toast, .r8-motion-filters button, .r8-home-intro, .r8-home-photo, .r8-home-process, .r8-home-cities, .r8-motion-skeleton { animation: none !important; transition: none !important; translate: none !important; scale: none !important; }
   .r8-motion-card img { transition: none !important; transform: none !important; }
 }
+
+/* Relok8 Motion 1.0 — application-wide progressive enhancement */
+@keyframes r8-workspace-enter { from { opacity: .78; } to { opacity: 1; } }
+@keyframes r8-section-enter { from { opacity: .75; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: no-preference) {
+  .r8-motion-app main:not(.r8-messages main) > :is(header,h1,h2) { animation: r8-workspace-enter 240ms ease-out both; }
+  .r8-motion-app :is(button,[role="button"],a) { -webkit-tap-highlight-color: transparent; }
+  .r8-motion-app button:not(:disabled):active { scale: .98; }
+  .r8-motion-app button:not(:disabled) { transition-property: background-color,border-color,color,box-shadow,scale; transition-duration: 150ms; transition-timing-function: var(--r8-motion-ease); }
+  .r8-motion-app :is(input,textarea,select) { transition: border-color 150ms ease, box-shadow 150ms ease; }
+  .r8-motion-app [role="dialog"] { animation: r8-workspace-enter 220ms ease-out both; }
+  .r8-motion-app .r8-messages main > section { animation: r8-workspace-enter 180ms ease-out both; }
+  .r8-motion-app .r8-messages [role="status"] { animation: r8-workspace-enter 180ms ease-out both; }
+  .r8-motion-app .r8-motion-page { animation: r8-workspace-enter 240ms ease-out both; }
+  @supports (animation-timeline: view()) {
+    .r8-motion-app[data-motion="public"] .r8-motion-page > section:not(:focus-within) {
+      animation: r8-section-enter linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .r8-motion-app *, .r8-motion-app *::before, .r8-motion-app *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
