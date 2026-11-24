@@ -49,7 +49,10 @@ async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minim
     typeof thread.lastMessageAt !== 'number' ||
     thread.lastMessageAt > now - minimumAgeMs ||
     thread.lastMessageAt < stale
-  ) return 0;
+  ) {
+    console.info('Unread email skipped', { reason: !Array.isArray(thread.unreadFor) || !thread.unreadFor.length ? 'no_unread_recipients' : typeof thread.lastMessageAt !== 'number' ? 'missing_timestamp' : thread.lastMessageAt > now - minimumAgeMs ? 'too_recent' : 'stale_thread' });
+    return 0;
+  }
 
   const messages = (await ctx.db.query('domainRecords').withIndex('by_kind', (q: any) => q.eq('kind', 'message')).collect())
     .filter((row: any) => row.data?.threadId === threadRow.key && typeof row.data?.createdAt === 'number');
@@ -59,12 +62,12 @@ async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minim
   let queued = 0;
 
   for (const userId of thread.unreadFor) {
-    if (typeof userId !== 'string' || ![threadRow.ownerId, lease?.ownerId, lease?.landlordUserId].includes(userId)) continue;
+    if (typeof userId !== 'string' || ![threadRow.ownerId, lease?.ownerId, lease?.landlordUserId].includes(userId)) { console.info('Unread email skipped', { reason: 'not_participant' }); continue; }
     const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', userId)).unique();
-    if (!profile?.email || profile.emailUnreadMessages === false) continue;
+    if (!profile?.email || profile.emailUnreadMessages === false) { console.info('Unread email skipped', { reason: !profile ? 'missing_profile' : !profile.email ? 'missing_email' : 'opted_out' }); continue; }
     const readAt = typeof readAtByUser[userId] === 'number' ? readAtByUser[userId] : 0;
     const unread = messages.filter((row: any) => row.data.authorId !== userId && row.data.authorId !== 'onlo' && row.data.createdAt > readAt);
-    if (!unread.length) continue;
+    if (!unread.length) { console.info('Unread email skipped', { reason: 'no_eligible_unread_messages', messageCount: messages.length }); continue; }
     const latest = unread.sort((left: any, right: any) => right.data.createdAt - left.data.createdAt)[0]?.data;
     const senderProfile = latest?.authorId && latest.authorId !== 'onlo'
       ? await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', latest.authorId)).unique()
@@ -74,7 +77,7 @@ async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minim
       .filter((delivery: any) => delivery.template === 'unread_message' && delivery.relatedId === threadRow.key)
       .sort((a: any, b: any) => b.createdAt - a.createdAt)[0];
     // Coalesce bursts, but allow a later message to notify an inactive recipient.
-    if (prior && (prior.createdAt >= latest.createdAt || now - prior.createdAt < 30 * 60_000)) continue;
+    if (prior && (prior.createdAt >= latest.createdAt || now - prior.createdAt < 30 * 60_000)) { console.info('Unread email skipped', { reason: 'duplicate_or_cooldown' }); continue; }
     const result = await queueEmailDelivery(ctx, {
       idempotencyKey: `unread-message:${keyPart(threadRow._id)}:${keyPart(profile._id)}:${latest.createdAt}`,
       userId,
@@ -91,6 +94,7 @@ async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minim
       relatedId: threadRow.key,
       scheduleDelivery: !profile.email.endsWith('.test'),
     });
+    console.info('Unread email queue result', { created: result.created, testAddress: profile.email.endsWith('.test') });
     if (result.created) queued += 1;
   }
   return queued;
@@ -100,7 +104,7 @@ export const queueThreadMessageNotifications = internalMutation({
   args: { threadId: v.string() },
   handler: async (ctx, args) => {
     const threadRow = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', args.threadId)).unique();
-    if (!threadRow) return { queued: 0 };
+    if (!threadRow) { console.info('Unread email skipped', { reason: 'thread_not_found' }); return { queued: 0 }; }
     return { queued: await queueUnreadForThread(ctx, threadRow, Date.now(), 2 * 60_000) };
   },
 });
