@@ -31,17 +31,32 @@ async function profileForUser(ctx: any, userId: string) {
   return ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', userId)).unique();
 }
 
-export const syncAccount = mutation({
-  args: {
-    locale: v.union(v.literal('en'), v.literal('pl')),
-    fullName: v.optional(v.string()),
-  },
-  handler: async (ctx, args) => {
+export const syncAccountVerified = action({
+  args: { locale: v.union(v.literal('en'), v.literal('pl')), fullName: v.optional(v.string()) },
+  handler: async (ctx, args): Promise<{ synced: boolean }> => {
     const identity = await requireIdentity(ctx);
-    if (identity.emailVerified !== true || !identity.email) {
-      console.warn('Email account sync skipped', { reason: !identity.email ? 'missing_email_claim' : 'unverified_email_claim' });
+    const key = process.env.CLERK_SECRET_KEY;
+    if (!key) { console.warn('Email account sync skipped', { reason: 'missing_clerk_key' }); return { synced: false }; }
+    const response = await fetch('https://api.clerk.com/v1/users/' + encodeURIComponent(identity.subject), {
+      headers: { Authorization: 'Bearer ' + key },
+    });
+    if (!response.ok) { console.warn('Email account sync skipped', { reason: 'clerk_api_error', status: response.status }); return { synced: false }; }
+    const user = await response.json();
+    const primary = user.email_addresses?.find((entry: any) => entry.id === user.primary_email_address_id);
+    if (user.id !== identity.subject || primary?.verification?.status !== 'verified' || typeof primary.email_address !== 'string') {
+      console.warn('Email account sync skipped', { reason: 'clerk_primary_not_verified' });
       return { synced: false };
     }
+    return ctx.runMutation((internal as any).emailPreferences.syncVerifiedContact, {
+      ...args, userId: identity.subject, email: primary.email_address,
+    });
+  },
+});
+
+export const syncVerifiedContact = internalMutation({
+  args: { locale: v.union(v.literal('en'), v.literal('pl')), fullName: v.optional(v.string()), userId: v.string(), email: v.string() },
+  handler: async (ctx, args) => {
+    const identity = { subject: args.userId, email: args.email, emailVerified: true };
     const fullName = args.fullName?.trim();
     if (fullName && fullName.length > 150) throw new Error('Name is too long');
     const contact = await rememberEmailContact(ctx, identity, args.locale, fullName);
@@ -55,7 +70,6 @@ export const syncAccount = mutation({
     if (profile.marketingConsent === undefined) defaults.marketingConsent = false;
     if (profile.digestCities === undefined) defaults.digestCities = [];
     if (profile.digestRoomTypes === undefined) defaults.digestRoomTypes = [];
-    if (profile.isVerified !== true) defaults.isVerified = true;
     if (Object.keys(defaults).length) await ctx.db.patch(profile._id, defaults);
     await queueEmailDelivery(ctx, {
       idempotencyKey: `welcome:${identity.subject}:v1`,
@@ -70,6 +84,7 @@ export const syncAccount = mutation({
       relatedId: identity.subject,
       scheduleDelivery: !contact.email.endsWith('.test'),
     });
+    console.info('Email account sync completed');
     return { synced: true };
   },
 });
