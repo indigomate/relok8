@@ -1,7 +1,7 @@
 import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
-import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin, Search, ChevronUp, ChevronDown, House, Pin } from 'lucide-react';
+import { ArrowLeft, Send, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin, Search, ChevronUp, ChevronDown, House, Pin } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { Thread, Message, Place, Relok8User } from '../types/relok8';
 import {
@@ -13,7 +13,6 @@ import {
   getPlaces,
   getCurrentDevUser,
   updateUserAvailability,
-  onloSuggestReply,
   getPlaceRoomMessages,
   sendPlaceRoomMessage,
   startPolling
@@ -316,21 +315,6 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       setThreads((prev) => prev.map((t) => (t.id === res.thread.id ? res.thread : t)));
     } catch (err) {
       setComposerStatus({ tone: 'error', message: err instanceof Error ? err.message : (locale === 'pl' ? 'Onlo nie może teraz odpowiedzieć. Napisz bezpośrednio do uczestnika.' : 'Onlo cannot answer right now. Message the participant directly.') });
-    } finally {
-      setIsHelperLoading(false);
-    }
-  };
-
-  // Handle Suggest a Reply
-  const handleSuggestReply = async () => {
-    if (!activeThread) return;
-    try {
-      setIsHelperLoading(true);
-      setComposerStatus(null);
-      const suggestion = await onloSuggestReply(activeThread.id);
-      setInputText(suggestion);
-    } catch (e) {
-      setComposerStatus({ tone: 'error', message: e instanceof Error ? e.message : (locale === 'pl' ? 'Nie udało się przygotować propozycji.' : 'Could not prepare a suggested reply.') });
     } finally {
       setIsHelperLoading(false);
     }
@@ -830,26 +814,17 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     type="button"
                     onClick={() => setIsComposerToolsExpanded((expanded) => !expanded)}
                     className="min-h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
-                    aria-label="Onlo writing tools"
+                    aria-label="Onlo assistant"
                     aria-expanded={isComposerToolsExpanded}
                     aria-controls="message-writing-tools"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                    <OnloAvatar size={22} variant="avatar" state="idle" />
                     
                     {isComposerToolsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                   </button>
                   {isComposerToolsExpanded && (
-                    <div id="message-writing-tools" className="flex items-center gap-2 flex-wrap" role="group" aria-label={locale === 'pl' ? 'Narzędzia pisania wiadomości' : 'Message writing tools'}>
+                    <div id="message-writing-tools" className="flex items-center gap-2 flex-wrap" role="group" aria-label={locale === 'pl' ? 'Narzędzia pisania wiadomości' : 'Onlo assistant'}>
                       {(isTenant || isLandlord) && activeThread?.handledBy === 'onlo' && <button type="button" onClick={handleTakeOver} className="px-3 py-2 rounded-full bg-slate-100">Reply myself</button>}
-                      <button
-                        type="button"
-                        disabled={isHelperLoading}
-                        onClick={handleSuggestReply}
-                        className="min-h-8 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        <span>{locale === 'pl' ? 'Zaproponuj odpowiedź' : 'Suggest a reply'}</span>
-                      </button>
                       <button
                         type="button"
                         disabled={isHelperLoading}
