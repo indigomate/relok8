@@ -103,11 +103,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     if (!field) return;
     const resize = () => {
       const keepBottom = isUserNearBottomRef.current;
-      field.style.height = 'auto';
+      field.style.height = '44px';
+      field.style.overflowY = 'hidden';
       const maxHeight = Math.min(168, Math.max(44, window.innerHeight * 0.28));
-      const height = Math.max(44, Math.min(field.scrollHeight + 2, maxHeight));
+      const height = field.value ? Math.max(44, Math.min(field.scrollHeight + 2, maxHeight)) : 44;
       field.style.height = `${height}px`;
-      field.style.overflowY = field.scrollHeight + 2 > height ? 'auto' : 'hidden';
+      field.style.overflowY = field.value && field.scrollHeight + 2 > height ? 'auto' : 'hidden';
       const messages = messagesContainerRef.current;
       if (keepBottom && messages) messages.scrollTop = messages.scrollHeight;
     };
@@ -878,12 +879,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                   }}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder={
-                    activeTab === 'place_room'
-                      ? 'Write a private message to the landlord or tenant...'
-                      : 'Type a message to the place...'
-                  }
-                  className="flex-1 min-w-0 min-h-11 resize-none px-4 py-2.5 rounded-[22px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-base md:text-sm leading-5 text-slate-900 bg-slate-50 focus:bg-white transition-colors break-words"
+                  placeholder={locale === 'pl' ? 'Wiadomość…' : 'Message…'}
+                  className="flex-1 min-w-0 min-h-11 box-border resize-none px-4 py-[11px] rounded-[22px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-base md:text-sm leading-5 text-slate-900 bg-slate-50 focus:bg-white transition-colors break-words"
                 />
                 <button
                   type="submit"
