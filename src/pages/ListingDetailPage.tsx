@@ -116,7 +116,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const defaultAmenities = listing.amenities.map(label=>({label}));
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 pb-36 sm:pb-28 text-left">
+    <div className="min-h-screen bg-white text-slate-900 pb-[calc(10rem+env(safe-area-inset-bottom))] sm:pb-28 text-left">
       {/* 1. Clean Top Header Bar with Back Arrow, Title, Share & Heart icons */}
       <header className="bg-white border-b border-slate-200/80 px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -453,8 +453,8 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       </main>
 
       {/* Fixed Sticky Bottom Bar with Elevated Shadow and Mobile-First Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 sm:px-4 py-3 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="text-left shrink-0">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-3 sm:px-4 pt-2.5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <div className="text-left min-w-0 flex-1">
           <div className="text-base sm:text-lg font-black text-slate-900 tnum leading-tight">
             {formatPLN(knownMonthlyCost(listing), locale)}<span className="text-xs font-normal text-slate-500">/mo</span>
           </div>
@@ -463,12 +463,12 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 w-full min-w-0 sm:w-auto sm:flex sm:shrink-0">
           {/* Onlo AI Proxy Chat Button */}
           <button
             type="button"
             onClick={() => setIsAIChatOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-2 sm:py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-semibold transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            className="inline-flex min-w-0 min-h-11 justify-center items-center gap-1.5 px-2 sm:px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-semibold transition-all active:scale-95 cursor-pointer"
           >
             <OnloAvatar size={16} variant="avatar" />
             <span>{locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}</span>
@@ -478,10 +478,10 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
           <button
             type="button"
             onClick={handleMessageClick}
-            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+            className="min-w-0 min-h-11 px-2 sm:px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
           >
-            <MessageSquare className="w-4 h-4 text-indigo-100" />
-            <span>{locale === 'pl' ? `Napisz do: ${tenant.name.split(' ')[0]}` : `Message ${tenant.name.split(' ')[0]}`}</span>
+            <MessageSquare className="w-4 h-4 shrink-0 text-indigo-100" />
+            <span className="truncate">{locale === 'pl' ? `Napisz do: ${tenant.name.split(' ')[0]}` : `Message ${tenant.name.split(' ')[0]}`}</span>
           </button>
         </div>
       </div>
