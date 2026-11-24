@@ -1,6 +1,6 @@
 import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin, Search, ChevronUp, ChevronDown } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { Thread, Message, Place, Relok8User } from '../types/relok8';
@@ -88,11 +88,31 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   // Mobile responsive pane state ('list' vs 'chat')
   const [mobilePane, setMobilePane] = useState<'list' | 'chat'>(initialThreadId ? 'chat' : 'list');
 
+  const composerRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isUserNearBottomRef = useRef<boolean>(true);
   const prevMessageCountRef = useRef<number>(0);
   const activeThreadOrTabRef = useRef<string>('');
+
+  // Fit the draft to its content, with a bounded height on small screens.
+  useLayoutEffect(() => {
+    const field = composerRef.current;
+    if (!field) return;
+    const resize = () => {
+      const keepBottom = isUserNearBottomRef.current;
+      field.style.height = 'auto';
+      const maxHeight = Math.min(168, Math.max(44, window.innerHeight * 0.28));
+      const height = Math.max(44, Math.min(field.scrollHeight + 2, maxHeight));
+      field.style.height = `${height}px`;
+      field.style.overflowY = field.scrollHeight + 2 > height ? 'auto' : 'hidden';
+      const messages = messagesContainerRef.current;
+      if (keepBottom && messages) messages.scrollTop = messages.scrollHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, [inputText, activeTab, activeThreadId, mobilePane]);
 
   // Track container scroll position to prevent disruptive jumps while reading earlier messages
   const handleContainerScroll = () => {
@@ -966,11 +986,18 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               )}
 
               {/* Pill input with round indigo send button */}
-              <form onSubmit={handleSend} className="flex items-center gap-2">
+              <form onSubmit={handleSend} className="flex items-end gap-2">
                 <label htmlFor="conversation-message" className="sr-only">{locale === 'pl' ? 'Wiadomość' : 'Message'}</label>
-                <input
+                <textarea
+                  ref={composerRef}
                   id="conversation-message"
-                  type="text"
+                  rows={1}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+                      e.preventDefault();
+                      e.currentTarget.form?.requestSubmit();
+                    }
+                  }}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder={
@@ -978,7 +1005,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                       ? 'Write a private message to the landlord or tenant...'
                       : 'Type a message to the place...'
                   }
-                  className="flex-1 px-4 py-2.5 rounded-full border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 bg-slate-50 focus:bg-white transition-colors"
+                  className="flex-1 min-w-0 min-h-11 resize-none px-4 py-2.5 rounded-[22px] border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-base md:text-sm leading-5 text-slate-900 bg-slate-50 focus:bg-white transition-colors break-words"
                 />
                 <button
                   type="submit"
