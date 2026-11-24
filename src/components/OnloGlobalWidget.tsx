@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { ArrowUp, LockKeyhole, Sparkles, X } from 'lucide-react';
+import { ArrowUp, LockKeyhole, X } from 'lucide-react';
 import { backend } from '../lib/backend';
 import { api } from '../../convex/_generated/api';
 import { OnloAvatar, OnloState } from './OnloAvatar';
@@ -206,7 +206,6 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
           <span className="text-xs font-bold tracking-tight">
             {locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}
           </span>
-          <Sparkles className="w-3.5 h-3.5 text-indigo-300" aria-hidden="true" />
         </button>
       </aside>
 
