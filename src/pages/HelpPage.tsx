@@ -240,7 +240,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema).replace(/</g, '\\u003c') }}
       />
 
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
+      <div className="r8-motion-page max-w-[1000px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-6 sm:space-y-10">
         
         {/* Breadcrumb & Back */}
         <div className="flex items-center gap-2 text-xs text-slate-500">
