@@ -166,7 +166,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           onSelectListing(listing);
         }
       }}
-      className="group relative rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 transition-all duration-200 hover:shadow-md overflow-hidden cursor-pointer flex flex-col justify-between text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
+      className="r8-motion-card group relative rounded-2xl bg-white border border-slate-200/90 hover:border-slate-300 transition-all duration-200 hover:shadow-md overflow-hidden cursor-pointer flex flex-col justify-between text-left focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none"
     >
       {/* 1. Photo Container with touch swipe support & exact rounded corners */}
       <div 
@@ -234,7 +234,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
           type="button"
           onClick={handleHeartClick}
           aria-label={isSaved ? 'Remove from saved' : 'Save listing'}
-          className="absolute top-3 right-3 z-10 w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-rose-600 flex items-center justify-center shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
+          className="r8-motion-favorite absolute top-3 right-3 z-10 w-9 h-9 min-w-[36px] min-h-[36px] rounded-full bg-white/95 hover:bg-white text-slate-700 hover:text-rose-600 flex items-center justify-center shadow-md transition-all active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
         >
           <Heart
             className={`w-4 h-4 transition-colors ${
