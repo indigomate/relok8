@@ -1,7 +1,7 @@
 import { useConvexAuth } from 'convex/react';
 import { billsLabel } from '../utils/listingFlow';
 import React, { useState, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
-import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Clock, CheckCircle2, Lock, MessageSquare, Globe, Shield, ExternalLink, MapPin, Search, ChevronUp, ChevronDown, House, Pin } from 'lucide-react';
 import { SupportedLocale, formatPLN } from '../utils/formatters';
 import { Thread, Message, Place, Relok8User } from '../types/relok8';
 import {
@@ -489,10 +489,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
             {/* Thread Rows */}
             <div id="mobile-thread-list" className={`${isThreadListExpanded ? 'block' : 'hidden'} md:block md:flex-1 max-h-[min(58dvh,34rem)] md:max-h-none overflow-y-auto divide-y divide-slate-100 overscroll-contain`}>
-              {filter === 'all' && privatePlaces.filter(p => !threadSearch.trim() || (p.title + ' ' + p.address).toLowerCase().includes(threadSearch.trim().toLowerCase())).map(p => (
-                <button key={p.id} type="button" disabled={isSending || isHelperLoading} onClick={() => { setInputText(''); setComposerStatus(null); setIsComposerToolsExpanded(false); setShowDetails(false); setRoomPlaceId(p.id); setActiveTab('place_room'); setMobilePane('chat'); }} className={`w-full px-4 py-3 flex items-center gap-3 text-left border-l-[3px] ${activeTab === 'place_room' && roomPlaceId === p.id ? 'bg-indigo-50 border-indigo-600' : 'border-transparent hover:bg-slate-50'}`}>
-                  <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0"><Lock className="w-4 h-4" /></div>
-                  <div className="min-w-0 flex-1"><div className="font-semibold text-sm truncate">{p.title}</div><div className="text-xs text-slate-500">{locale === 'pl' ? 'Prywatna rozmowa' : 'Private property conversation'}</div></div>
+              {filter === 'all' && privatePlaces.filter(p => !threadSearch.trim() || (p.title + ' ' + p.address + ' My Home Chat Rozmowa domowa').toLowerCase().includes(threadSearch.trim().toLowerCase())).map(p => (
+                <button key={p.id} type="button" disabled={isSending || isHelperLoading} onClick={() => { setInputText(''); setComposerStatus(null); setIsComposerToolsExpanded(false); setShowDetails(false); setRoomPlaceId(p.id); setActiveTab('place_room'); setMobilePane('chat'); }} className={`w-full px-4 py-3 flex items-center gap-3 text-left border-l-[3px] ${activeTab === 'place_room' && roomPlaceId === p.id ? 'bg-indigo-100 border-indigo-600' : 'bg-indigo-50/80 border-indigo-300 hover:bg-indigo-100'}`}>
+                  <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0"><House className="w-5 h-5" /></div>
+                  <div className="min-w-0 flex-1"><div className="font-semibold text-sm text-indigo-950 truncate">{locale === 'pl' ? 'Rozmowa domowa' : 'My Home Chat'}</div><div className="text-xs text-slate-600 truncate">{p.title}</div><div className="text-xs text-indigo-700">{locale === 'pl' ? 'Najemca i wynajmujący' : 'Tenant & landlord'}</div></div><Pin className="w-4 h-4 text-indigo-600 shrink-0" aria-label="Pinned" />
                 </button>
               ))}
               {filteredThreads.length === 0 && (filter !== 'all' || privatePlaces.length === 0) ? (
@@ -618,14 +618,14 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 {activeTab === 'place_room' ? (
                   <>
                     <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs" aria-hidden="true">
-                      {placeRoomMemberNames.length > 0 ? placeRoomMemberNames.map(getInitials).join('').slice(0, 2) : 'R8'}
+                      <House className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                        {placeRoomMemberNames.length > 0 ? placeRoomMemberNames.join(' & ') : unavailableName}
+                        {locale === 'pl' ? 'Rozmowa domowa' : 'My Home Chat'}
                       </div>
                       <div className="text-[11px] text-slate-500 truncate">
-                        {activePlace?.address || 'Lublin'} · {locale === 'pl' ? 'Prywatny kanał domu' : 'Private home channel'}
+                        {activePlace?.address || 'Lublin'} · {locale === 'pl' ? 'Najemca i wynajmujący' : 'Tenant & landlord'}
                       </div>
                     </div>
                   </>
