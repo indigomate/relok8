@@ -341,14 +341,19 @@ function contentFor(kind: EmailTemplateKind, locale: EmailLocale, data: EmailTem
     case 'unread_message':
       return {
         category: 'product',
-        eyebrow: pick(locale, 'New message', 'Nowa wiadomość'),
-        subject: pick(locale, `${d.senderName || 'Someone'} messaged you · ${d.listingTitle}`, `${d.senderName || 'Ktoś'} napisał(a) do Ciebie · ${d.listingTitle}`),
-        preheader: pick(locale, `You have ${d.count} unread messages in Relok8.`, `Masz ${d.count} nieprzeczytane wiadomości w Relok8.`),
-        title: pick(locale, 'A conversation is waiting', 'Czeka na Ciebie rozmowa'),
-        intro: `${hello} ${pick(locale, `${d.senderName || 'Someone'} sent you ${d.count === 1 ? 'a message' : `${d.count} messages`} in the conversation about ${d.listingTitle}.`, `${d.senderName || 'Ktoś'} wysłał(a) Ci ${d.count === 1 ? 'wiadomość' : `${d.count} wiadomości`} w rozmowie dotyczącej ${d.listingTitle}.`)}`,
-        ctaLabel: pick(locale, 'Open Messages', 'Otwórz Wiadomości'),
-        ctaUrl,
-        notice: pick(locale, 'For privacy, message content is available only after you sign in to Relok8.', 'Ze względu na prywatność treść wiadomości jest dostępna dopiero po zalogowaniu do Relok8.'),
+        eyebrow: pick(locale, 'Your inbox', 'Twoja skrzynka'),
+        subject: pick(locale, 'You have a new message on Relok8', 'Masz nową wiadomość w Relok8'),
+        preheader: pick(locale, 'Open your private conversation to read and reply.', 'Otwórz prywatną rozmowę, aby przeczytać i odpowiedzieć.'),
+        title: pick(locale, 'Your next move starts with a conversation.', 'Twój kolejny krok zaczyna się od rozmowy.'),
+        intro: `${hello} ${pick(locale, 'There is a new message waiting in your Relok8 inbox.', 'W Twojej skrzynce Relok8 czeka nowa wiadomość.')}`,
+        details: [
+          [pick(locale, 'Conversation', 'Rozmowa'), data.listingTitle || pick(locale, 'Relok8 messages', 'Wiadomości Relok8')],
+          [pick(locale, 'Latest sender', 'Ostatni nadawca'), data.senderName || pick(locale, 'Relok8 member', 'Użytkownik Relok8')],
+          [pick(locale, 'Unread messages', 'Nieprzeczytane wiadomości'), String(data.count ?? 1)],
+        ],
+        ctaLabel: pick(locale, 'Read and reply', 'Przeczytaj i odpowiedz'),
+        ctaUrl: safeUrl(data.ctaUrl, APP_ORIGIN + (locale === 'pl' ? '/pl/messages' : '/messages')),
+        notice: pick(locale, 'Your conversation stays private. Sign in to read the message and reply securely.', 'Twoja rozmowa pozostaje prywatna. Zaloguj się, aby przeczytać wiadomość i bezpiecznie odpowiedzieć.'),
       };
     case 'listing_published':
       return {
