@@ -133,7 +133,7 @@ export const EnrollmentsPage: React.FC<EnrollmentsPageProps> = ({ onBack, locale
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <main className="r8-motion-page max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-8">
         {/* 6-STEP ARRIVAL CHECKLIST (§10) */}
         <section aria-labelledby="arrival-checklist" className="p-6 sm:p-7 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
