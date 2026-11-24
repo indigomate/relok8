@@ -96,7 +96,7 @@ The takeover takes effect on ${formatAgreementDate(effectiveDate, 'en-GB')}.`;
       </header>
 
       {/* Main Container */}
-      <main className="max-w-xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
+      <main className="r8-motion-page max-w-xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
         {!isEditMode ? (
           /* TEMPLATE OVERVIEW VIEW (Screenshot 5) */
           <>
