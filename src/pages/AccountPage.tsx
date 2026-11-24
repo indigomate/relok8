@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/react';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 import { ArrowLeft, User, Shield, LogOut, CheckCircle2, AlertCircle, Phone, GraduationCap, Lock, Trash2, Heart, Globe, Building2, ChevronRight } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale } from '../utils/formatters';
@@ -30,6 +32,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 }) => {
   const { user: clerkUser } = useUser();
   const clerk = useClerk();
+  const upsertProfile = useMutation(api.profiles.upsertProfile);
 
   // Profile editing state
   const [fullName, setFullName] = useState(currentUser?.name || '');
@@ -63,6 +66,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     e.preventDefault();
     if (!currentUser || !clerkUser) { setProfileErrorMsg('Sign in to update your profile.'); return; }
 
+    const normalizedName = fullName.trim().replace(/\s+/g, ' ');
+    if (normalizedName.split(' ').length < 2 || normalizedName.length > 150 || ['name unavailable', 'relok8 member', 'add your name'].includes(normalizedName.toLowerCase())) {
+      setProfileErrorMsg(locale === 'pl' ? 'Podaj imię i nazwisko.' : 'Enter your first and last name.');
+      return;
+    }
     setIsSavingProfile(true);
     setProfileSuccessMsg(null);
     setProfileErrorMsg(null);
@@ -70,7 +78,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     try {
       // 1. Sync to Clerk if authenticated session
       if (clerkUser) {
-        const parts = fullName.trim().split(/\s+/);
+        const parts = normalizedName.split(' ');
         const firstName = parts[0] || '';
         const lastName = parts.slice(1).join(' ') || '';
 
@@ -88,10 +96,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         });
       }
 
+      // Persist the authenticated profile before reporting success.
+      await upsertProfile({ userId: clerkUser.id, fullName: normalizedName });
+
       // 3. Update current user state in application
       const updatedUser: UserProfile = {
         ...currentUser,
-        name: fullName,
+        name: normalizedName,
         phone,
         university
       };
