@@ -71,7 +71,7 @@ export const upsertProfile = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         ...(args.fullName !== undefined ? { fullName } : {}),
-        email: identity.email,
+        ...(identity.emailVerified === true && identity.email ? { email: identity.email.trim().toLowerCase() } : {}),
         ...(args.avatarUrl !== undefined ? { avatarUrl } : {}),
         ...(args.phoneNumber !== undefined ? { phoneNumber } : {}),
         ...(args.whatsappNumber !== undefined ? { whatsappNumber } : {}),
@@ -84,7 +84,7 @@ export const upsertProfile = mutation({
       return await ctx.db.insert("profiles", {
         userId: args.userId,
         fullName,
-        email: identity.email,
+        ...(identity.emailVerified === true && identity.email ? { email: identity.email.trim().toLowerCase() } : {}),
         avatarUrl,
         phoneNumber,
         whatsappNumber,
