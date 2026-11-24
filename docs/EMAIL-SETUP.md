@@ -6,7 +6,8 @@ Relok8 is WhatsApp-first for daily apartment discovery. Email should handle acco
 
 The application now queues welcome, unread-message, listing-expiry, consented listing-invitation, and consented weekly-digest emails through the durable `emailDeliveries` ledger.
 
-- Hourly at `:20`: unread-message summaries after a 30-minute wait
+- Two minutes after a new message: one unread-message notification per thread and unread cycle
+- Hourly at `:20`: fallback scan for unread-message notifications that were not already queued
 - Daily at `06:35 UTC`: listing reminders seven days and one day before lease end
 - Daily at `09:40 UTC`: listing invitations for verified, opted-in members with no listing (day 3 and day 10 only)
 - Monday at `07:10 UTC`: consented weekly property digest
@@ -59,13 +60,13 @@ Set `Reply-To: support@relok8.online` on product emails. Do not use a `no-reply@
 
 ### Add after launch
 
-8. **Unread message summary** — one email after 10–15 quiet minutes, with no private message body in the email.
+8. **Unread message notification** — one email after a two-minute unread window, deduplicated until the recipient opens the thread, with no private message body in the email.
 9. **Listing expiry reminder** — seven days and one day before the lease/listing becomes unavailable.
 10. **Weekly saved-search digest** — optional marketing email for people who explicitly opt in. WhatsApp remains the daily channel.
 11. **Welcome to Relok8** — a single onboarding email after verification, tailored to finding a room or leaving a lease.
 12. **Invitation to list a place** — no more than two marketing messages, on day 3 and day 10, only for verified members who explicitly consented and still have no listing.
 
-Do not send an email for every chat message, saved listing, page visit, Onlo response, or WhatsApp delivery. Relok8 does not currently support payments or escrow, so it must not send payment-received, deposit-held, refund, or payout emails.
+Do not send a separate email for every chat message: messages arriving in the same unread cycle are collapsed into one notification. Do not email for saved listings, page visits, or WhatsApp delivery events. Relok8 does not currently support payments or escrow, so it must not send payment-received, deposit-held, refund, or payout emails.
 
 ## 3. Delivery ownership
 
@@ -342,16 +343,16 @@ Wszyscy uczestnicy oznaczyli etapy przekazania jako zakończone dla {{listing_ti
 Przechowuj podpisane dokumenty i dowody płatności w bezpiecznym miejscu. Relok8 rejestruje status zgłoszony przez uczestników; nie poświadcza niezależnie cesji, podpisów, kaucji ani przekazania kluczy.
 ```
 
-### F. Unread message summary
+### F. Unread message notification
 
-**Trigger:** recipient has unread messages after a 10–15 minute quiet period; send at most one per thread per four hours.  
-**To:** participant with unread messages.  
+**Trigger:** recipient still has unread messages two minutes after the latest message; send one notification per thread and unread cycle. Opening the thread starts a new cycle. An hourly fallback scan catches missed scheduled jobs.
+**To:** participant with unread messages.
 **Privacy:** never include message text.
 
 **English subject**
 
 ```text
-New message about {{listing_title}}
+{{sender_name}} messaged you · {{listing_title}}
 ```
 
 **English body**
@@ -359,7 +360,7 @@ New message about {{listing_title}}
 ```text
 Hello {{recipient_name}},
 
-You have {{message_count}} unread {{message_word}} in the conversation about {{listing_title}}.
+{{sender_name}} sent you {{message_count}} unread {{message_word}} in the conversation about {{listing_title}}.
 
 [Open Messages]
 

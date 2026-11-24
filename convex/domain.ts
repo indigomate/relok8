@@ -1,5 +1,6 @@
 import { validLeaseDates, leaseHasEnded } from '../src/utils/leaseTiming';
 import { query, mutation, internalMutation } from "./_generated/server";
+import { internal } from './_generated/api';
 import { v, ConvexError } from "convex/values";
 import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
 import { DEFAULT_REWARD_CONFIG, DEFAULT_INSURANCE_CONFIG } from "../src/types/relok8";
@@ -12,6 +13,13 @@ const text = (value: unknown, max = 10000): string => {
   return value.trim();
 };
 const landlord = isLandlord;
+const PLACEHOLDER_NAMES = new Set(['name unavailable', 'relok8 member', 'user', 'add your name']);
+function usableName(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const name = value.trim().replace(/\s+/g, ' ');
+  if (!name || name.length > 150 || PLACEHOLDER_NAMES.has(name.toLowerCase())) return null;
+  return name;
+}
 const owns = (lease: any, identity: any): boolean => lease.ownerId === identity.subject;
 async function leaseFor(ctx: any, placeId: string) {
   const id = ctx.db.normalizeId('leases', placeId);
@@ -80,6 +88,39 @@ export async function consume(ctx: any, identity: any, operation: string, limit 
 }
 export const quota = internalMutation({ args: { operation: v.string(), limit: v.number() }, handler: async (ctx, args) => { const identity = await requireIdentity(ctx); await consume(ctx, identity, args.operation, args.limit); } });
 
+export const recordOnloReply = internalMutation({
+  args: { threadId: v.string(), requestedBy: v.string(), body: v.string() },
+  handler: async (ctx, args) => {
+    const row = await record(ctx, 'thread', text(args.threadId, 200));
+    if (!row) throw new Error('Thread not found');
+    const lease = await leaseFor(ctx, row.placeId);
+    const participants = [row.ownerId, lease.ownerId, lease.landlordUserId].filter(Boolean);
+    if (!participants.includes(args.requestedBy)) throw new Error('Forbidden');
+    const now = Date.now();
+    const message = {
+      id: `${now}-${row.key}-onlo-${Math.random().toString(36).slice(2)}`,
+      threadId: row.key,
+      authorId: 'onlo',
+      authorType: 'onlo',
+      authorName: 'Onlo',
+      onBehalfOf: args.requestedBy,
+      body: text(args.body),
+      createdAt: now,
+    };
+    await put(ctx, 'message', message.id, args.requestedBy, message, lease._id);
+    const unreadFor = [...new Set(participants.filter((id) => id !== args.requestedBy))];
+    const thread = { ...row.data, handledBy: 'onlo', lastMessageAt: now, unreadFor };
+    await put(ctx, 'thread', row.key, row.ownerId, thread, lease._id);
+    for (const recipient of unreadFor) {
+      const notification = { id: `${message.id}:${recipient}`, userId: recipient, type: 'message', placeId: lease._id, body: 'Onlo added a reply to your conversation', createdAt: now };
+      await put(ctx, 'notification', notification.id, recipient, notification, lease._id);
+    }
+    await ctx.scheduler.runAfter(2 * 60_000, (internal as any).emailAutomation.queueThreadMessageNotifications, { threadId: row.key });
+    await ctx.scheduler.runAfter(2 * 60_000, (internal as any).whatsapp.queueThreadMessageNotifications, { threadId: row.key });
+    return { reply: message, thread };
+  },
+});
+
 export const read = query({
   args: { operation: v.string(), input: v.any() },
   handler: async (ctx, { operation, input }) => {
@@ -88,9 +129,10 @@ export const read = query({
     switch (operation) {
       case 'currentUser': {
         const settings = (await record(ctx, 'settings', identity.subject))?.data || {};
+        const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', identity.subject)).unique();
         const leases = await ctx.db.query('leases').collect();
         const role = leases.some(l => landlord(l, identity)) ? 'landlord' : leases.some(l => owns(l, identity)) ? 'tenant' : 'prospect';
-        return { id: identity.subject, name: identity.name || 'Name unavailable', email: identity.email || '', avatar: identity.pictureUrl || '', role, isVerified: false, isAvailable: true, ...settings };
+        return { id: identity.subject, name: usableName(profile?.fullName) || usableName(identity.name) || 'Add your name', email: identity.email || '', avatar: identity.pictureUrl || '', role, isVerified: profile?.isVerified === true, isAvailable: true, ...settings };
       }
       case 'places': {
         const leases = await ctx.db.query('leases').collect();
@@ -160,12 +202,15 @@ export const write = mutation({
     if (operation === 'createThread') {
       const lease = await leaseFor(ctx, text(input.placeId, 100));
       if (owns(lease, identity) || landlord(lease, identity)) throw new ConvexError("You are signed in as this listing's owner or landlord. Open Messages to reply to enquiries. To test an enquiry, use a separate account.");
+      const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', uid)).unique();
+      const prospectName = usableName(profile?.fullName) || usableName(identity.name);
+      if (!prospectName) throw new ConvexError('Add your first and last name in Account settings before sending an inquiry. This lets the other person know who they are speaking with.');
       const key = `${lease._id}:${uid}`;
       const existing = await record(ctx, 'thread', key);
       if (existing) return existing.data;
-      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName: identity.name || 'Name unavailable', status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
+      return put(ctx, 'thread', key, uid, { id: key, placeId: lease._id, prospectId: uid, prospectName, status: 'open', handledBy: 'tenant', lastMessageAt: now, unreadFor: [], readAtByUser: { [uid]: now } }, lease._id);
     }
-    if (operation === 'sendMessage' || operation === 'takeover' || operation === 'askOnlo' || operation === 'markThreadRead') {
+    if (operation === 'sendMessage' || operation === 'takeover' || operation === 'markThreadRead') {
       const { row, lease } = await authorizedThread(ctx, text(input.threadId, 200), identity);
       if (operation === 'markThreadRead') {
         await put(ctx, 'thread', row.key, row.ownerId, {
@@ -180,9 +225,12 @@ export const write = mutation({
         const thread = { ...row.data, handledBy: landlord(lease, identity) ? 'landlord' : 'tenant' };
         return put(ctx, 'thread', row.key, row.ownerId, thread, lease._id);
       }
-      const isAssistant = operation === 'askOnlo';
-      const body = isAssistant ? 'Please confirm availability, landlord consent, and deposit terms directly with the tenant or landlord. No payment has been taken through Relok8.' : text(input.body);
-      const message = { id: `${now}-${row.key}-${Math.random().toString(36).slice(2)}`, threadId: row.key, authorId: isAssistant ? 'onlo' : uid, authorType: isAssistant ? 'onlo' : owns(lease, identity) ? 'tenant' : landlord(lease, identity) ? 'landlord' : 'prospect', body, createdAt: now };
+      const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', uid)).unique();
+      const authorName = usableName(profile?.fullName) || usableName(identity.name);
+      const authorType = owns(lease, identity) ? 'tenant' : landlord(lease, identity) ? 'landlord' : 'prospect';
+      if (authorType === 'prospect' && !authorName) throw new ConvexError('Add your first and last name in Account settings before sending a message. This lets the other person know who they are speaking with.');
+      const body = text(input.body);
+      const message = { id: `${now}-${row.key}-${Math.random().toString(36).slice(2)}`, threadId: row.key, authorId: uid, authorType, ...(authorName ? { authorName } : {}), body, createdAt: now };
       await put(ctx, 'message', message.id, uid, message, lease._id);
       const thread = { ...row.data, lastMessageAt: now, unreadFor: [lease.ownerId, lease.landlordUserId, row.ownerId].filter(id => id && id !== uid) };
       await put(ctx, 'thread', row.key, row.ownerId, thread, lease._id);
@@ -190,7 +238,9 @@ export const write = mutation({
         const notification = { id: `${message.id}:${recipient}`, userId: recipient, type: 'message', placeId: lease._id, body: 'You have a new message', createdAt: now };
         await put(ctx, 'notification', notification.id, recipient, notification, lease._id);
       }
-      return isAssistant ? { reply: message, thread } : { message, thread };
+      await ctx.scheduler.runAfter(2 * 60_000, (internal as any).emailAutomation.queueThreadMessageNotifications, { threadId: row.key });
+      await ctx.scheduler.runAfter(2 * 60_000, (internal as any).whatsapp.queueThreadMessageNotifications, { threadId: row.key });
+      return { message, thread };
     }
     if (operation === 'roomMessage') {
       const lease = await leaseFor(ctx, text(input.placeId, 100)); allow(lease, identity);

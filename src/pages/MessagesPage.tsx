@@ -20,6 +20,7 @@ import {
 } from '../lib/api';
 import { OnloAvatar } from '../components/OnloAvatar';
 import { useLiveTranslations } from '../hooks/useLiveTranslations';
+import { StatusMessage } from '../components/ui/StatusMessage';
 
 interface MessagesPageProps {
   onBack: () => void;
@@ -82,6 +83,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isHelperLoading, setIsHelperLoading] = useState(false);
+  const [composerStatus, setComposerStatus] = useState<{ tone: 'error' | 'success'; message: string } | null>(null);
 
   // Mobile responsive pane state ('list' vs 'chat')
   const [mobilePane, setMobilePane] = useState<'list' | 'chat'>(initialThreadId ? 'chat' : 'list');
@@ -205,7 +207,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   };
   const getThreadPreview = (thread: Thread): string => {
     if (thread.status === 'needs_human') return locale === 'pl' ? 'Czeka na Twoją odpowiedź' : 'Waiting for your reply';
-    if (thread.handledBy === 'onlo') return locale === 'pl' ? 'Onlo prowadzi rozmowę' : 'Onlo is covering this conversation';
+    if (thread.handledBy === 'onlo') return locale === 'pl' ? 'Onlo pomógł w rozmowie' : 'Onlo helped in this conversation';
     if (thread.status === 'reserved') return locale === 'pl' ? 'Następca wybrany' : 'Replacement selected';
     return locale === 'pl' ? 'Otwórz rozmowę' : 'Open conversation';
   };
@@ -238,6 +240,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     const text = inputText.trim();
     setInputText('');
     setIsSending(true);
+    setComposerStatus(null);
 
     try {
       if (activeTab === 'place_room' && activePlace) {
@@ -258,7 +261,10 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       }
     } catch (err: any) {
       setInputText(text);
-      window.alert(locale === 'pl' ? 'Nie wysłano wiadomości. Spróbuj ponownie.' : 'Your message was not sent. Please try again.');
+      setComposerStatus({
+        tone: 'error',
+        message: typeof err?.data === 'string' ? err.data : (err instanceof Error ? err.message : (locale === 'pl' ? 'Nie wysłano wiadomości. Spróbuj ponownie.' : 'Your message was not sent. Please try again.')),
+      });
     } finally {
       setIsSending(false);
     }
@@ -280,11 +286,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     if (!activeThread) return;
     try {
       setIsHelperLoading(true);
-      const res = await askOnloNow(activeThread.id);
+      setComposerStatus(null);
+      const res = await askOnloNow(activeThread.id, locale === 'pl' ? 'pl' : 'en');
       setMessages((prev) => [...prev, res.reply]);
       setThreads((prev) => prev.map((t) => (t.id === res.thread.id ? res.thread : t)));
     } catch (err) {
-      console.warn('Ask Onlo error:', err);
+      setComposerStatus({ tone: 'error', message: err instanceof Error ? err.message : (locale === 'pl' ? 'Onlo nie może teraz odpowiedzieć. Napisz bezpośrednio do uczestnika.' : 'Onlo cannot answer right now. Message the participant directly.') });
     } finally {
       setIsHelperLoading(false);
     }
@@ -295,10 +302,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
     if (!activeThread) return;
     try {
       setIsHelperLoading(true);
+      setComposerStatus(null);
       const suggestion = await onloSuggestReply(activeThread.id);
       setInputText(suggestion);
     } catch (e) {
-      console.warn('Suggest reply error:', e);
+      setComposerStatus({ tone: 'error', message: e instanceof Error ? e.message : (locale === 'pl' ? 'Nie udało się przygotować propozycji.' : 'Could not prepare a suggested reply.') });
     } finally {
       setIsHelperLoading(false);
     }
@@ -706,14 +714,12 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
               </div>
             </div>
 
-            {/* When Onlo is handling: Soft indigo banner with Take over button */}
+              {/* Onlo is transparent assistance; a human participant remains in control. */}
             {activeTab === 'prospects' && activeThread?.handledBy === 'onlo' && (
               <div className="bg-indigo-50/90 border-b border-indigo-100 px-4 py-2 flex items-center justify-between gap-3 text-xs text-indigo-900 shrink-0">
                 <div className="flex items-center gap-2">
                   <OnloAvatar size={22} variant="avatar" state="idle" title="Onlo is active" className="shrink-0" />
-                  <span>
-                    Onlo is answering for <span className="font-bold">{tenantName}</span>. Take over to reply yourself.
-                  </span>
+                  <span>{locale === 'pl' ? 'Onlo dodał odpowiedź asystenta AI. Uczestnicy nadal kontrolują rozmowę.' : 'Onlo added an AI assistant reply. The participants remain in control.'}</span>
                 </div>
                 {(isTenant || isLandlord) && (
                   <button
@@ -721,18 +727,18 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     onClick={handleTakeOver}
                     className="text-xs font-bold px-3 py-1 rounded-full bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow-2xs transition-colors cursor-pointer shrink-0"
                   >
-                    Take over
+                    {locale === 'pl' ? 'Odpowiadaj samodzielnie' : 'Reply myself'}
                   </button>
                 )}
               </div>
             )}
 
-            {/* When Human is handling: Soft slate banner with Hand back to Onlo button */}
+            {/* Onlo replies only when a participant explicitly asks. */}
             {activeTab === 'prospects' && activeThread && activeThread.handledBy !== 'onlo' && (
               <div className="bg-slate-50 border-b border-slate-200/80 px-4 py-2 flex items-center justify-between gap-3 text-xs text-slate-700 shrink-0">
                 <div className="flex items-center gap-2">
                   <OnloAvatar size={22} variant="avatar" state="away" title="Onlo is away (human took over)" className="shrink-0" />
-                  <span>You are answering. Hand back to Onlo to handle incoming questions automatically.</span>
+                  <span>{locale === 'pl' ? 'Odpowiadasz samodzielnie. Możesz poprosić Onlo o przejrzystą odpowiedź na ostatnią wiadomość.' : 'You are replying yourself. You can ask Onlo for a transparent answer to the latest message.'}</span>
                 </div>
                 {(isTenant || isLandlord) && (
                   <button
@@ -741,7 +747,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     disabled={isHelperLoading}
                     className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white border border-slate-300 text-indigo-600 hover:bg-indigo-50 shadow-2xs transition-colors cursor-pointer shrink-0"
                   >
-                    {isHelperLoading ? 'Connecting...' : 'Hand back to Onlo'}
+                    {isHelperLoading ? (locale === 'pl' ? 'Onlo sprawdza…' : 'Onlo is checking…') : (locale === 'pl' ? 'Poproś Onlo' : 'Ask Onlo')}
                   </button>
                 )}
               </div>
@@ -812,7 +818,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                         {isOnlo && (
                           <div className="flex items-center gap-2 text-[12px] font-semibold text-indigo-700 mb-1.5 px-1">
                             <OnloAvatar size={20} variant="avatar" state="idle" className="shrink-0 shadow-xs" />
-                            <span>Onlo for <span className="font-bold">{tenantName}</span> · {locale === 'pl' ? 'Lokalny przewodnik' : 'Local Guide'}</span>
+                            <span>Onlo · {locale === 'pl' ? 'Asystent mieszkaniowy AI' : 'AI housing assistant'}</span>
                           </div>
                         )}
 
@@ -915,6 +921,11 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
             {/* 3. Composer (Always docked at the bottom, never covered by any floating panel) */}
             <div className="p-3 sm:p-4 border-t border-slate-200/90 bg-white space-y-2.5 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {composerStatus && (
+                <StatusMessage tone={composerStatus.tone} title={composerStatus.tone === 'error' ? (locale === 'pl' ? 'Nie wysłano' : 'Not sent') : undefined}>
+                  {composerStatus.message}
+                </StatusMessage>
+              )}
               {/* Inquiry helpers stay collapsed until requested and never act on the private room. */}
               {activeTab === 'prospects' && (
                 <div className="text-xs space-y-2">
@@ -956,7 +967,9 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
 
               {/* Pill input with round indigo send button */}
               <form onSubmit={handleSend} className="flex items-center gap-2">
+                <label htmlFor="conversation-message" className="sr-only">{locale === 'pl' ? 'Wiadomość' : 'Message'}</label>
                 <input
+                  id="conversation-message"
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
@@ -970,7 +983,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                 <button
                   type="submit"
                   disabled={!inputText.trim() || isSending}
-                  className="w-9 h-9 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-colors shadow-2xs shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-busy={isSending}
+                  className="w-11 h-11 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-colors shadow-2xs shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                   aria-label="Send message"
                 >
                   <Send className="w-4 h-4" />

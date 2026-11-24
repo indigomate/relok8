@@ -1,6 +1,7 @@
 import { internalMutation } from './_generated/server';
 import { queueEmailDelivery } from './emails';
 import { appOrigin } from './lib/appUrl';
+import { v } from 'convex/values';
 
 const DAY_MS = 86_400_000;
 
@@ -39,50 +40,74 @@ function keyPart(value: unknown): string {
   return String(value).replace(/[^A-Za-z0-9_.-]/g, '_').slice(0, 180);
 }
 
+async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minimumAgeMs: number): Promise<number> {
+  const thread = threadRow.data || {};
+  const stale = now - 7 * DAY_MS;
+  if (
+    !Array.isArray(thread.unreadFor) ||
+    !thread.unreadFor.length ||
+    typeof thread.lastMessageAt !== 'number' ||
+    thread.lastMessageAt > now - minimumAgeMs ||
+    thread.lastMessageAt < stale
+  ) return 0;
+
+  const messages = (await ctx.db.query('domainRecords').withIndex('by_kind', (q: any) => q.eq('kind', 'message')).collect())
+    .filter((row: any) => row.data?.threadId === threadRow.key && typeof row.data?.createdAt === 'number');
+  const leaseId = threadRow.placeId ? ctx.db.normalizeId('leases', threadRow.placeId) : null;
+  const lease = leaseId ? await ctx.db.get(leaseId) : null;
+  const readAtByUser = thread.readAtByUser && typeof thread.readAtByUser === 'object' ? thread.readAtByUser : {};
+  let queued = 0;
+
+  for (const userId of thread.unreadFor) {
+    if (typeof userId !== 'string') continue;
+    const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', userId)).unique();
+    if (!profile?.email || profile.emailUnreadMessages === false) continue;
+    const readAt = typeof readAtByUser[userId] === 'number' ? readAtByUser[userId] : 0;
+    const unread = messages.filter((row: any) => row.data.authorId !== userId && row.data.createdAt > readAt);
+    if (!unread.length) continue;
+    const latest = unread.sort((left: any, right: any) => right.data.createdAt - left.data.createdAt)[0]?.data;
+    const senderProfile = latest?.authorId && latest.authorId !== 'onlo'
+      ? await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', latest.authorId)).unique()
+      : null;
+    const locale = emailLocale(profile.locale);
+    const result = await queueEmailDelivery(ctx, {
+      idempotencyKey: `unread-message:${keyPart(threadRow.key)}:${keyPart(userId)}:${readAt}`,
+      userId,
+      recipient: profile.email,
+      template: 'unread_message',
+      locale,
+      templateData: {
+        recipientName: profile.fullName,
+        actorName: latest?.authorName || senderProfile?.fullName || (latest?.authorId === 'onlo' ? 'Onlo' : undefined),
+        listingTitle: lease?.title || (locale === 'pl' ? 'ogłoszenia Relok8' : 'a Relok8 listing'),
+        count: unread.length,
+        ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/messages?thread=${encodeURIComponent(threadRow.key)}`,
+      },
+      relatedId: threadRow.key,
+      scheduleDelivery: !profile.email.endsWith('.test'),
+    });
+    if (result.created) queued += 1;
+  }
+  return queued;
+}
+
+export const queueThreadMessageNotifications = internalMutation({
+  args: { threadId: v.string() },
+  handler: async (ctx, args) => {
+    const threadRow = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', args.threadId)).unique();
+    if (!threadRow) return { queued: 0 };
+    return { queued: await queueUnreadForThread(ctx, threadRow, Date.now(), 2 * 60_000) };
+  },
+});
+
 export const queueUnreadMessageSummaries = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    const cutoff = now - 30 * 60_000;
-    const stale = now - 7 * DAY_MS;
     const threads = await ctx.db.query('domainRecords').withIndex('by_kind', (q) => q.eq('kind', 'thread')).collect();
-    const messages = await ctx.db.query('domainRecords').withIndex('by_kind', (q) => q.eq('kind', 'message')).collect();
-    const profiles = await ctx.db.query('profiles').collect();
-    const profilesByUser = new Map(profiles.map((profile) => [profile.userId, profile]));
-    const leases = await ctx.db.query('leases').collect();
-    const leasesById = new Map(leases.map((lease) => [String(lease._id), lease]));
     let queued = 0;
-
     for (const threadRow of threads) {
-      const thread = threadRow.data || {};
-      if (!Array.isArray(thread.unreadFor) || !thread.unreadFor.length || typeof thread.lastMessageAt !== 'number' || thread.lastMessageAt > cutoff || thread.lastMessageAt < stale) continue;
-      const lease = threadRow.placeId ? leasesById.get(String(threadRow.placeId)) : undefined;
-      const readAtByUser = thread.readAtByUser && typeof thread.readAtByUser === 'object' ? thread.readAtByUser : {};
-      for (const userId of thread.unreadFor) {
-        if (typeof userId !== 'string') continue;
-        const profile = profilesByUser.get(userId);
-        if (!profile?.email || profile.emailUnreadMessages === false) continue;
-        const readAt = typeof readAtByUser[userId] === 'number' ? readAtByUser[userId] : stale;
-        const count = messages.filter((row) => row.data?.threadId === threadRow.key && row.data?.authorId !== userId && typeof row.data?.createdAt === 'number' && row.data.createdAt > readAt).length;
-        if (!count) continue;
-        const locale = emailLocale(profile.locale);
-        const result = await queueEmailDelivery(ctx, {
-          idempotencyKey: `unread-message:${keyPart(threadRow.key)}:${keyPart(userId)}:${thread.lastMessageAt}`,
-          userId,
-          recipient: profile.email,
-          template: 'unread_message',
-          locale,
-          templateData: {
-            recipientName: profile.fullName,
-            listingTitle: lease?.title || (locale === 'pl' ? 'ogłoszenia Relok8' : 'a Relok8 listing'),
-            count,
-            ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/messages?thread=${encodeURIComponent(threadRow.key)}`,
-          },
-          relatedId: threadRow.key,
-          scheduleDelivery: !profile.email.endsWith('.test'),
-        });
-        if (result.created) queued += 1;
-      }
+      queued += await queueUnreadForThread(ctx, threadRow, now, 30 * 60_000);
     }
     return { queued };
   },

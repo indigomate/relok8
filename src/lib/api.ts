@@ -9,7 +9,7 @@ export const createOrGetThread = (placeId: string): Promise<Thread> => write('cr
 export const getThreadMessages = async (threadId: string): Promise<Message[]> => { const messages = await read('messages', { threadId }); await write('markThreadRead', { threadId }).catch(() => {}); return messages; };
 export const sendThreadMessage = (threadId: string, body: string): Promise<{ message: Message; thread: Thread; onloReply?: Message }> => write('sendMessage', { threadId, body });
 export const takeOverThread = (threadId: string): Promise<Thread> => write('takeover', { threadId });
-export const askOnloNow = (threadId: string): Promise<{ reply: Message; thread: Thread }> => write('askOnlo', { threadId });
+export const askOnloNow = (threadId: string, locale: 'en' | 'pl' = 'en'): Promise<{ reply: Message; thread: Thread }> => backend().action((api as any).services.threadAssistant, { threadId, locale });
 export const getPlaceRoomMessages = (placeId: string): Promise<Message[]> => read('roomMessages', { placeId });
 export const sendPlaceRoomMessage = (placeId: string, body: string): Promise<Message> => write('roomMessage', { placeId, body });
 export const onloSuggestReply = (threadId: string): Promise<string> => backend().action(api.services.helper, { action: 'suggest', threadId });

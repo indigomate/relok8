@@ -340,10 +340,10 @@ function contentFor(kind: EmailTemplateKind, locale: EmailLocale, data: EmailTem
       return {
         category: 'product',
         eyebrow: pick(locale, 'New message', 'Nowa wiadomość'),
-        subject: pick(locale, `New message about ${d.listingTitle}`, `Nowa wiadomość: ${d.listingTitle}`),
+        subject: pick(locale, `${d.actorName || 'Someone'} messaged you · ${d.listingTitle}`, `${d.actorName || 'Ktoś'} napisał(a) do Ciebie · ${d.listingTitle}`),
         preheader: pick(locale, `You have ${d.count} unread messages in Relok8.`, `Masz ${d.count} nieprzeczytane wiadomości w Relok8.`),
         title: pick(locale, 'A conversation is waiting', 'Czeka na Ciebie rozmowa'),
-        intro: `${hello} ${pick(locale, `You have ${d.count} unread ${d.count === 1 ? 'message' : 'messages'} in the conversation about ${d.listingTitle}.`, `Masz ${d.count} nieprzeczytane wiadomości w rozmowie dotyczącej ${d.listingTitle}.`)}`,
+        intro: `${hello} ${pick(locale, `${d.actorName || 'Someone'} sent you ${d.count === 1 ? 'a message' : `${d.count} messages`} in the conversation about ${d.listingTitle}.`, `${d.actorName || 'Ktoś'} wysłał(a) Ci ${d.count === 1 ? 'wiadomość' : `${d.count} wiadomości`} w rozmowie dotyczącej ${d.listingTitle}.`)}`,
         ctaLabel: pick(locale, 'Open Messages', 'Otwórz Wiadomości'),
         ctaUrl,
         notice: pick(locale, 'For privacy, message content is available only after you sign in to Relok8.', 'Ze względu na prywatność treść wiadomości jest dostępna dopiero po zalogowaniu do Relok8.'),

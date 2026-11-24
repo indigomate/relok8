@@ -32,11 +32,16 @@ async function profileForUser(ctx: any, userId: string) {
 }
 
 export const syncAccount = mutation({
-  args: { locale: v.union(v.literal('en'), v.literal('pl')) },
+  args: {
+    locale: v.union(v.literal('en'), v.literal('pl')),
+    fullName: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     if (identity.emailVerified !== true || !identity.email) return { synced: false };
-    const contact = await rememberEmailContact(ctx, identity, args.locale);
+    const fullName = args.fullName?.trim();
+    if (fullName && fullName.length > 150) throw new Error('Name is too long');
+    const contact = await rememberEmailContact(ctx, identity, args.locale, fullName);
     if (!contact) return { synced: false };
     const profile = await profileForUser(ctx, identity.subject);
     if (!profile) return { synced: false };

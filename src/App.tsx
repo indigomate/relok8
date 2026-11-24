@@ -256,8 +256,12 @@ function Relok8App() {
   const remoteFavorites = useQuery(api.favorites.getUserFavorites, isBackendAuthenticated && currentUser ? { userId: currentUser.id } : "skip");
   useEffect(() => {
     if (!isBackendAuthenticated || !currentUser?.email) return;
-    syncEmailAccount({ locale: locale === 'pl' ? 'pl' : 'en' }).catch(() => {});
-  }, [currentUser?.email, isBackendAuthenticated, locale, syncEmailAccount]);
+    const verifiedProfileName = clerkUser?.fullName || [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ') || undefined;
+    syncEmailAccount({
+      locale: locale === 'pl' ? 'pl' : 'en',
+      ...(verifiedProfileName ? { fullName: verifiedProfileName } : {}),
+    }).catch(() => {});
+  }, [currentUser?.email, clerkUser?.firstName, clerkUser?.fullName, clerkUser?.lastName, isBackendAuthenticated, locale, syncEmailAccount]);
   useEffect(() => { if (remoteFavorites) setSavedIds(remoteFavorites); }, [remoteFavorites]);
 
   useEffect(() => {

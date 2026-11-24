@@ -79,6 +79,13 @@ describe('support delivery', () => {
 });
 
 describe('private messaging and invitations', () => {
+  test('an inquiry requires a real profile name', async () => {
+    const { t, owner } = setup();
+    const unnamed = t.withIdentity({ subject: 'unnamed', issuer: 'https://clerk.example.test', email: 'unnamed@example.test', emailVerified: true });
+    const placeId = await owner.mutation(api.leases.create, listing);
+    await expect(write(unnamed, 'createThread', { placeId })).rejects.toThrow('Add your first and last name');
+  });
+
   test('listing participants receive an actionable self-message error', async () => {
     const { owner, landlord } = setup();
     const placeId = await owner.mutation(api.leases.create, listing);

@@ -76,6 +76,8 @@ export const getPreferences = query({
       maxMonthlyRent: subscription.maxMonthlyRent,
       locale: subscription.locale,
       sendHourLocal: subscription.sendHourLocal,
+      dailyDigestEnabled: subscription.dailyDigestEnabled !== false,
+      messageNotificationsEnabled: subscription.messageNotificationsEnabled === true,
       timeZone: subscription.timeZone,
       active: subscription.active,
       consentedAt: subscription.consentedAt,
@@ -93,6 +95,8 @@ export const configurePreferences = mutation({
     locale: v.union(v.literal('en'), v.literal('pl')),
     sendHourLocal: v.number(),
     consent: v.boolean(),
+    dailyDigestEnabled: v.optional(v.boolean()),
+    messageNotificationsEnabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
@@ -110,6 +114,9 @@ export const configurePreferences = mutation({
       .query('whatsappSubscriptions')
       .withIndex('by_user', (q) => q.eq('userId', identity.subject))
       .unique();
+    const dailyDigestEnabled = args.dailyDigestEnabled ?? existing?.dailyDigestEnabled ?? true;
+    const messageNotificationsEnabled = args.messageNotificationsEnabled ?? existing?.messageNotificationsEnabled ?? false;
+    if (!dailyDigestEnabled && !messageNotificationsEnabled) throw new Error('Choose at least one WhatsApp notification type');
     const phoneE164 = args.phoneE164?.trim()
       ? normalizeE164(args.phoneE164)
       : existing?.phoneE164;
@@ -131,6 +138,8 @@ export const configurePreferences = mutation({
       locale: args.locale,
       timeZone: DEFAULT_TIME_ZONE,
       sendHourLocal: args.sendHourLocal,
+      dailyDigestEnabled,
+      messageNotificationsEnabled,
       active: true,
       consentVersion: CONSENT_VERSION,
       consentedAt: now,
@@ -194,11 +203,12 @@ export const queueDueDigests = internalMutation({
     let queued = 0;
 
     for (const subscription of subscriptions) {
+      if (subscription.dailyDigestEnabled === false) continue;
       const local = localScheduleParts(now, subscription.timeZone);
       if (local.hour !== subscription.sendHourLocal) continue;
       const existing = await ctx.db
         .query('whatsappDeliveries')
-        .withIndex('by_subscription_date', (q) => q.eq('subscriptionId', subscription._id).eq('digestDate', local.date))
+        .withIndex('by_subscription_kind_date', (q) => q.eq('subscriptionId', subscription._id).eq('kind', 'daily_apartment_digest').eq('digestDate', local.date))
         .unique();
       if (existing) continue;
 
@@ -237,17 +247,70 @@ export const queueDueDigests = internalMutation({
   },
 });
 
+export const queueThreadMessageNotifications = internalMutation({
+  args: { threadId: v.string(), scheduleDelivery: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const threadRow = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', args.threadId)).unique();
+    const thread = threadRow?.data || {};
+    if (!threadRow || !Array.isArray(thread.unreadFor) || !thread.unreadFor.length || typeof thread.lastMessageAt !== 'number' || thread.lastMessageAt > Date.now() - 2 * 60_000) return { queued: 0 };
+    const messages = (await ctx.db.query('domainRecords').withIndex('by_kind', (q) => q.eq('kind', 'message')).collect())
+      .filter((row) => row.data?.threadId === threadRow.key && typeof row.data?.createdAt === 'number');
+    const leaseId = threadRow.placeId ? ctx.db.normalizeId('leases', threadRow.placeId) : null;
+    const lease = leaseId ? await ctx.db.get(leaseId) : null;
+    const readAtByUser = thread.readAtByUser && typeof thread.readAtByUser === 'object' ? thread.readAtByUser : {};
+    let queued = 0;
+
+    for (const userId of thread.unreadFor) {
+      if (typeof userId !== 'string') continue;
+      const subscription = await ctx.db.query('whatsappSubscriptions').withIndex('by_user', (q) => q.eq('userId', userId)).unique();
+      if (!subscription?.active || subscription.messageNotificationsEnabled !== true) continue;
+      const readAt = typeof readAtByUser[userId] === 'number' ? readAtByUser[userId] : 0;
+      const unread = messages.filter((row) => row.data.authorId !== userId && row.data.createdAt > readAt)
+        .sort((left, right) => right.data.createdAt - left.data.createdAt);
+      if (!unread.length) continue;
+      const latest = unread[0].data;
+      const senderProfile = latest.authorId && latest.authorId !== 'onlo'
+        ? await ctx.db.query('profiles').withIndex('by_userId', (q) => q.eq('userId', latest.authorId)).unique()
+        : null;
+      const deliveryKey = `new-message:${threadRow.key}:${userId}:${readAt}`;
+      const existing = await ctx.db.query('whatsappDeliveries')
+        .withIndex('by_subscription_delivery_key', (q) => q.eq('subscriptionId', subscription._id).eq('deliveryKey', deliveryKey))
+        .unique();
+      if (existing) continue;
+      const now = Date.now();
+      const deliveryId = await ctx.db.insert('whatsappDeliveries', {
+        subscriptionId: subscription._id,
+        userId,
+        kind: 'new_message',
+        deliveryKey,
+        threadId: threadRow.key,
+        senderName: latest.authorName || senderProfile?.fullName || (latest.authorId === 'onlo' ? 'Onlo' : 'Relok8 member'),
+        listingTitle: lease?.title || 'Relok8 listing',
+        digestDate: localScheduleParts(now, subscription.timeZone).date,
+        listingIds: lease ? [String(lease._id)] : [],
+        status: 'queued',
+        attempts: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+      if (args.scheduleDelivery !== false) await ctx.scheduler.runAfter(0, internal.whatsapp.sendDelivery, { deliveryId });
+      queued += 1;
+    }
+    return { queued };
+  },
+});
+
 export const getDeliveryContext = internalQuery({
   args: { deliveryId: v.id('whatsappDeliveries') },
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
     if (!delivery) return null;
     const subscription = await ctx.db.get(delivery.subscriptionId);
-    if (!subscription || !subscription.active) return null;
+    if (!subscription || !subscription.active || (delivery.kind === 'new_message' && subscription.messageNotificationsEnabled !== true)) return null;
     const listings: Doc<'leases'>[] = [];
     for (const id of delivery.listingIds) {
       const listing = await ctx.db.get(id as Id<'leases'>);
-      if (listing && listing.status === 'AVAILABLE' && !leaseHasEnded(listing.leaseEndDate)) listings.push(listing);
+      if (listing && (delivery.kind === 'new_message' || (listing.status === 'AVAILABLE' && !leaseHasEnded(listing.leaseEndDate)))) listings.push(listing);
     }
     return { delivery, subscription, listings };
   },
@@ -271,7 +334,7 @@ export const recordSent = internalMutation({
     if (!delivery) return;
     const now = Date.now();
     await ctx.db.patch(delivery._id, { status: 'sent', providerMessageId: args.providerMessageId, sentAt: now, updatedAt: now });
-    await ctx.db.patch(delivery.subscriptionId, { lastDigestAt: now, updatedAt: now });
+    if (delivery.kind === 'daily_apartment_digest') await ctx.db.patch(delivery.subscriptionId, { lastDigestAt: now, updatedAt: now });
   },
 });
 
@@ -296,7 +359,7 @@ export const sendDelivery = internalAction({
     const attempt = await ctx.runMutation(internal.whatsapp.markSending, args);
     if (!attempt) return;
     const context = await ctx.runQuery(internal.whatsapp.getDeliveryContext, args);
-    if (!context || !context.listings.length) {
+    if (!context || (context.delivery.kind === 'daily_apartment_digest' && !context.listings.length)) {
       await ctx.runMutation(internal.whatsapp.recordFailure, { ...args, errorCode: 'NO_ACTIVE_MATCHES', errorMessage: 'No active listings remained at send time' });
       return;
     }
@@ -307,19 +370,33 @@ export const sendDelivery = internalAction({
       const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
       const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
       const graphVersion = process.env.WHATSAPP_GRAPH_VERSION;
-      const templateName = context.subscription.locale === 'pl'
-        ? process.env.WHATSAPP_DAILY_TEMPLATE_PL
-        : process.env.WHATSAPP_DAILY_TEMPLATE_EN;
+      const templateName = context.delivery.kind === 'new_message'
+        ? (context.subscription.locale === 'pl' ? process.env.WHATSAPP_MESSAGE_TEMPLATE_PL : process.env.WHATSAPP_MESSAGE_TEMPLATE_EN)
+        : (context.subscription.locale === 'pl' ? process.env.WHATSAPP_DAILY_TEMPLATE_PL : process.env.WHATSAPP_DAILY_TEMPLATE_EN);
       if (!accessToken || !phoneNumberId || !graphVersion || !templateName || !/^v\d+\.\d+$/.test(graphVersion)) {
         errorCode = 'CONFIGURATION_MISSING';
         throw new Error('WhatsApp Cloud API environment variables are incomplete');
       }
 
+      const appOrigin = (process.env.PUBLIC_APP_URL || 'https://relok8.online').replace(/\/$/, '');
       const summary = context.listings.map((listing, index) =>
         `${index + 1}. ${listing.title.slice(0, 80)} — ${Math.round(totalMonthlyCost(listing))} PLN, ${listing.city}`
       ).join('\n').slice(0, 900);
-      const appOrigin = (process.env.PUBLIC_APP_URL || 'https://relok8.online').replace(/\/$/, '');
-      const firstListingUrl = `${appOrigin}/listing/${context.listings[0]._id}`;
+      const firstListingUrl = context.listings[0] ? `${appOrigin}/listing/${context.listings[0]._id}` : appOrigin;
+      const localePrefix = context.subscription.locale === 'pl' ? '/pl' : '';
+      const bodyParameters = context.delivery.kind === 'new_message'
+        ? [
+          { type: 'text', text: context.subscription.displayName || (context.subscription.locale === 'pl' ? 'Cześć' : 'there') },
+          { type: 'text', text: context.delivery.senderName || 'Relok8 member' },
+          { type: 'text', text: context.delivery.listingTitle || 'Relok8 listing' },
+          { type: 'text', text: `${appOrigin}${localePrefix}/messages?thread=${encodeURIComponent(context.delivery.threadId || '')}` },
+        ]
+        : [
+          { type: 'text', text: context.subscription.displayName || (context.subscription.locale === 'pl' ? 'Cześć' : 'there') },
+          { type: 'text', text: String(context.listings.length) },
+          { type: 'text', text: summary },
+          { type: 'text', text: firstListingUrl },
+        ];
       const response = await fetch(`https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -333,12 +410,7 @@ export const sendDelivery = internalAction({
             language: { code: context.subscription.locale === 'pl' ? 'pl' : 'en_US' },
             components: [{
               type: 'body',
-              parameters: [
-                { type: 'text', text: context.subscription.displayName || (context.subscription.locale === 'pl' ? 'Cześć' : 'there') },
-                { type: 'text', text: String(context.listings.length) },
-                { type: 'text', text: summary },
-                { type: 'text', text: firstListingUrl },
-              ],
+              parameters: bodyParameters,
             }],
           },
         }),

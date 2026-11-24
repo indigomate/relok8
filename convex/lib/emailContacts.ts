@@ -16,6 +16,7 @@ export async function rememberEmailContact(
   ctx: MutationCtx,
   identity: { subject: string; email?: string; emailVerified?: boolean; name?: string },
   localeValue?: unknown,
+  preferredName?: unknown,
 ): Promise<EmailContact | null> {
   if (identity.emailVerified !== true || !identity.email) return null;
   const email = identity.email.trim().toLowerCase();
@@ -25,7 +26,8 @@ export async function rememberEmailContact(
     .query('profiles')
     .withIndex('by_userId', (q) => q.eq('userId', identity.subject))
     .first();
-  const name = identity.name?.trim() || existing?.fullName?.trim() || 'Relok8 member';
+  const suppliedName = typeof preferredName === 'string' ? preferredName.trim() : '';
+  const name = suppliedName || identity.name?.trim() || existing?.fullName?.trim() || 'Relok8 member';
   if (existing) {
     await ctx.db.patch(existing._id, { email, fullName: name, locale });
   } else {

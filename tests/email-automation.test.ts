@@ -148,6 +148,29 @@ describe('email automation and consent', () => {
     expect(deliveries.some((row) => row.template === 'unread_message')).toBe(true);
   });
 
+  test('queues one private email alert per unread cycle and names the sender without copying message content', async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity(identity('message-owner'));
+    const prospect = t.withIdentity(identity('message-prospect'));
+    const emailApi = (api as any).emailPreferences;
+    await owner.mutation(emailApi.syncAccount, { locale: 'en', fullName: 'Olivia Owner' });
+    await prospect.mutation(emailApi.syncAccount, { locale: 'en', fullName: 'Peter Prospect' });
+    const leaseId = await owner.mutation((api as any).leases.create, listing());
+    const thread = await prospect.mutation((api as any).domain.write, { operation: 'createThread', input: { placeId: leaseId } });
+    const privateBody = 'My private viewing details are 18:30 on Tuesday.';
+    await prospect.mutation((api as any).domain.write, { operation: 'sendMessage', input: { threadId: thread.id, body: privateBody } });
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', thread.id)).unique();
+      await ctx.db.patch(row!._id, { data: { ...row!.data, lastMessageAt: Date.now() - 3 * 60_000 } });
+    });
+    const automation = (internal as any).emailAutomation;
+    expect((await t.mutation(automation.queueThreadMessageNotifications, { threadId: thread.id })).queued).toBe(1);
+    expect((await t.mutation(automation.queueThreadMessageNotifications, { threadId: thread.id })).queued).toBe(0);
+    const delivery = (await t.run((ctx) => ctx.db.query('emailDeliveries').collect())).find((row) => row.template === 'unread_message');
+    expect(delivery?.templateData).toMatchObject({ actorName: 'Peter Prospect', listingTitle: 'Warsaw test studio', count: 1 });
+    expect(JSON.stringify(delivery?.templateData)).not.toContain(privateBody);
+  });
+
   test('Resend events are idempotent and complaints suppress the address', async () => {
     const t = convexTest(schema, modules);
     const deliveryId = (await t.mutation((internal as any).emails.queue, {

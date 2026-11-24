@@ -95,4 +95,31 @@ describe('WhatsApp apartment alerts', () => {
     });
     expect((await a.query(api.whatsapp.getPreferences, {}))?.active).toBe(true);
   });
+
+  test('new-message alerts require explicit opt-in, deduplicate, and never store the message body', async () => {
+    const t = convexTest(schema, modules);
+    const owner = t.withIdentity(identity('message-owner'));
+    const prospect = t.withIdentity(identity('message-prospect'));
+    const leaseId = await owner.mutation(api.leases.create, listing);
+    await owner.mutation(api.whatsapp.configurePreferences, {
+      ...preferences,
+      phoneE164: '+48 987 654 321',
+      dailyDigestEnabled: false,
+      messageNotificationsEnabled: true,
+    });
+    const thread = await prospect.mutation((api as any).domain.write, { operation: 'createThread', input: { placeId: leaseId } });
+    const privateBody = 'Please call me about private documents.';
+    await prospect.mutation((api as any).domain.write, { operation: 'sendMessage', input: { threadId: thread.id, body: privateBody } });
+    await t.run(async (ctx) => {
+      const row = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', thread.id)).unique();
+      await ctx.db.patch(row!._id, { data: { ...row!.data, lastMessageAt: Date.now() - 3 * 60_000 } });
+    });
+    const whatsapp = (internal as any).whatsapp;
+    expect((await t.mutation(whatsapp.queueThreadMessageNotifications, { threadId: thread.id, scheduleDelivery: false })).queued).toBe(1);
+    expect((await t.mutation(whatsapp.queueThreadMessageNotifications, { threadId: thread.id, scheduleDelivery: false })).queued).toBe(0);
+    const deliveries = await t.run((ctx) => ctx.db.query('whatsappDeliveries').collect());
+    expect(deliveries).toHaveLength(1);
+    expect(deliveries[0]).toMatchObject({ kind: 'new_message', senderName: 'User message-prospect', listingTitle: 'New Warsaw studio' });
+    expect(JSON.stringify(deliveries[0])).not.toContain(privateBody);
+  });
 });

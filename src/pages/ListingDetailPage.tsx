@@ -14,6 +14,7 @@ import { EarlyLockModal } from '../components/EarlyLockModal';
 import { AIProxyChatModal } from '../components/AIProxyChatModal';
 import { OnloAvatar } from '../components/OnloAvatar';
 import { useConvex } from '../lib/convex/client';
+import { StatusMessage } from '../components/ui/StatusMessage';
 
 interface ListingDetailPageProps {
   openComposer?: boolean;
@@ -55,6 +56,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
   const [isContactModalOpen, setIsContactModalOpen] = useState(openComposer);
   const [inquiryText, setInquiryText] = useState('');
   const [inquiryPending,setInquiryPending]=useState(false);
+  const [inquiryError, setInquiryError] = useState('');
 
   const convex = useConvex();
   const convexDoc = convex.db.listings.find((l) => l._id === listing.id);
@@ -83,6 +85,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       return;
     }
     if(inquiryPending)return;
+    setInquiryError('');
     setInquiryPending(true);
     const finalMessage = inquiryText.trim() || `Hi ${tenant.name}, I am interested in your listing on ${listing.address}. Could we confirm the occupancy, proposed takeover date (${formatDate(listing.availableDate, locale)}) and arrange a viewing?`;
     try {
@@ -92,7 +95,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       return;
     } catch (error: any) {
       setInquiryPending(false);
-      window.alert(typeof error.data === 'string' ? error.data : 'Could not send your message. Please try again.');
+      setInquiryError(typeof error.data === 'string' ? error.data : error instanceof Error ? error.message : 'Could not send your message. Please try again.');
       return;
     }
   };
@@ -532,14 +535,30 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             <p className="text-xs text-slate-500">
               Coordinate a viewing or introduce yourself for the takeover on {listing.address}.
             </p>
+            {currentUser && (
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 px-3 py-2.5 text-xs text-slate-700">
+                <span className="font-bold text-slate-900">Sending as {currentUser.name}</span>
+                <span className="mt-1 block">Your profile name is visible only to authorized participants in this conversation.</span>
+              </div>
+            )}
             <form onSubmit={handleSendInquiry} className="space-y-4">
+              <label htmlFor="listing-inquiry-message" className="block text-xs font-bold text-slate-700">Your message</label>
               <textarea
+                id="listing-inquiry-message"
                 value={inquiryText}
                 onChange={(e) => setInquiryText(e.target.value)}
                 placeholder={`Hi ${tenant.name}, I'm interested in taking over your lease from ${moveInDateFormatted}...`}
                 rows={4}
                 className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600"
               />
+              {inquiryError && (
+                <StatusMessage tone="error" title="Message not sent">
+                  <span>{inquiryError}</span>
+                  {inquiryError.toLowerCase().includes('name') && (
+                    <button type="button" onClick={() => navigateTo(locale === 'pl' ? '/pl/account' : '/account')} className="mt-2 block font-bold underline underline-offset-2">Open Account settings</button>
+                  )}
+                </StatusMessage>
+              )}
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -550,7 +569,8 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
                 </button>
                 <button
                   type="submit" disabled={inquiryPending}
-                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700"
+                  aria-busy={inquiryPending}
+                  className="flex-1 min-h-11 py-2.5 rounded-xl bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {inquiryPending ? 'Sending…' : 'Send Message'}
                 </button>

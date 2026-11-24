@@ -45,6 +45,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const [whatsappMaxRent, setWhatsappMaxRent] = useState('');
   const [whatsappHour, setWhatsappHour] = useState('8');
   const [whatsappConsent, setWhatsappConsent] = useState(false);
+  const [whatsappDigestEnabled, setWhatsappDigestEnabled] = useState(true);
+  const [whatsappMessagesEnabled, setWhatsappMessagesEnabled] = useState(false);
   const [whatsappSaving, setWhatsappSaving] = useState(false);
   const [whatsappStatus, setWhatsappStatus] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
   const [emailUnread, setEmailUnread] = useState(true);
@@ -63,6 +65,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
     setWhatsappMaxRent(whatsappPreferences.maxMonthlyRent ? String(whatsappPreferences.maxMonthlyRent) : '');
     setWhatsappHour(String(whatsappPreferences.sendHourLocal));
     setWhatsappConsent(whatsappPreferences.active);
+    setWhatsappDigestEnabled(whatsappPreferences.dailyDigestEnabled !== false);
+    setWhatsappMessagesEnabled(whatsappPreferences.messageNotificationsEnabled === true);
   }, [whatsappPreferences]);
 
   useEffect(() => {
@@ -117,13 +121,15 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
         locale: locale === 'pl' ? 'pl' : 'en',
         sendHourLocal: Number(whatsappHour),
         consent: whatsappConsent,
+        dailyDigestEnabled: whatsappDigestEnabled,
+        messageNotificationsEnabled: whatsappMessagesEnabled,
       });
       setWhatsappPhone('');
       setWhatsappStatus({
         kind: 'success',
         message: locale === 'pl'
-          ? 'Zapisano codzienny alert WhatsApp.'
-          : 'Your daily WhatsApp alert is saved.',
+          ? 'Zapisano wybrane powiadomienia WhatsApp.'
+          : 'Your WhatsApp notification choices are saved.',
       });
     } catch (error) {
       setWhatsappStatus({
@@ -451,12 +457,12 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 </div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">
-                      {locale === 'pl' ? 'Codzienny przegląd WhatsApp' : 'Daily WhatsApp apartment digest'}
+                      {locale === 'pl' ? 'Powiadomienia WhatsApp' : 'WhatsApp notifications'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                       {locale === 'pl'
-                        ? 'Otrzymuj raz dziennie nowe pokoje pasujące do miasta, budżetu i typu lokalu.'
-                        : 'Receive one daily message with new rooms matching your city, budget, and room type.'}
+                        ? 'Wybierz codzienny przegląd mieszkań, powiadomienia o nowych wiadomościach lub oba.'
+                        : 'Choose a daily apartment digest, new-message notifications, or both.'}
                     </p>
                   </div>
                 </div>
@@ -479,6 +485,17 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 </div>
               ) : (
                 <form onSubmit={handleWhatsappSave} className="space-y-4">
+                  <fieldset className="space-y-2">
+                    <legend className="text-xs font-bold text-slate-700">{locale === 'pl' ? 'Co wysyłać' : 'What to send'}</legend>
+                    <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 p-3 cursor-pointer">
+                      <input type="checkbox" checked={whatsappMessagesEnabled} onChange={(event) => setWhatsappMessagesEnabled(event.target.checked)} className="mt-0.5 w-4 h-4 accent-indigo-600" />
+                      <span><span className="block text-xs font-bold text-slate-800">{locale === 'pl' ? 'Nowe wiadomości' : 'New messages'}</span><span className="mt-0.5 block text-[11px] leading-4 text-slate-500">{locale === 'pl' ? 'Wyślemy nazwę nadawcy, nazwę ogłoszenia i bezpieczny link. Treść rozmowy pozostaje w Relok8.' : 'We send the sender name, listing name, and a secure link. Message content stays inside Relok8.'}</span></span>
+                    </label>
+                    <label className="flex items-start gap-2.5 rounded-xl border border-slate-200 p-3 cursor-pointer">
+                      <input type="checkbox" checked={whatsappDigestEnabled} onChange={(event) => setWhatsappDigestEnabled(event.target.checked)} className="mt-0.5 w-4 h-4 accent-indigo-600" />
+                      <span><span className="block text-xs font-bold text-slate-800">{locale === 'pl' ? 'Codzienny przegląd mieszkań' : 'Daily apartment digest'}</span><span className="mt-0.5 block text-[11px] leading-4 text-slate-500">{locale === 'pl' ? 'Jedna wiadomość dziennie z nowymi ofertami pasującymi do filtrów.' : 'One daily message with new listings matching your filters.'}</span></span>
+                    </label>
+                  </fieldset>
                   <div>
                     <label htmlFor="whatsapp-phone" className="block text-xs font-bold text-slate-700 mb-1.5">
                       {locale === 'pl' ? 'Numer WhatsApp' : 'WhatsApp number'}
@@ -498,7 +515,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                  {whatsappDigestEnabled && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                     <label className="text-xs font-bold text-slate-700">
                       {locale === 'pl' ? 'Miasto' : 'City'}
                       <select value={whatsappCity} onChange={(event) => setWhatsappCity(event.target.value)} className="mt-1.5 w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600">
@@ -532,14 +549,14 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                         </select>
                       </div>
                     </label>
-                  </div>
+                  </div>}
 
                   <label className="flex items-start gap-2.5 rounded-xl bg-slate-50 border border-slate-200 p-3 cursor-pointer">
                     <input type="checkbox" checked={whatsappConsent} onChange={(event) => setWhatsappConsent(event.target.checked)} className="mt-0.5 w-4 h-4 accent-indigo-600" />
                     <span className="text-[11px] leading-4 text-slate-600">
                       {locale === 'pl'
-                        ? 'Wyrażam zgodę na jeden codzienny alert WhatsApp od Relok8. Mogę w każdej chwili odpowiedzieć STOP lub wyłączyć alert tutaj.'
-                        : 'I agree to receive one daily WhatsApp apartment alert from Relok8. I can reply STOP or pause it here at any time.'}
+                        ? 'Wyrażam zgodę na wybrane powiadomienia WhatsApp od Relok8. Mogę w każdej chwili odpowiedzieć STOP lub wyłączyć je tutaj.'
+                        : 'I agree to receive the selected WhatsApp notifications from Relok8. I can reply STOP or pause them here at any time.'}
                     </span>
                   </label>
 
@@ -550,8 +567,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   )}
 
                   <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
-                    <button type="submit" disabled={whatsappSaving || !whatsappConsent} className="min-h-11 flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer disabled:cursor-not-allowed">
-                      {whatsappSaving ? (locale === 'pl' ? 'Zapisywanie…' : 'Saving…') : whatsappPreferences ? (locale === 'pl' ? 'Zapisz ustawienia' : 'Save settings') : (locale === 'pl' ? 'Włącz codzienny alert' : 'Enable daily alert')}
+                    <button type="submit" disabled={whatsappSaving || !whatsappConsent || (!whatsappDigestEnabled && !whatsappMessagesEnabled)} className="min-h-11 flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer disabled:cursor-not-allowed">
+                      {whatsappSaving ? (locale === 'pl' ? 'Zapisywanie…' : 'Saving…') : whatsappPreferences ? (locale === 'pl' ? 'Zapisz ustawienia' : 'Save settings') : (locale === 'pl' ? 'Włącz powiadomienia' : 'Enable notifications')}
                     </button>
                     {whatsappPreferences?.active && (
                       <button type="button" onClick={handleWhatsappPause} disabled={whatsappSaving} className="min-h-11 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold cursor-pointer">

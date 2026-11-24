@@ -278,6 +278,8 @@ export default defineSchema({
     locale: v.union(v.literal("en"), v.literal("pl")),
     timeZone: v.string(),
     sendHourLocal: v.number(),
+    dailyDigestEnabled: v.optional(v.boolean()),
+    messageNotificationsEnabled: v.optional(v.boolean()),
     active: v.boolean(),
     consentVersion: v.string(),
     consentedAt: v.number(),
@@ -296,7 +298,11 @@ export default defineSchema({
   whatsappDeliveries: defineTable({
     subscriptionId: v.id("whatsappSubscriptions"),
     userId: v.string(),
-    kind: v.union(v.literal("daily_apartment_digest"), v.literal("landlord_approval")),
+    kind: v.union(v.literal("daily_apartment_digest"), v.literal("new_message"), v.literal("landlord_approval")),
+    deliveryKey: v.optional(v.string()),
+    threadId: v.optional(v.string()),
+    senderName: v.optional(v.string()),
+    listingTitle: v.optional(v.string()),
     digestDate: v.string(),
     listingIds: v.array(v.string()),
     status: v.union(
@@ -317,6 +323,8 @@ export default defineSchema({
     sentAt: v.optional(v.number()),
   })
     .index("by_subscription_date", ["subscriptionId", "digestDate"])
+    .index("by_subscription_kind_date", ["subscriptionId", "kind", "digestDate"])
+    .index("by_subscription_delivery_key", ["subscriptionId", "deliveryKey"])
     .index("by_provider_message", ["providerMessageId"])
     .index("by_user", ["userId"])
     .index("by_status", ["status"]),
