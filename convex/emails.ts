@@ -217,6 +217,10 @@ export const deliver = internalAction({
         userId: delivery.userId,
         recipient: delivery.recipient,
       });
+      if (delivery.template === 'unread_message' && !policy.unreadMessagesAllowed) {
+        await ctx.runMutation(internal.emails.markSuppressed, { deliveryId: args.deliveryId, errorCode: 'message_opt_out' });
+        return { sent: false, skipped: true };
+      }
       if (policy.suppressed || (delivery.category === 'marketing' && !policy.marketingAllowed)) {
         await ctx.runMutation(internal.emails.markSuppressed, {
           deliveryId: args.deliveryId,
