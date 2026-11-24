@@ -59,19 +59,24 @@ async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minim
   let queued = 0;
 
   for (const userId of thread.unreadFor) {
-    if (typeof userId !== 'string') continue;
+    if (typeof userId !== 'string' || ![threadRow.ownerId, lease?.ownerId, lease?.landlordUserId].includes(userId)) continue;
     const profile = await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', userId)).unique();
     if (!profile?.email || profile.emailUnreadMessages === false) continue;
     const readAt = typeof readAtByUser[userId] === 'number' ? readAtByUser[userId] : 0;
-    const unread = messages.filter((row: any) => row.data.authorId !== userId && row.data.createdAt > readAt);
+    const unread = messages.filter((row: any) => row.data.authorId !== userId && row.data.authorId !== 'onlo' && row.data.createdAt > readAt);
     if (!unread.length) continue;
     const latest = unread.sort((left: any, right: any) => right.data.createdAt - left.data.createdAt)[0]?.data;
     const senderProfile = latest?.authorId && latest.authorId !== 'onlo'
       ? await ctx.db.query('profiles').withIndex('by_userId', (q: any) => q.eq('userId', latest.authorId)).unique()
       : null;
     const locale = emailLocale(profile.locale);
+    const prior = (await ctx.db.query('emailDeliveries').withIndex('by_user', (q: any) => q.eq('userId', userId)).collect())
+      .filter((delivery: any) => delivery.template === 'unread_message' && delivery.relatedId === threadRow.key)
+      .sort((a: any, b: any) => b.createdAt - a.createdAt)[0];
+    // Coalesce bursts, but allow a later message to notify an inactive recipient.
+    if (prior && (prior.createdAt >= latest.createdAt || now - prior.createdAt < 30 * 60_000)) continue;
     const result = await queueEmailDelivery(ctx, {
-      idempotencyKey: `unread-message:${keyPart(threadRow.key)}:${keyPart(userId)}:${readAt}`,
+      idempotencyKey: `unread-message:${keyPart(threadRow._id)}:${keyPart(profile._id)}:${latest.createdAt}`,
       userId,
       recipient: profile.email,
       template: 'unread_message',
