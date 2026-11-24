@@ -38,7 +38,10 @@ export const syncAccount = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
-    if (identity.emailVerified !== true || !identity.email) return { synced: false };
+    if (identity.emailVerified !== true || !identity.email) {
+      console.warn('Email account sync skipped', { reason: !identity.email ? 'missing_email_claim' : 'unverified_email_claim' });
+      return { synced: false };
+    }
     const fullName = args.fullName?.trim();
     if (fullName && fullName.length > 150) throw new Error('Name is too long');
     const contact = await rememberEmailContact(ctx, identity, args.locale, fullName);
