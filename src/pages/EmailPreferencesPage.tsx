@@ -64,7 +64,7 @@ export function EmailPreferencesPage({ locale, onBack }: { locale: SupportedLoca
 
   const toggle = (key: keyof Preferences) => setPreferences((current) => current ? { ...current, [key]: !current[key] } : current);
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
+    <main className="r8-motion-page min-h-screen bg-slate-50 px-4 py-8 text-slate-900">
       <div className="mx-auto max-w-2xl">
         <button onClick={onBack} className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600"><ArrowLeft className="h-4 w-4"/>{pl ? 'Relok8' : 'Relok8'}</button>
         <form onSubmit={save} className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
