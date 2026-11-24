@@ -794,7 +794,7 @@ function Relok8App() {
   }, [listings, activeCityConfig, searchState.city, searchState.minRent, filterValues, listingToday]);
 
   return (
-    <div className={`${currentRoute.type === 'messages' && isClerkSignedIn ? 'h-dvh min-h-0 overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900`}>
+    <div data-motion={['home', 'city', 'listing-detail', 'how-it-works', 'help', 'leave-your-lease', 'savings-calculator', 'meldunek-guide', 'safety-guide', 'cesja-template'].includes(currentRoute.type) ? 'public' : 'workspace'} className={`r8-motion-app ${currentRoute.type === 'messages' && isClerkSignedIn ? 'h-dvh min-h-0 overflow-hidden' : 'min-h-screen overflow-x-hidden'} w-full bg-white text-slate-900 flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900`}>
       
       {(currentRoute.type === 'home' || currentRoute.type === 'city') && (
         <a className="r8-home-skip" href="#rooms-grid">
