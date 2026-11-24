@@ -84,7 +84,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isHelperLoading, setIsHelperLoading] = useState(false);
-  const [composerStatus, setComposerStatus] = useState<{ tone: 'error' | 'success'; message: string } | null>(null);
+  const [composerStatus, setComposerStatus] = useState<{ tone: 'error' | 'success'; message: string; source?: 'onlo' | 'send' } | null>(null);
 
   // Mobile responsive pane state ('list' vs 'chat')
   const [mobilePane, setMobilePane] = useState<'list' | 'chat'>(initialThreadId ? 'chat' : 'list');
@@ -286,7 +286,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       setInputText(text);
       setComposerStatus({
         tone: 'error',
-        message: typeof err?.data === 'string' ? err.data : (err instanceof Error ? err.message : (locale === 'pl' ? 'Nie wysłano wiadomości. Spróbuj ponownie.' : 'Your message was not sent. Please try again.')),
+        source: 'send',
+        message: locale === 'pl' ? 'Nie udało się wysłać wiadomości. Spróbuj ponownie.' : 'Could not send your message. Please try again.',
       });
     } finally {
       setIsSending(false);
@@ -314,7 +315,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       setMessages((prev) => [...prev, res.reply]);
       setThreads((prev) => prev.map((t) => (t.id === res.thread.id ? res.thread : t)));
     } catch (err) {
-      setComposerStatus({ tone: 'error', message: err instanceof Error ? err.message : (locale === 'pl' ? 'Onlo nie może teraz odpowiedzieć. Napisz bezpośrednio do uczestnika.' : 'Onlo cannot answer right now. Message the participant directly.') });
+      setComposerStatus({ tone: 'error', source: 'onlo', message: locale === 'pl' ? 'Onlo jest chwilowo niedostępny. Spróbuj ponownie za chwilę.' : 'Onlo is temporarily unavailable. Please try again in a moment.' });
     } finally {
       setIsHelperLoading(false);
     }
@@ -798,9 +799,13 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
             {/* 3. Composer (Always docked at the bottom, never covered by any floating panel) */}
             <div className="p-3 sm:p-4 border-t border-slate-200/90 bg-white space-y-2.5 shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               {composerStatus && (
-                <StatusMessage tone={composerStatus.tone} title={composerStatus.tone === 'error' ? (locale === 'pl' ? 'Nie wysłano' : 'Not sent') : undefined}>
-                  {composerStatus.message}
-                </StatusMessage>
+                <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  <div>{composerStatus.message}</div>
+                  <div className="flex items-center justify-end gap-3 mt-1">
+                    {composerStatus.source === 'onlo' && <button type="button" disabled={isHelperLoading} onClick={handleAskOnloNow} className="min-h-8 font-semibold text-indigo-700">{locale === 'pl' ? 'Spróbuj ponownie' : 'Try again'}</button>}
+                    <button type="button" onClick={() => setComposerStatus(null)} className="min-h-8 text-slate-600">{locale === 'pl' ? 'Zamknij' : 'Dismiss'}</button>
+                  </div>
+                </div>
               )}
               {/* Inquiry helpers stay collapsed until requested and never act on the private room. */}
               {activeTab === 'prospects' && (
