@@ -167,7 +167,7 @@ describe('email automation and consent', () => {
     expect((await t.mutation(automation.queueThreadMessageNotifications, { threadId: thread.id })).queued).toBe(1);
     expect((await t.mutation(automation.queueThreadMessageNotifications, { threadId: thread.id })).queued).toBe(0);
     const delivery = (await t.run((ctx) => ctx.db.query('emailDeliveries').collect())).find((row) => row.template === 'unread_message');
-    expect(delivery?.templateData).toMatchObject({ actorName: 'Peter Prospect', listingTitle: 'Warsaw test studio', count: 1 });
+    expect(delivery?.templateData).toMatchObject({ senderName: 'Peter Prospect', listingTitle: 'Warsaw test studio', count: 1 });
     expect(JSON.stringify(delivery?.templateData)).not.toContain(privateBody);
   });
 

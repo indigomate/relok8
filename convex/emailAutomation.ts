@@ -78,7 +78,7 @@ async function queueUnreadForThread(ctx: any, threadRow: any, now: number, minim
       locale,
       templateData: {
         recipientName: profile.fullName,
-        actorName: latest?.authorName || senderProfile?.fullName || (latest?.authorId === 'onlo' ? 'Onlo' : undefined),
+        senderName: latest?.authorName || senderProfile?.fullName || (latest?.authorId === 'onlo' ? 'Onlo' : undefined),
         listingTitle: lease?.title || (locale === 'pl' ? 'ogłoszenia Relok8' : 'a Relok8 listing'),
         count: unread.length,
         ctaUrl: `${appOrigin()}${locale === 'pl' ? '/pl' : ''}/messages?thread=${encodeURIComponent(threadRow.key)}`,
