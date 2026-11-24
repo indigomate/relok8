@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useMutation, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Button } from "./ui/Button";
+import { FormField } from "./ui/FormField";
+import { StatusMessage } from "./ui/StatusMessage";
 export function ReportListing({
   listingId,
   locale = "en",
@@ -22,8 +25,10 @@ export function ReportListing({
     <div className="space-y-3">
       <button
         type="button"
-        className="text-xs font-semibold text-slate-500 hover:text-indigo-600 cursor-pointer"
+        className="min-h-11 text-xs font-semibold text-slate-600 hover:text-indigo-700 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls="report-listing-form"
       >
         {pl
           ? "Zgłoś problem z ogłoszeniem"
@@ -31,7 +36,9 @@ export function ReportListing({
       </button>
       {open && (
         <form
+          id="report-listing-form"
           className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3"
+          aria-busy={busy}
           onSubmit={async (e) => {
             e.preventDefault();
             if (!isAuthenticated) {
@@ -48,36 +55,39 @@ export function ReportListing({
               const id = await report({ listingId, reason });
               setReceipt(String(id));
               setReason("");
-            } catch (e: any) {
-              setError(e.message);
+            } catch (e: unknown) {
+              setError(e instanceof Error ? e.message : pl ? "Nie udało się wysłać zgłoszenia." : "Could not submit the report.");
             } finally {
               setBusy(false);
             }
           }}
         >
-          <label className="block text-xs font-semibold text-slate-700">
-            {pl
+          <FormField
+            label={pl
               ? "Opisz problem (bez dokumentów z danymi osobowymi)"
               : "Describe the problem (do not include identity documents)"}
+            htmlFor="report-listing-reason"
+            required
+            hint={pl ? "Minimum 10 znaków. Nie dodawaj danych dokumentów ani płatności." : "Minimum 10 characters. Do not include document or payment details."}
+          >
             <textarea
+              id="report-listing-reason"
               required
               minLength={10}
               maxLength={3000}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="mt-2 w-full min-h-24 rounded-xl border border-slate-200 p-3 text-sm"
+              className="w-full min-h-24 rounded-xl border border-slate-300 p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             />
-          </label>
+          </FormField>
           {error && (
-            <p role="alert" className="text-sm text-rose-700">
-              {error}
-            </p>
+            <StatusMessage tone="error">{error}</StatusMessage>
           )}
           {receipt && (
-            <p role="status" className="text-sm text-indigo-700">
+            <StatusMessage tone="success" title={pl ? "Zgłoszenie zapisane" : "Report received"}>
               {pl
-                ? "Zapisano zgłoszenie. Numer: "
-                : "Report received. Reference: "}
+                ? "Numer zgłoszenia: "
+                : "Reference: "}
               {receipt}.{" "}
               {pl
                 ? "Status sprawdzisz w My Place."
@@ -91,11 +101,12 @@ export function ReportListing({
               >
                 {pl ? "Skontaktuj się z pomocą" : "Contact support"}
               </a>
-            </p>
+            </StatusMessage>
           )}
-          <button
+          <Button
+            type="submit"
             disabled={busy || !!receipt}
-            className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-bold disabled:opacity-50"
+            aria-busy={busy}
           >
             {busy
               ? pl
@@ -104,7 +115,7 @@ export function ReportListing({
               : pl
                 ? "Wyślij zgłoszenie"
                 : "Submit report"}
-          </button>
+          </Button>
         </form>
       )}
     </div>

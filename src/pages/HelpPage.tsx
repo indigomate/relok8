@@ -1,9 +1,13 @@
 import { backend } from '../lib/backend';
 import { api } from '../../convex/_generated/api';
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Search, HelpCircle, FileCheck, CheckCircle2, Mail, ExternalLink, ChevronDown, ChevronUp, ShieldCheck, BookOpen, Send, Bot, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, HelpCircle, FileCheck, Mail, ExternalLink, ChevronDown, ChevronUp, ShieldCheck, BookOpen, Send, Bot, Sparkles } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
+import { Button } from '../components/ui/Button';
+import { EmptyState } from '../components/ui/EmptyState';
+import { FormField } from '../components/ui/FormField';
+import { StatusMessage } from '../components/ui/StatusMessage';
 
 interface HelpPageProps {
   onBack: () => void;
@@ -136,7 +140,10 @@ export const HelpPage: React.FC<HelpPageProps> = ({
   const [expandedId, setExpandedId] = useState<string | null>('cesja-what-is');
   const [supportMessage, setSupportMessage] = useState('');
   const [supportEmail, setSupportEmail] = useState('');
-  const [ticketStatus, setTicketStatus] = useState<'idle' | 'submitting' | 'sent'>('idle');
+  const [supportCity, setSupportCity] = useState('');
+  const [ticketStatus, setTicketStatus] = useState<'idle' | 'submitting' | 'sent' | 'error'>('idle');
+  const [ticketError, setTicketError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; message?: string }>({});
 
   // Sync document title and meta description for SEO
   useEffect(() => {
@@ -186,15 +193,40 @@ export const HelpPage: React.FC<HelpPageProps> = ({
 
   const handleSubmitTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supportMessage || !supportEmail) return;
+    const email = supportEmail.trim();
+    const message = supportMessage.trim();
+    const errors: { email?: string; message?: string } = {};
+    if (!email) {
+      errors.email = locale === 'pl' ? 'Wpisz adres e-mail.' : 'Enter your email address.';
+    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
+      errors.email = locale === 'pl' ? 'Wpisz prawidłowy adres e-mail.' : 'Enter a valid email address.';
+    }
+    if (!message) {
+      errors.message = locale === 'pl' ? 'Opisz, w czym możemy pomóc.' : 'Describe how we can help.';
+    } else if (message.length < 10) {
+      errors.message = locale === 'pl' ? 'Wpisz co najmniej 10 znaków.' : 'Enter at least 10 characters.';
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
     setTicketStatus('submitting');
+    setTicketError('');
     try {
-      await backend().action(api.services.contact, { name: supportEmail.split('@')[0], email: supportEmail, subject: 'Help Center Inquiry', message: supportMessage, topic: selectedCategory, locale: locale === 'pl' ? 'pl' : 'en' });
+      const city = supportCity.trim();
+      const contextualMessage = city
+        ? `${locale === 'pl' ? 'Miasto / uczelnia' : 'City / university'}: ${city}\n\n${message}`
+        : message;
+      await backend().action(api.services.contact, { name: email.split('@')[0], email, subject: 'Help Center Inquiry', message: contextualMessage, topic: selectedCategory, locale: locale === 'pl' ? 'pl' : 'en' });
       setTicketStatus('sent');
       setSupportMessage('');
-    } catch (error: any) {
-      setTicketStatus('idle');
-      window.alert(error.message || 'Your message was not sent. Please try again.');
+      setSupportCity('');
+    } catch {
+      setTicketStatus('error');
+      setTicketError(
+        locale === 'pl'
+          ? 'Wiadomość nie została wysłana. Spróbuj ponownie.'
+          : 'Your message was not sent. Please try again.',
+      );
     }
   };
 
@@ -214,7 +246,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+            className="min-h-11 inline-flex items-center gap-1.5 font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>{locale === 'pl' ? 'Wróć do ogłoszeń' : 'Back to rooms'}</span>
@@ -244,8 +276,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
 
         {/* Search Bar */}
         <div className="relative max-w-2xl">
+          <label htmlFor="help-search" className="sr-only">
+            {locale === 'pl' ? 'Szukaj w centrum pomocy' : 'Search the help center'}
+          </label>
           <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
           <input
+            id="help-search"
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -294,7 +330,8 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategory(cat.id as any)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              aria-pressed={selectedCategory === cat.id}
+              className={`min-h-11 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                 selectedCategory === cat.id
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -323,10 +360,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
                   className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs transition-colors hover:border-slate-300"
                 >
                   <button
+                    id={`faq-trigger-${faq.id}`}
                     type="button"
                     onClick={() => setExpandedId(isOpen ? null : faq.id)}
                     className="w-full p-5 sm:p-6 text-left flex items-start justify-between gap-4 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
                     aria-expanded={isOpen}
+                    aria-controls={`faq-panel-${faq.id}`}
                   >
                     <span className="font-bold text-slate-900 text-sm sm:text-base leading-snug">
                       {qText}
@@ -337,7 +376,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
                   </button>
 
                   {isOpen && (
-                    <div className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-slate-600 space-y-4 border-t border-slate-100 animate-in fade-in duration-150">
+                    <div
+                      id={`faq-panel-${faq.id}`}
+                      role="region"
+                      aria-labelledby={`faq-trigger-${faq.id}`}
+                      className="px-5 sm:px-6 pb-6 pt-1 text-xs sm:text-sm text-slate-600 space-y-4 border-t border-slate-100 animate-in fade-in duration-150 motion-reduce:animate-none"
+                    >
                       <p className="leading-relaxed whitespace-pre-line">{aText}</p>
                       
                       {faq.relatedLink && (
@@ -348,7 +392,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
                               const prefix = locale === 'pl' ? '/pl' : '';
                               navigateTo(prefix + faq.relatedLink!.path);
                             }}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer"
+                            className="min-h-11 inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
                           >
                             <span>{faq.relatedLink.text[locale === 'pl' ? 'pl' : 'en']}</span>
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -361,15 +405,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               );
             })
           ) : (
-            <div className="text-center py-12 px-4 rounded-2xl bg-white border border-slate-200 space-y-2">
-              <HelpCircle className="w-8 h-8 text-slate-400 mx-auto" />
-              <h3 className="text-sm font-bold text-slate-900">
-                {locale === 'pl' ? 'Brak pytań pasujących do wyszukiwania' : 'No matching questions found'}
-              </h3>
-              <p className="text-xs text-slate-500">
-                {locale === 'pl' ? 'Spróbuj innych słów kluczowych lub wyślij wiadomość do zespołu poniżej.' : 'Try different keywords or submit an inquiry directly below.'}
-              </p>
-            </div>
+            <EmptyState
+              icon={<HelpCircle className="h-8 w-8" />}
+              title={locale === 'pl' ? 'Brak pytań pasujących do wyszukiwania' : 'No matching questions found'}
+              description={locale === 'pl' ? 'Spróbuj innych słów kluczowych lub wyślij wiadomość do zespołu poniżej.' : 'Try different keywords or submit an inquiry directly below.'}
+              className="rounded-2xl border border-slate-200 bg-white"
+            />
           )}
           </div>
         </div>
@@ -380,9 +421,10 @@ export const HelpPage: React.FC<HelpPageProps> = ({
             {locale === 'pl' ? 'Wzory dokumentów i przewodniki' : 'Templates and guides'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div
+            <button
+              type="button"
               onClick={() => navigateTo(locale === 'pl' ? '/pl/safety-guide' : '/safety-guide')}
-              className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
+              className="w-full p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                 <FileCheck className="w-4 h-4" />
@@ -393,11 +435,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               <p className="text-xs text-slate-500 leading-relaxed">
                 {locale === 'pl' ? 'Wskazówki krok po kroku jak bezpiecznie przekazać pokój za zgodą właściciela.' : 'Step-by-step guidance on agreeing a smooth room handover with your landlord.'}
               </p>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               onClick={() => navigateTo(locale === 'pl' ? '/pl/meldunek-guide' : '/meldunek-guide')}
-              className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
+              className="w-full p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <BookOpen className="w-4 h-4" />
@@ -408,11 +451,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               <p className="text-xs text-slate-500 leading-relaxed">
                 {locale === 'pl' ? 'Jak zarejestrować pobyt w urzędzie dzielnicy w 15 minut.' : 'How to register your temporary address and get a PESEL number in 15 minutes.'}
               </p>
-            </div>
+            </button>
 
-            <div
+            <button
+              type="button"
               onClick={() => navigateTo(locale === 'pl' ? '/pl/savings-calculator' : '/savings-calculator')}
-              className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left"
+              className="w-full p-5 rounded-2xl bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer space-y-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
             >
               <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4" />
@@ -423,7 +467,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
               <p className="text-xs text-slate-500 leading-relaxed">
                 {locale === 'pl' ? 'Oblicz ile zaoszczędzisz przekazując umowę zamiast jej zrywania.' : 'Calculate exact deposit and rent liabilities saved by executing a lease takeover.'}
               </p>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -442,68 +486,101 @@ export const HelpPage: React.FC<HelpPageProps> = ({
           </div>
 
           {ticketStatus === 'sent' ? (
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs sm:text-sm font-semibold">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              <span>
-                {locale === 'pl'
-                  ? 'Twoja wiadomość została wysłana! Odpowiemy na podany adres e-mail.'
-                  : 'Message received! Our support team will reply to your email shortly.'}
-              </span>
-            </div>
+            <StatusMessage
+              tone="success"
+              title={locale === 'pl' ? 'Wiadomość wysłana' : 'Message received'}
+            >
+              {locale === 'pl'
+                ? 'Odpowiemy na podany adres e-mail.'
+                : 'Our support team will reply to your email shortly.'}
+            </StatusMessage>
           ) : (
-            <form onSubmit={handleSubmitTicket} className="space-y-4">
+            <form onSubmit={handleSubmitTicket} noValidate aria-busy={ticketStatus === 'submitting'} className="space-y-4">
+              {ticketStatus === 'error' && (
+                <StatusMessage tone="error" title={locale === 'pl' ? 'Nie udało się wysłać' : 'Message not sent'}>
+                  {ticketError}
+                </StatusMessage>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Twój adres e-mail' : 'Your email address'}
-                  </label>
+                <FormField
+                  label={locale === 'pl' ? 'Twój adres e-mail' : 'Your email address'}
+                  htmlFor="support-email"
+                  required
+                  error={fieldErrors.email}
+                >
                   <input
+                    id="support-email"
                     type="email"
                     required
                     value={supportEmail}
-                    onChange={(e) => setSupportEmail(e.target.value)}
+                    onChange={(e) => {
+                      setSupportEmail(e.target.value);
+                      setFieldErrors((current) => ({ ...current, email: undefined }));
+                      if (ticketStatus === 'error') setTicketStatus('idle');
+                    }}
+                    autoComplete="email"
                     placeholder="student@university.edu"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                    className="min-h-11 w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm text-slate-900 placeholder:text-slate-400"
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    {locale === 'pl' ? 'Dotyczy miasta' : 'City / University'}
-                  </label>
+                </FormField>
+                <FormField
+                  label={locale === 'pl' ? 'Miasto / uczelnia (opcjonalnie)' : 'City / university (optional)'}
+                  htmlFor="support-city"
+                  hint={locale === 'pl' ? 'Pomaga nam skierować pytanie do właściwej osoby.' : 'Helps us route your question to the right person.'}
+                >
                   <input
+                    id="support-city"
                     type="text"
+                    value={supportCity}
+                    onChange={(e) => {
+                      setSupportCity(e.target.value);
+                      if (ticketStatus === 'error') setTicketStatus('idle');
+                    }}
+                    autoComplete="address-level2"
                     placeholder="e.g. Warsaw, Kraków, Wrocław, Gdańsk"
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    className="min-h-11 w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600"
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {locale === 'pl' ? 'Twoje pytanie lub opis sytuacji' : 'Your question or issue'}
-                </label>
+              <FormField
+                label={locale === 'pl' ? 'Twoje pytanie lub opis sytuacji' : 'Your question or issue'}
+                htmlFor="support-message"
+                required
+                error={fieldErrors.message}
+                hint={locale === 'pl' ? 'Nie wpisuj numerów dokumentów ani danych płatniczych.' : 'Do not include identity-document numbers or payment details.'}
+              >
                 <textarea
+                  id="support-message"
                   required
+                  minLength={10}
+                  maxLength={5000}
                   rows={3}
                   value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
+                  onChange={(e) => {
+                    setSupportMessage(e.target.value);
+                    setFieldErrors((current) => ({ ...current, message: undefined }));
+                    if (ticketStatus === 'error') setTicketStatus('idle');
+                  }}
                   placeholder={locale === 'pl' ? 'Opisz swoje pytanie dotyczące cesji, kaucji lub właściciela lokalu...' : 'Describe your question about the lease takeover, landlord consent, or deposit settlement...'}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-xs text-slate-900 placeholder:text-slate-400"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm text-slate-900 placeholder:text-slate-400"
                 />
-              </div>
+              </FormField>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
                 <span className="text-xs text-slate-500">
                   Direct contact: <a href="mailto:info@relok8.online" className="text-indigo-600 font-semibold underline">info@relok8.online</a>
                 </span>
-                <button
+                <Button
                   type="submit"
                   disabled={ticketStatus === 'submitting'}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                  aria-busy={ticketStatus === 'submitting'}
+                  fullWidth
+                  leadingIcon={<Send className="h-4 w-4" />}
+                  className="sm:w-auto"
                 >
-                  <Send className="w-3.5 h-3.5" />
                   <span>{ticketStatus === 'submitting' ? (locale === 'pl' ? 'Wysyłanie...' : 'Sending...') : (locale === 'pl' ? 'Wyślij zapytanie' : 'Send message')}</span>
-                </button>
+                </Button>
               </div>
             </form>
           )}
