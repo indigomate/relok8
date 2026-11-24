@@ -725,3 +725,26 @@ textarea:focus-visible {
     border-color: currentColor;
   }
 }
+
+/* Relok8 Motion 1.0 — progressive enhancement */
+:root { --r8-motion-fast: 150ms; --r8-motion-standard: 280ms; --r8-motion-reveal: 450ms; --r8-motion-ease: cubic-bezier(.2,.75,.25,1); }
+@keyframes r8-motion-enter { from { opacity: .55; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
+@keyframes r8-motion-reveal { from { opacity: .7; translate: 0 16px; } to { opacity: 1; translate: 0 0; } }
+@keyframes r8-motion-heart { 0%,100% { scale: 1; } 45% { scale: 1.22; } }
+@media (prefers-reduced-motion: no-preference) {
+  .r8-home-intro, .r8-home-photo { animation: r8-motion-enter var(--r8-motion-reveal) var(--r8-motion-ease) both; }
+  .r8-home-photo { animation-delay: 70ms; }
+  .r8-motion-card { transition: translate var(--r8-motion-standard) var(--r8-motion-ease), box-shadow var(--r8-motion-standard) var(--r8-motion-ease), border-color var(--r8-motion-fast); }
+  .r8-motion-favorite[aria-pressed="true"] svg { animation: r8-motion-heart 320ms var(--r8-motion-ease); }
+  .r8-motion-panel, .r8-motion-toast { animation: r8-motion-enter var(--r8-motion-standard) var(--r8-motion-ease) both; }
+  .r8-motion-favorite, .r8-motion-filters button { transition: scale var(--r8-motion-fast), background-color var(--r8-motion-fast), color var(--r8-motion-fast), border-color var(--r8-motion-fast); }
+  .r8-motion-favorite:active, .r8-motion-filters button:active { scale: .97; }
+  @supports (animation-timeline: view()) {
+    .r8-home-process, .r8-home-cities, .r8-motion-card { animation: r8-motion-reveal linear both; animation-timeline: view(); animation-range: entry 0% entry 65%; }
+  }
+  @media (hover: hover) and (pointer: fine) { .r8-motion-card:hover { translate: 0 -3px; box-shadow: 0 12px 26px rgb(30 41 59 / .10); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .r8-motion-card, .r8-motion-favorite, .r8-motion-favorite svg, .r8-motion-panel, .r8-motion-toast, .r8-motion-filters button, .r8-home-intro, .r8-home-photo, .r8-home-process, .r8-home-cities, .r8-motion-skeleton { animation: none !important; transition: none !important; translate: none !important; scale: none !important; }
+  .r8-motion-card img { transition: none !important; transform: none !important; }
+}
