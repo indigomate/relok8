@@ -55,7 +55,7 @@ export const HowItWorksPage = ({ onBack, onOpenLeaveYourLease, onOpenBrowse, loc
   };
   const journey = journeys[path];
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24">
+    <main className="r8-motion-page min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         <button type="button" onClick={onBack} className="inline-flex items-center gap-2 min-h-11 text-sm font-semibold text-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-4"><ArrowLeft size={16} aria-hidden="true" />{say('Back to listings', 'Wróć do ogłoszeń')}</button>
         <header className="space-y-3">
