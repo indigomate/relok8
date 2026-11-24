@@ -1,7 +1,8 @@
+import { OnloAvatar } from '../components/OnloAvatar';
 import { backend } from '../lib/backend';
 import { api } from '../../convex/_generated/api';
 import React, { useState, useMemo, useEffect } from 'react';
-import { ArrowLeft, Search, HelpCircle, FileCheck, Mail, ExternalLink, ChevronDown, ChevronUp, ShieldCheck, BookOpen, Send, Bot, Sparkles } from 'lucide-react';
+import { ArrowLeft, Search, HelpCircle, FileCheck, Mail, ExternalLink, ChevronDown, ChevronUp, ShieldCheck, BookOpen, Send, Bot } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { navigateTo } from '../utils/router';
 import { Button } from '../components/ui/Button';
@@ -310,7 +311,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
             onClick={onOpenOnlo}
             className="min-h-11 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold inline-flex items-center justify-center gap-2 cursor-pointer transition-[background-color,transform] shrink-0"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <OnloAvatar size={20} variant="avatar" state="idle" />
             {locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}
           </button>
         </div>
