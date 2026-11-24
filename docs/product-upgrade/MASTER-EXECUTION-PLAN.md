@@ -263,4 +263,13 @@ Step 03A is verified on deployment `Am2kKcWgvtfp9JYabzc64uw3jFjz` for commits `1
 - type checking, 186 automated tests, and the production build pass;
 - all nine production smoke checks pass at 320, 390, 768, 1024, and 1440px widths.
 
-Step 03B is next: adopt the shared primitives in the highest-use forms and operational panels, then capture loading, empty, validation-error, provider-error, success, focus, keyboard, contrast, and reduced-motion evidence.
+Step 03B is in progress. Slice 1 is verified on deployment `FvXQs6LcxuXv26rk4nmbEZMR2QT2` for commit `c7ee11d`:
+
+- reusable status and reduced-motion loading states were added;
+- Help and listing-report controls now use shared form and feedback patterns;
+- the public Help journey has labelled search, keyboard-operable resources, connected accordion panels, and bilingual inline validation;
+- 18 test files and 190 tests pass;
+- all 11 production smoke checks pass;
+- English and Polish empty-submit validation captures passed without sending a support message.
+
+Step 03B remains open for authenticated Account and Property Settings adoption, 200% zoom, assistive-technology checks, and controlled success/failure evidence.

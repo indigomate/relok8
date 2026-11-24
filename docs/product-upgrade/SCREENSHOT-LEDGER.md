@@ -77,3 +77,21 @@
 - `evidence/step-03-design-foundation/S03-07-list-place-mobile-390.png`
 - `evidence/step-03-design-foundation/S03-08-messages-signed-out-mobile-390.png`
 - `evidence/step-03-design-foundation/S03-09-help-desktop-1440.png`
+
+## Step 03B accessible-state evidence — slice 1
+
+| Screenshot ID | Route/screen | Viewport | State | Publication status | Evidence/notes |
+|---|---|---:|---|---|---|
+| S03B-01 | Help `/help` | 390×844 | Public default | approved-public | Deployed accessible Help layout; production smoke check passed. |
+| S03B-02 | Polish Help `/pl/help` | 390×844 | Public default | approved-public | Polish labels and controls fit; production smoke check passed. |
+| S03B-03 | Help `/help` | 1440×1000 | Public default | approved-public | Desktop production smoke check passed. |
+| S03B-04 | Help contact form `/help` | 390×844 | Empty-submit validation | approved-public | Two invalid controls and two linked English error messages; no message sent. |
+| S03B-05 | Polish Help contact form `/pl/help` | 390×844 | Empty-submit validation | approved-public | Two invalid controls and two linked Polish error messages; no message sent. |
+
+## Step 03B files — slice 1
+
+- `evidence/step-03b-accessible-states/S03B-01-help-mobile-390.png`
+- `evidence/step-03b-accessible-states/S03B-02-help-polish-mobile-390.png`
+- `evidence/step-03b-accessible-states/S03B-03-help-desktop-1440.png`
+- `evidence/step-03b-accessible-states/S03B-04-help-validation-en-390.png`
+- `evidence/step-03b-accessible-states/S03B-05-help-validation-pl-390.png`

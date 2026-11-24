@@ -70,6 +70,19 @@ Shared primitives live in `src/components/ui/`.
 - Adds hint/error associations and `aria-invalid` automatically.
 - Errors should explain how to correct the value.
 
+### StatusMessage
+
+- Tones: `success`, `error`, `warning`, and `info`.
+- Errors use an assertive alert; other updates use a polite status announcement.
+- Use a short title when the action or result needs immediate context.
+- Do not expose raw provider or server errors to customers.
+
+### LoadingState
+
+- Requires visible text describing what is loading.
+- The spinner stops when reduced motion is requested; the text remains available.
+- Prefer a compact state inside an existing panel and the default state for a full content region.
+
 ## Navigation rules
 
 - Every mobile navigation target is at least 44px tall.

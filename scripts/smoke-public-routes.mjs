@@ -22,6 +22,8 @@ const routes = [
   { id: 'how-it-works-desktop', path: '/how-it-works', viewport: { width: 1440, height: 1000 } },
   { id: 'list-place-mobile', path: '/list', viewport: { width: 390, height: 844 } },
   { id: 'messages-signed-out-mobile', path: '/messages', viewport: { width: 390, height: 844 } },
+  { id: 'help-mobile', path: '/help', viewport: { width: 390, height: 844 } },
+  { id: 'help-polish-mobile', path: '/pl/help', viewport: { width: 390, height: 844 } },
   { id: 'help-desktop', path: '/help', viewport: { width: 1440, height: 1000 } },
 ];
 
