@@ -154,7 +154,7 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
       </header>
 
       {/* Main Container */}
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 pt-3 space-y-6">
+      <main className="r8-motion-page max-w-3xl mx-auto px-4 sm:px-6 pt-3 space-y-6">
         {/* Photo Gallery (Swipeable carousel / Aspect 4:3 or 16:9, Screenshot 8) */}
         <div 
           className="relative aspect-[4/3] sm:aspect-[16/10] w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/70 shadow-sm group cursor-pointer"
