@@ -315,25 +315,25 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
 
         <p className="text-xs text-slate-500">{locale==='pl'?'Czynsz + opłaty administracyjne.':'Rent + administration.'} {billsLabel(listing.billsMode || (listing.billsIncluded ? 'included' : undefined), listing.fixedBillsPLN, locale)}</p>
         {/* Lease Takeover Action Hub */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-50/70 via-white to-slate-50 border border-indigo-100 shadow-xs space-y-3.5 my-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3 my-2">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 shrink-0 rounded-full bg-emerald-500" />
               <h3 className="text-sm font-bold text-slate-900">
-                {locale === 'pl' ? 'Skontaktuj się w sprawie pokoju' : 'Connect with the Tenant'}
+                {locale === 'pl' ? 'Skontaktuj się w sprawie pokoju' : 'Contact the tenant'}
               </h3>
             </div>
-            <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
-              {locale === 'pl' ? 'Bez prowizji pośrednika' : 'Zero Broker Fees'}
+            <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] leading-4 font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
+              {locale === 'pl' ? 'Bez prowizji' : 'Zero Broker Fees'}
             </span>
           </div>
 
           {/* Primary Action Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               type="button"
               onClick={handleMessageClick}
-              className="p-3.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-98 cursor-pointer"
+              className="min-h-11 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-98 cursor-pointer"
             >
               <MessageSquare className="w-4 h-4 text-indigo-100" />
               <span>{locale === 'pl' ? `Napisz do: ${tenant.name.split(' ')[0]}` : `Message ${tenant.name.split(' ')[0]}`}</span>
@@ -342,17 +342,17 @@ export const ListingDetailPage: React.FC<ListingDetailPageProps> = ({
             <button
               type="button"
               onClick={() => setIsAIChatOpen(true)}
-              className="p-3.5 rounded-2xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 transition-all active:scale-98 cursor-pointer shadow-xs"
+              className="min-h-11 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-950 border border-indigo-200 transition-all active:scale-98 cursor-pointer shadow-xs"
             >
               <OnloAvatar size={18} variant="icon" />
               <span>{locale === 'pl' ? 'Zapytaj Onlo o ten pokój' : 'Ask Onlo about this room'}</span>
             </button>
           </div>
 
-          <button type="button" onClick={()=>setIsEarlyLockOpen(true)} className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">{locale==='pl'?'Poproś właściciela o zgodę na przejęcie':'Request landlord approval for takeover'}</button>
+          <button type="button" onClick={()=>setIsEarlyLockOpen(true)} className="min-h-11 text-left text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">{locale==='pl'?'Poproś właściciela o zgodę na przejęcie':'Request landlord approval for takeover'}</button>
           {/* Direct Matching Notice */}
           <div className="pt-2 border-t border-indigo-100/60 text-[11px] text-slate-500 flex items-center justify-between gap-2">
-            <span>Direct connection between tenant & landlord · Zero agency commissions</span>
+            <span>{locale === 'pl' ? 'Kontakt bezpośrednio z najemcą i właścicielem.' : 'Connect directly with the tenant and landlord.'}</span>
           </div>
         </div>
 
