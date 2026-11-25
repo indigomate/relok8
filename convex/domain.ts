@@ -1,5 +1,6 @@
 import { validLeaseDates, leaseHasEnded } from '../src/utils/leaseTiming';
-import { query, mutation, internalMutation } from "./_generated/server";
+import { query, mutation, internalMutation, action } from "./_generated/server";
+import { lookupClerkContact } from "./lib/clerkIdentity";
 import { internal } from './_generated/api';
 import { v, ConvexError } from "convex/values";
 import { requireIdentity, isLandlord, validateMoney } from "./lib/auth";
@@ -267,16 +268,7 @@ export const write = mutation({
       return { id: uid, name: identity.name || 'Name unavailable', email: identity.email || '', role: 'prospect', avatar: identity.pictureUrl || '', isVerified: false, ...settings };
     }
     if (operation === 'acceptInvitation') {
-      await rememberEmailContact(ctx, identity, input.locale);
-      const token = text(input.token, 200);
-      const row = await record(ctx, 'invitation', token);
-      if (!row || row.data.role !== 'landlord' || row.data.acceptedAt || now - row.data.createdAt > 7 * 86400000 || identity.emailVerified !== true || identity.email?.toLowerCase() !== row.data.email.toLowerCase()) throw new Error('Invalid or expired invitation');
-      const lease = await leaseFor(ctx, row.placeId);
-      if (row.data.revokedAt || row.ownerId !== lease.ownerId || uid === lease.ownerId) throw new Error('Invalid or expired invitation');
-      if (lease.landlordUserId && lease.landlordUserId !== uid) throw new Error('Landlord reassignment requires review');
-      await ctx.db.patch(lease._id, { landlordUserId: uid, landlordContactEmail: identity.email });
-      await ctx.db.patch(row._id, { data: { ...row.data, acceptedAt: now } });
-      return { success: true, place: toPlace(await ctx.db.get(lease._id), identity) };
+      throw new Error('Use the verified invitation acceptance service');
     }
     const lease = await leaseFor(ctx, text(input.placeId, 100));
     if (operation === 'invitation') {
@@ -376,3 +368,35 @@ export async function removeLease(ctx: any, lease: any) {
     if (upload && upload.ownerId === lease.ownerId) { await ctx.storage.delete(upload.storageId); await ctx.db.delete(upload._id); }
   }
 }
+
+/** Verify recipient using Clerk before committing any property permission change. */
+export const acceptInvitationVerified = action({
+  args: { token: v.string(), locale: v.optional(v.string()) },
+  handler: async (ctx, args): Promise<any> => {
+    const identity = await requireIdentity(ctx);
+    const result = await lookupClerkContact(identity.subject, process.env.CLERK_SECRET_KEY);
+    if (!result.ok) throw new Error('Verified account email required');
+    return ctx.runMutation((internal as any).domain.acceptInvitationInternal, {
+      token: args.token, locale: args.locale, subject: identity.subject, email: result.contact.email,
+    });
+  },
+});
+export const acceptInvitationInternal = internalMutation({
+  args: { token: v.string(), locale: v.optional(v.string()), subject: v.string(), email: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+    if (identity.subject !== args.subject) throw new Error('Forbidden');
+    const uid = identity.subject;
+    const now = Date.now();
+    const token = text(args.token, 200);
+    const row = await record(ctx, 'invitation', token);
+    if (!row || row.data.role !== 'landlord' || row.data.acceptedAt || row.data.revokedAt || now - row.data.createdAt > 7 * 86400000 || args.email !== row.data.email.toLowerCase()) throw new Error('Invalid or expired invitation');
+    const lease = await leaseFor(ctx, row.placeId);
+    if (row.ownerId !== lease.ownerId || uid === lease.ownerId) throw new Error('Invalid or expired invitation');
+    if (lease.landlordUserId && lease.landlordUserId !== uid) throw new Error('Landlord reassignment requires review');
+    await rememberEmailContact(ctx, { ...identity, email: args.email, emailVerified: true }, args.locale);
+    await ctx.db.patch(lease._id, { landlordUserId: uid, landlordContactEmail: args.email });
+    await ctx.db.patch(row._id, { data: { ...row.data, acceptedAt: now, acceptedBy: uid } });
+    return { success: true };
+  },
+});
