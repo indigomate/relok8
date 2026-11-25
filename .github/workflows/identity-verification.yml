@@ -1,7 +1,7 @@
 name: Identity verification
 on:
   push:
-    branches: [development/r8-00-01-a]
+    branches: ['development/**']
   pull_request:
     branches: [main]
 permissions:
