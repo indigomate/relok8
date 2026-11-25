@@ -32,13 +32,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   locale,
   currentUser
 }) => {
-  const isExplore = currentPath === 'home' || currentPath === 'city';
+  const isExplore = ['home', 'city', 'saved'].includes(currentPath);
   const isSaved = ['place','dashboard','list'].includes(currentPath);
   const isList = currentPath === 'services';
   const isMessages = currentPath === 'messages';
   const isProfile = currentPath === 'account';
   const itemClassName = (active: boolean) => classNames(
-    'flex min-h-11 min-w-[52px] flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1 transition-colors',
+    'flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 transition-colors',
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1',
     active ? 'font-semibold text-indigo-600' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900',
   );
@@ -76,8 +76,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
   return (
     <nav 
-      aria-label="Mobile navigation" 
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 flex items-center justify-around shadow-[var(--shadow-raised)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+      aria-label={locale === 'pl' ? 'Nawigacja mobilna' : 'Mobile navigation'} 
+      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-1.5 grid grid-cols-5 items-stretch shadow-[var(--shadow-raised)] pb-[max(0.5rem,env(safe-area-inset-bottom))]"
     >
       {/* 1. Explore */}
       <button
@@ -87,7 +87,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         aria-current={isExplore ? 'page' : undefined}
       >
         <Search aria-hidden="true" className={`w-5 h-5 ${isExplore ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Szukaj' : 'Explore'}</span>
+        <span className="text-[10px] leading-tight text-center break-words tracking-normal font-medium">{locale === 'pl' ? 'Szukaj' : 'Explore'}</span>
       </button>
 
       {/* 2. Saved */}
@@ -102,21 +102,10 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
           <Home aria-hidden="true" className="w-5 h-5" />
           
         </div>
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Moje miejsce' : 'My Place'}</span>
+        <span className="text-[10px] leading-tight text-center break-words tracking-normal font-medium">{locale === 'pl' ? 'Moje miejsce' : 'My Place'}</span>
       </button>
 
-      {/* 3. List */}
-      <button
-        type="button"
-        onClick={() => { window.history.pushState({}, '', locale === 'pl' ? '/pl/services' : '/services'); window.dispatchEvent(new PopStateEvent('popstate')); }}
-        className={itemClassName(isList)}
-        aria-current={isList ? 'page' : undefined}
-      >
-        <LayoutGrid aria-hidden="true" className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Usługi' : 'Services'}</span>
-      </button>
-
-      {/* 4. Messages */}
+      {/* 3. Inbox */}
       <button
         type="button"
         onClick={handleMessagesClick}
@@ -124,7 +113,18 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         aria-current={isMessages ? 'page' : undefined}
       >
         <MessageSquare aria-hidden="true" className={`w-5 h-5 ${isMessages ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Skrzynka' : 'Inbox'}</span>
+        <span className="text-[10px] leading-tight text-center break-words tracking-normal font-medium">{locale === 'pl' ? 'Skrzynka' : 'Inbox'}</span>
+      </button>
+
+      {/* 4. Services */}
+      <button
+        type="button"
+        onClick={() => { window.history.pushState({}, '', locale === 'pl' ? '/pl/services' : '/services'); window.dispatchEvent(new PopStateEvent('popstate')); }}
+        className={itemClassName(isList)}
+        aria-current={isList ? 'page' : undefined}
+      >
+        <LayoutGrid aria-hidden="true" className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10px] leading-tight text-center break-words tracking-normal font-medium">{locale === 'pl' ? 'Usługi' : 'Services'}</span>
       </button>
 
       {/* 5. Profile */}
@@ -135,7 +135,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         aria-current={isProfile ? 'page' : undefined}
       >
         <User aria-hidden="true" className={`w-5 h-5 ${isProfile ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Konto' : 'Account'}</span>
+        <span className="text-[10px] leading-tight text-center break-words tracking-normal font-medium">{locale === 'pl' ? 'Konto' : 'Account'}</span>
       </button>
     </nav>
   );
