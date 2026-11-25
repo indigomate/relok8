@@ -19,7 +19,7 @@ Baseline: 2026-11-25. Statuses are preliminary; no feature is certified by sourc
 | 14 | Integrated operations and Onlo | Pending |
 
 ## R8-00.01 identity infrastructure
-- A: identity service implemented; CI runs #9 and #14 passed 204/204 tests. User verified Vercel project, main production branch, Node 24, production-only project variables and empty preview project/shared variables. Preview frontend-only build correction committed; latest CI and deployment checks pending. Live verification remains outstanding.
+- A: implementation merged and production deployment reported successful for 0a82ed6; CI run #19 passed 204/204 tests, 19/19 suites, typecheck and frontend build. Preview deployment passed. Live public routes and authenticated acceptance checks remain unverified because direct site and Vercel API access are unavailable. Status: deployed, acceptance open.
 - B: profile synchronization and role normalization pending.
 - C: landlord invitation and reassignment protection pending.
 - D: signed Clerk lifecycle webhooks pending.
@@ -40,3 +40,5 @@ Review, typecheck, tests, build, security/privacy review, user authorization, th
 - Release audit 2026-11-25: Vercel project lookup returned 404 and scoped project search returned no matches. No merge or production deployment initiated. Confirm intended project access, production branch, build command and environment-scoped Convex deploy keys before release. Live Clerk/Convex integration remains unverified.
 
 - Run 45522806537 (bcefaff): 204/204 passed, 19/19 suites, typecheck and frontend build passed. Vercel preview build rejected by production guard, confirmed by user screenshot. Corrected preview path in f0e645e; no production release yet.
+
+- Run 45523346566 (342765c): completed successfully, 204/204 tests, 19/19 files, typecheck and frontend build passed; Vercel preview success. PR #1 merged as 0a82ed6982eca39d4250a153107bf9791f66a525; GitHub Vercel status success. Public route probes unavailable from verification environment; no authenticated test or production log inspection completed. Do not close A until live checks pass.
