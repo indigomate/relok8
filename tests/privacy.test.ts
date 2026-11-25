@@ -1,9 +1,22 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../convex/schema';
 import { api } from '../convex/_generated/api';
 
 const modules = import.meta.glob('../convex/**/*.{ts,js}');
+beforeEach(() => {
+  vi.stubEnv('CLERK_SECRET_KEY', 'test-only-key');
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    const endpoint = new URL(url);
+    if (endpoint.origin !== 'https://api.clerk.com' || !endpoint.pathname.startsWith('/v1/users/')) throw new Error('Unexpected network call');
+    const subject = decodeURIComponent(endpoint.pathname.slice('/v1/users/'.length));
+    return Response.json({
+      id: subject, primary_email_address_id: 'primary',
+      email_addresses: [{ id: 'primary', email_address: subject + '@example.test', verification: { status: 'verified' } }],
+    });
+  }));
+});
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 const identity = {
   subject: 'private-owner',
@@ -67,7 +80,7 @@ describe('public listing identity and contact privacy', () => {
       currentTenant: { name: 'Exact Private Name', status: 'Departing tenant', avatar: '' },
       amenities: [], images: [], locale: 'en',
     });
-    await prospect.mutation((api as any).emailPreferences.syncAccount, { locale: 'en' });
+    await prospect.action((api as any).emailPreferences.syncAccountVerified, { locale: 'en', fullName: 'Interested Person' });
     const thread = await prospect.mutation((api as any).domain.write, { operation: 'createThread', input: { placeId: id } });
     await t.run(async (ctx) => {
       const row = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', thread.id)).unique();
