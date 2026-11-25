@@ -141,7 +141,7 @@ function Relok8App() {
       const unsafeMeta = ((clerkUser.unsafeMetadata || (clerkUser as any).unsafe_metadata) || {}) as Record<string, any>;
       const publicMeta = ((clerkUser.publicMetadata || (clerkUser as any).public_metadata) || {}) as Record<string, any>;
 
-      const role = 'member';
+      const role = typeof publicMeta.role === 'string' ? publicMeta.role : 'member';
 
       const primaryEmail = clerkUser.primaryEmailAddress || 
         clerkUser.emailAddresses?.find(e => e.id === (clerkUser as any).primaryEmailAddressId || e.id === (clerkUser as any).primary_email_address_id) ||
@@ -242,8 +242,8 @@ function Relok8App() {
     setCurrentUser(previous => {
       if (!previous || previous.id !== savedProfile.userId) return previous;
       const next = { ...previous, name: savedProfile.fullName || previous.name,
-        phone: savedProfile.phoneNumber ?? '', university: savedProfile.university ?? '',
-        role: savedProfile.role || 'member', isVerified: savedProfile.isVerified };
+        phone: savedProfile.phoneNumber ?? previous.phone, university: savedProfile.university ?? previous.university,
+        role: savedProfile.role === 'landlord' || previous.role === 'landlord' ? 'landlord' : savedProfile.role || 'member', isVerified: savedProfile.isVerified };
       return next.name === previous.name && next.phone === previous.phone && next.university === previous.university && next.role === previous.role && next.isVerified === previous.isVerified ? previous : next;
     });
   }, [savedProfile, isBackendAuthenticated, clerkUser]);
