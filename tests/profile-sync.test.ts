@@ -30,6 +30,14 @@ describe('Universal profile', () => {
     await t.mutation((internal as any).emailPreferences.syncVerifiedContact, sync);
     expect(await user.query((api as any).emailPreferences.getMine, {})).toMatchObject({ unreadMessages: false, listingReminders: false, marketingConsent: false });
   });
+  test('explicitly cleared contact fields remain cleared after synchronization', async () => {
+    const t = convexTest(schema, modules);
+    const user = t.withIdentity(identity);
+    await user.mutation(api.profiles.upsertProfile, { userId: identity.subject, phoneNumber: '+48123456789', university: 'Example institution' });
+    await user.mutation(api.profiles.upsertProfile, { userId: identity.subject, phoneNumber: '', university: '' });
+    await t.mutation((internal as any).emailPreferences.syncVerifiedContact, sync);
+    expect(await user.query(api.profiles.getProfile, { userId: identity.subject })).toMatchObject({ phoneNumber: '', university: '' });
+  });
   test('another member cannot read or modify the profile', async () => {
     const t = convexTest(schema, modules);
     const other = t.withIdentity({ ...identity, subject: 'member-b' });
