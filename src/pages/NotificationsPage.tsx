@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home, CheckCircle2, Clock3, Mail } from 'lucide-react';
+import { ArrowLeft, Bell, Share2, Heart, MessageSquare, FileText, Home, CheckCircle2, Clock3, Mail, Settings2, X } from 'lucide-react';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { ENABLED_CITIES } from '../data/cities';
@@ -21,17 +21,12 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   onBack,
   locale = 'en',
   onOpenListing,
-  onRequireLogin,
-  currentUser
+  onRequireLogin
 }) => {
+  const preferencesDialog = React.useRef<HTMLDialogElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeFilter, setActiveFilter] = useState<NotificationCategory>('all');
   
-  const activeRole = currentUser?.role === 'landlord'
-    ? 'landlord'
-    : currentUser?.role === 'tenant' || currentUser?.role === 'departing_tenant'
-      ? 'tenant'
-      : 'prospect';
   const { isAuthenticated } = useConvexAuth();
   const whatsappPreferences = useQuery(api.whatsapp.getPreferences, isAuthenticated ? {} : 'skip');
   const recentWhatsappDeliveries = useQuery(api.whatsapp.getRecentDeliveries, isAuthenticated ? {} : 'skip');
@@ -81,7 +76,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
   const handleEmailSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!isAuthenticated) { onRequireLogin?.(); return; }
+    if (!isAuthenticated) { preferencesDialog.current?.close(); onRequireLogin?.(); return; }
     setEmailSaving(true);
     setEmailStatus(null);
     try {
@@ -106,6 +101,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const handleWhatsappSave = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!isAuthenticated) {
+      preferencesDialog.current?.close();
       onRequireLogin?.();
       return;
     }
@@ -204,96 +200,34 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const unreadCount = notifications.filter(n => !n.readAt).length;
 
   return (
-    <div className="r8-notifications min-h-screen bg-[#f8fafc] text-[#0f172a] text-left pb-32 sm:pb-24 font-sans">
-      {/* Top Header - Compact single-row layout */}
-      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 sm:h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={onBack}
-            className="p-1.5 -ml-1 text-slate-700 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
-            aria-label="Back"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight truncate">
-              {locale === 'pl' ? 'Powiadomienia i Alerty' : 'Notifications & Alerts'}
-            </h1>
-            <p className="text-xs text-slate-500 hidden sm:block truncate">
-              {locale === 'pl'
-                ? 'Aktualizacje w czasie rzeczywistym dotyczące zapisanych pokoi, zgód właścicieli i zapytań o cesję.'
-                : 'Real-time updates on saved rooms, landlord approvals, and lease takeover inquiries.'}
-            </p>
-          </div>
+    <main className="r8-notifications flex-1 w-full bg-slate-50 text-slate-900 text-left pb-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+        <button type="button" onClick={onBack} className="inline-flex items-center gap-2 min-h-11 text-sm text-slate-600 hover:text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-600"><ArrowLeft size={18}/>{locale === 'pl' ? 'Wróć' : 'Back'}</button>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0"><h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{locale === 'pl' ? 'Powiadomienia' : 'Notifications'}</h1><p className="mt-2 text-sm text-slate-600">{locale === 'pl' ? 'Bądź na bieżąco z aktywnością najmu.' : 'Stay up to date with your rental activity.'}</p></div>
+          <button type="button" onClick={() => preferencesDialog.current?.showModal()} aria-label={locale === 'pl' ? 'Ustawienia powiadomień' : 'Notification settings'} className="shrink-0 w-11 h-11 rounded-xl border border-slate-200 bg-white grid place-items-center focus-visible:ring-2 focus-visible:ring-indigo-600"><Settings2 size={20}/></button>
         </div>
-
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAllAsRead}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer shrink-0 ml-2"
-          >
-            {locale === 'pl' ? 'Oznacz przeczytane' : 'Mark all read'}
-          </button>
-        )}
-      </header>
-
-      <main className="r8-motion-page max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-8">
-        
-        {/* Role-Specific Context Banner */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 shrink-0 mt-0.5">
-              {activeRole === 'prospect' ? (
-                <Heart className="w-5 h-5" />
-              ) : activeRole === 'tenant' ? (
-                <MessageSquare className="w-5 h-5" />
-              ) : (
-                <ShieldCheck className="w-5 h-5" />
-              )}
-            </div>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {locale === 'pl' ? 'Profil aktywny' : 'Active View'} · <span className="text-indigo-600 capitalize">{activeRole}</span>
-              </div>
-              <div className="text-sm font-bold text-slate-900 mt-0.5">
-                {activeRole === 'prospect'
-                  ? (locale === 'pl' ? 'Alerty dla poszukujących pokoju' : 'Room Discovery & Takeover Alerts')
-                  : activeRole === 'tenant'
-                  ? (locale === 'pl' ? 'Powiadomienia o zapytaniach kandydatów' : 'Incoming Inquiries & Response Score')
-                  : (locale === 'pl' ? 'Wnioski o cesję i weryfikacja najemców' : 'Takeover Consent & Verification')}
-              </div>
-              <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
-                {activeRole === 'prospect'
-                  ? (locale === 'pl'
-                      ? 'Gdy zapiszesz interesujący pokój serduszkiem, powiadomimy Cię w pierwszej kolejności, gdy zwolni się do przejęcia cesji.'
-                      : 'When you save rooms you like, you will be notified instantly when a departing tenant makes them available for takeover.')
-                  : activeRole === 'tenant'
-                  ? (locale === 'pl'
-                      ? 'Odpowiadaj sprawnie na zapytania chętnych, aby utrzymać wysoki wynik odpowiedzi i odznakę Szybkiego Kontaktu.'
-                      : 'Reply promptly to verified prospect inquiries to maintain your response score and top-rank badge.')
-                  : (locale === 'pl'
-                      ? 'Otrzymuj powiadomienia, gdy lokator prosi o zgodę na przejęcie najmu przez inną osobę.'
-                      : 'Receive notifications when a tenant asks you to approve a proposed replacement and lease takeover.')}
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4">
+          {[
+            { label: locale === 'pl' ? 'Nieprzeczytane' : 'Unread', count: unreadCount, Icon: Bell },
+            { label: locale === 'pl' ? 'Wiadomości' : 'Messages', count: notifications.filter(n => n.type === 'message').length, Icon: MessageSquare },
+            { label: locale === 'pl' ? 'Zapisane pokoje' : 'Saved rooms', count: notifications.filter(n => n.type === 'saved_available').length, Icon: Heart },
+          ].map(({label,count,Icon}) => <div key={label} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 sm:p-5"><Icon size={20} className="text-indigo-600"/><div className="mt-3 text-2xl font-bold tabular-nums">{count}</div><div className="text-xs sm:text-sm text-slate-600 break-words">{label}</div></div>)}
         </div>
-
-        {/* 2-Column Responsive Desktop Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Main Feed Column (lg:col-span-7) */}
-          <div className="lg:col-span-7 space-y-4">
-            
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="shrink-0 rounded-xl bg-emerald-50 text-emerald-700 p-3"><Share2 size={20}/></div>
+          <div className="min-w-0 flex-1"><h2 className="text-sm font-semibold">{locale === 'pl' ? 'Nie przegap aktualizacji' : 'Never miss an update'}</h2><p className="text-xs sm:text-sm text-slate-600">{locale === 'pl' ? 'Zarządzaj alertami WhatsApp i e-mail.' : 'Manage your WhatsApp and email alerts.'}</p></div>
+          <button type="button" onClick={() => preferencesDialog.current?.showModal()} className="shrink-0 min-h-11 px-3 rounded-xl border border-slate-200 text-sm font-semibold text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-600">{locale === 'pl' ? 'Ustawienia' : 'Manage'}</button>
+        </div>
+        <section aria-label={locale === 'pl' ? 'Aktywność' : 'Activity'} className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-lg font-semibold">{locale === 'pl' ? 'Aktywność' : 'Activity'}</h2>{unreadCount > 0 && <button type="button" onClick={handleMarkAllAsRead} className="min-h-11 text-sm font-semibold text-indigo-700 focus-visible:ring-2 focus-visible:ring-indigo-600">{locale === 'pl' ? 'Oznacz wszystkie jako przeczytane' : 'Mark all as read'}</button>}</div>
             {/* Filter Tabs */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('all')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  aria-pressed={activeFilter === 'all'} onClick={() => setActiveFilter('all')}
+                  className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'all'
                       ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -309,8 +243,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('saved')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  aria-pressed={activeFilter === 'saved'} onClick={() => setActiveFilter('saved')}
+                  className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'saved'
                       ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -321,8 +255,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('inquiries')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  aria-pressed={activeFilter === 'inquiries'} onClick={() => setActiveFilter('inquiries')}
+                  className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'inquiries'
                       ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -333,8 +267,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('approvals')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                  aria-pressed={activeFilter === 'approvals'} onClick={() => setActiveFilter('approvals')}
+                  className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'approvals'
                       ? 'bg-white text-slate-900 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -377,7 +311,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   return (
                     <div
                       key={n.id}
-                      className={`p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors ${
+                      className={`p-4 sm:p-5 flex flex-wrap sm:flex-nowrap items-start justify-between gap-3 transition-colors ${
                         isUnread ? 'bg-indigo-50/30' : 'bg-white hover:bg-slate-50/50'
                       }`}
                     >
@@ -399,10 +333,10 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                         </div>
                         
                         <div className="min-w-0">
-                          <div className="text-xs text-slate-900 font-semibold leading-relaxed">
+                          <div className="text-sm text-slate-900 font-semibold leading-relaxed break-words">
                             {n.body}
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2">
+                          <div className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-2">
                             <span>{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             <span>·</span>
                             <span>{new Date(n.createdAt).toLocaleDateString()}</span>
@@ -423,7 +357,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                           <button
                             type="button"
                             onClick={() => handleMarkAsRead(n.id)}
-                            className="text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+                            className="min-h-11 px-2 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors cursor-pointer"
                           >
                             {locale === 'pl' ? 'Oznacz' : 'Read'}
                           </button>
@@ -432,7 +366,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                           <button
                             type="button"
                             onClick={() => onOpenListing(n.placeId!)}
-                            className="px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
+                            className="min-h-11 px-3 py-2 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors cursor-pointer"
                           >
                             {locale === 'pl' ? 'Zobacz pokój' : 'View room'}
                           </button>
@@ -443,13 +377,15 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                 })
               )}
             </div>
+        </section>
+        <dialog ref={preferencesDialog} aria-labelledby="notification-preferences-title" className="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-full sm:max-w-lg overflow-y-auto overscroll-contain bg-slate-50 p-0 shadow-2xl backdrop:bg-slate-900/40">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white border-b border-slate-200 px-4 py-3">
+            <h2 id="notification-preferences-title" className="text-lg font-semibold">{locale === 'pl' ? 'Ustawienia powiadomień' : 'Notification settings'}</h2>
+            <button autoFocus type="button" onClick={() => preferencesDialog.current?.close()} aria-label={locale === 'pl' ? 'Zamknij' : 'Close'} className="w-11 h-11 grid place-items-center rounded-xl hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600"><X size={22}/></button>
           </div>
-
-          {/* Sidebar Settings Column (lg:col-span-5) */}
-          <div className="lg:col-span-5 space-y-6">
-            
+          <div className="p-4 sm:p-5 space-y-4">
             {/* WhatsApp-first apartment digest settings */}
-            <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-5">
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
                 <div className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
@@ -479,7 +415,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   <p className="text-xs leading-5 text-slate-700">
                     {locale === 'pl' ? 'Zaloguj się, aby połączyć numer WhatsApp z własnymi filtrami mieszkań.' : 'Sign in to connect your WhatsApp number to your apartment filters.'}
                   </p>
-                  <button type="button" onClick={onRequireLogin} className="min-h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                  <button type="button" onClick={() => { preferencesDialog.current?.close(); onRequireLogin?.(); }} className="min-h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
                     {locale === 'pl' ? 'Zaloguj się' : 'Sign in'}
                   </button>
                 </div>
@@ -515,7 +451,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                     </p>
                   </div>
 
-                  {whatsappDigestEnabled && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                  {whatsappDigestEnabled && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="text-xs font-bold text-slate-700">
                       {locale === 'pl' ? 'Miasto' : 'City'}
                       <select value={whatsappCity} onChange={(event) => setWhatsappCity(event.target.value)} className="mt-1.5 w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-normal text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600">
@@ -566,7 +502,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <button type="submit" disabled={whatsappSaving || !whatsappConsent || (!whatsappDigestEnabled && !whatsappMessagesEnabled)} className="min-h-11 flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer disabled:cursor-not-allowed">
                       {whatsappSaving ? (locale === 'pl' ? 'Zapisywanie…' : 'Saving…') : whatsappPreferences ? (locale === 'pl' ? 'Zapisz ustawienia' : 'Save settings') : (locale === 'pl' ? 'Włącz powiadomienia' : 'Enable notifications')}
                     </button>
@@ -591,7 +527,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
             <form onSubmit={handleEmailSave} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4">
               <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100"><Mail className="w-5 h-5" /></div><div><h3 className="text-sm font-bold text-slate-900">{locale === 'pl' ? 'Alerty e-mail' : 'Email alerts'}</h3><p className="mt-0.5 text-xs leading-5 text-slate-500">{locale === 'pl' ? 'Wybierz wiadomości produktowe i dobrowolny przegląd ofert.' : 'Choose product notifications and the optional property digest.'}</p></div></div>
-              {!isAuthenticated ? <button type="button" onClick={onRequireLogin} className="min-h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white">{locale === 'pl' ? 'Zaloguj się' : 'Sign in'}</button> : <>
+              {!isAuthenticated ? <button type="button" onClick={() => { preferencesDialog.current?.close(); onRequireLogin?.(); }} className="min-h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white">{locale === 'pl' ? 'Zaloguj się' : 'Sign in'}</button> : <>
                 <label className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Nieprzeczytane wiadomości' : 'Unread-message summaries'}</span><input type="checkbox" checked={emailUnread} onChange={(e) => setEmailUnread(e.target.checked)} className="h-4 w-4 accent-indigo-600" /></label>
                 <label className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Wygaśnięcie ogłoszenia' : 'Listing-expiry reminders'}</span><input type="checkbox" checked={emailListingReminders} onChange={(e) => setEmailListingReminders(e.target.checked)} className="h-4 w-4 accent-indigo-600" /></label>
                 <label className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3"><input type="checkbox" checked={emailConsent} onChange={(e) => { setEmailConsent(e.target.checked); if (!e.target.checked) setEmailDigest(false); }} className="mt-0.5 h-4 w-4 accent-indigo-600"/><span className="text-[11px] leading-4 text-slate-600">{locale === 'pl' ? 'Zgadzam się na cotygodniowe oferty oraz maksymalnie dwa przypomnienia o dodaniu własnego ogłoszenia, jeśli jeszcze go nie mam. Zgodę mogę wycofać w każdej chwili.' : 'I agree to weekly property matches and at most two reminders to list my own place if I have not published one. I can withdraw consent at any time.'}</span></label>
@@ -603,10 +539,8 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
             </form>
 
           </div>
-
-        </div>
-
-      </main>
-    </div>
+        </dialog>
+      </div>
+    </main>
   );
 };
