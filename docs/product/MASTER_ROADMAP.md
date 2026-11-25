@@ -19,7 +19,7 @@ Baseline: 2026-11-25. Statuses are preliminary; no feature is certified by sourc
 | 14 | Integrated operations and Onlo | Pending |
 
 ## R8-00.01 identity infrastructure
-- A: central Clerk verification helper and account sync integration committed on development branch; tests authored, execution unverified.
+- A: central Clerk verification helper and account sync integration committed on development branch. Identity unit tests 11/11 passed; full regression run #5 passed 203/204, TypeScript passed. Remaining listing-nudge fixture corrected in 32291fc; retest pending. Release blocked until verified.
 - B: profile synchronization and role normalization pending.
 - C: landlord invitation and reassignment protection pending.
 - D: signed Clerk lifecycle webhooks pending.
@@ -31,3 +31,7 @@ Preserve React, Convex, Clerk, Resend, Vercel and existing visual identity. Init
 
 ## Release gate
 Separate branch, review, typecheck, tests, build, security/privacy review, user approval, then merge and production smoke tests. Development branch Vercel deployment disabled in vercel.json; restore production deployment configuration before merge. Confirm actual preview isolation with Vercel administrator. No production release authorized for A yet.
+
+## Verification history
+- Run 45519689640: 198/204 passed; six legacy syncAccount references failed.
+- Run 45519831653: 203/204 passed; one listing nudge fixture conflated platform and email verification. Fixed fixture and added negative assertion. No production changes.
