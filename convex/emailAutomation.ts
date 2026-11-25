@@ -1,4 +1,5 @@
 import { internalMutation } from './_generated/server';
+import { internal } from './_generated/api';
 import { queueEmailDelivery } from './emails';
 import { appOrigin } from './lib/appUrl';
 import { v } from 'convex/values';
@@ -105,7 +106,18 @@ export const queueThreadMessageNotifications = internalMutation({
   handler: async (ctx, args) => {
     const threadRow = await ctx.db.query('domainRecords').withIndex('by_key', (q) => q.eq('kind', 'thread').eq('key', args.threadId)).unique();
     if (!threadRow) { console.info('Unread email skipped', { reason: 'thread_not_found' }); return { queued: 0 }; }
-    return { queued: await queueUnreadForThread(ctx, threadRow, Date.now(), 2 * 60_000) };
+    const now = Date.now();
+    const minimumAge = 2 * 60_000;
+    const thread = threadRow.data || {};
+    if (Array.isArray(thread.unreadFor) && thread.unreadFor.length && typeof thread.lastMessageAt === 'number') {
+      const remaining = thread.lastMessageAt + minimumAge - now;
+      if (remaining > 0) {
+        await ctx.scheduler.runAfter(remaining + 1000, internal.emailAutomation.queueThreadMessageNotifications, args);
+        console.info('Unread email rescheduled', { delayMs: remaining + 1000 });
+        return { queued: 0 };
+      }
+    }
+    return { queued: await queueUnreadForThread(ctx, threadRow, now, minimumAge) };
   },
 });
 
