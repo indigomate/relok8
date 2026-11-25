@@ -10,6 +10,7 @@
 
 import type * as aiMessages from "../aiMessages.js";
 import type * as domain from "../domain.js";
+import type * as emailAutomation from "../emailAutomation.js";
 import type * as emails from "../emails.js";
 import type * as favorites from "../favorites.js";
 import type * as inquiries from "../inquiries.js";
@@ -32,6 +33,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiMessages: typeof aiMessages;
   domain: typeof domain;
+  emailAutomation: typeof emailAutomation;
   emails: typeof emails;
   favorites: typeof favorites;
   inquiries: typeof inquiries;
