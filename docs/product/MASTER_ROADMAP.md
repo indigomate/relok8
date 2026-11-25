@@ -19,7 +19,7 @@ Baseline: 2026-11-25. Statuses are preliminary; no feature is certified by sourc
 | 14 | Integrated operations and Onlo | Pending |
 
 ## R8-00.01 identity infrastructure
-- A: central Clerk verification helper and account sync integration implemented. CI run #9 passed 204/204 tests, 19/19 suites, TypeScript and Vite build. Production release conditionally authorized by user but HOLD: Vercel project unavailable to connected account, preview/production Convex isolation and live provider configuration unverified.
+- A: identity service implemented; CI runs #9 and #14 passed 204/204 tests. User verified Vercel project, main production branch, Node 24, production-only project variables and empty preview project/shared variables. Preview frontend-only build correction committed; latest CI and deployment checks pending. Live verification remains outstanding.
 - B: profile synchronization and role normalization pending.
 - C: landlord invitation and reassignment protection pending.
 - D: signed Clerk lifecycle webhooks pending.
@@ -30,7 +30,7 @@ Baseline: 2026-11-25. Statuses are preliminary; no feature is certified by sourc
 Preserve React, Convex, Clerk, Resend, Vercel and existing visual identity. Initial market Lublin, student distribution wedge, broader foreign-national rental market. Proposed commercial baseline: 49 PLN one-time tenant placement, 49 PLN monthly landlord acquisition per eligible tenancy, 1.5% gross rent processing; management separately priced and validated. Licensed payment partners first.
 
 ## Release gate
-Separate branch, review, typecheck, tests, build, security/privacy review, user approval, then merge and production smoke tests. Development branch Vercel deployment disabled in vercel.json; restore production deployment configuration before merge. Confirm actual preview isolation with Vercel administrator. Conditional release authorization received; do not merge until deployment isolation and target configuration are verified. Temporary git.deploymentEnabled=false is not a production-ready setting and must be addressed before release.
+Review, typecheck, tests, build, security/privacy review, user authorization, then merge and production smoke tests. Preview builds use existing development frontend configuration and do not invoke Convex deployment. Production backend deployment requires VERCEL_ENV=production, main branch, and production configuration. Connected Vercel API access remains unavailable; use dashboard evidence and GitHub checks.
 
 ## Verification history
 - Run 45519689640: 198/204 passed; six legacy syncAccount references failed.
@@ -38,3 +38,5 @@ Separate branch, review, typecheck, tests, build, security/privacy review, user 
 
 - Run 45519960906 (110be8f): completed successfully, 204/204 tests, 19/19 files, typecheck and frontend build passed; npm reported zero known vulnerabilities. Nonblocking dependency/action deprecation warnings remain.
 - Release audit 2026-11-25: Vercel project lookup returned 404 and scoped project search returned no matches. No merge or production deployment initiated. Confirm intended project access, production branch, build command and environment-scoped Convex deploy keys before release. Live Clerk/Convex integration remains unverified.
+
+- Run 45522806537 (bcefaff): 204/204 passed, 19/19 suites, typecheck and frontend build passed. Vercel preview build rejected by production guard, confirmed by user screenshot. Corrected preview path in f0e645e; no production release yet.
