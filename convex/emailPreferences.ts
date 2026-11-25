@@ -105,10 +105,8 @@ export const updateMine = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
-    const contact = await rememberEmailContact(ctx, identity, args.locale);
-    if (!contact) throw new Error('Use a verified account email');
     const profile = await profileForUser(ctx, identity.subject);
-    if (!profile) throw new Error('Email profile not found');
+    if (!profile?.email) throw new Error('Email profile not found');
     if (args.weeklyDigest && !args.marketingConsent) throw new Error('Marketing consent is required for the weekly digest');
     if (args.digestMaxMonthlyRent !== undefined && (!Number.isFinite(args.digestMaxMonthlyRent) || args.digestMaxMonthlyRent < 500 || args.digestMaxMonthlyRent > 100_000)) throw new Error('Invalid maximum rent');
     const now = Date.now();
