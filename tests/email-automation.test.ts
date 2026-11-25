@@ -1,9 +1,22 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../convex/schema';
 import { api, internal } from '../convex/_generated/api';
 
 const modules = import.meta.glob('../convex/**/*.{ts,js}');
+beforeEach(() => {
+  vi.stubEnv('CLERK_SECRET_KEY', 'test-only-key');
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+    const endpoint = new URL(url);
+    if (endpoint.origin !== 'https://api.clerk.com' || !endpoint.pathname.startsWith('/v1/users/')) throw new Error('Unexpected network call');
+    const subject = decodeURIComponent(endpoint.pathname.slice('/v1/users/'.length));
+    return Response.json({
+      id: subject, primary_email_address_id: 'primary',
+      email_addresses: [{ id: 'primary', email_address: subject + '@example.test', verification: { status: 'verified' } }],
+    });
+  }));
+});
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 const identity = (subject: string) => ({
   subject,
   issuer: 'https://clerk.example.test',
@@ -41,8 +54,8 @@ describe('email automation and consent', () => {
     const t = convexTest(schema, modules);
     const user = t.withIdentity(identity('welcome'));
     const emailApi = (api as any).emailPreferences;
-    expect((await user.mutation(emailApi.syncAccount, { locale: 'en' })).synced).toBe(true);
-    await user.mutation(emailApi.syncAccount, { locale: 'en' });
+    expect((await user.action(emailApi.syncAccountVerified, { locale: 'en' })).synced).toBe(true);
+    await user.action(emailApi.syncAccountVerified, { locale: 'en' });
     const deliveries = await t.run((ctx) => ctx.db.query('emailDeliveries').collect());
     expect(deliveries.filter((row) => row.template === 'welcome')).toHaveLength(1);
     expect(await user.query(emailApi.getMine, {})).toMatchObject({
@@ -59,7 +72,7 @@ describe('email automation and consent', () => {
     const seeker = t.withIdentity(identity('seeker'));
     const emailApi = (api as any).emailPreferences;
     await owner.mutation((api as any).leases.create, listing());
-    await seeker.mutation(emailApi.syncAccount, { locale: 'en' });
+    await seeker.action(emailApi.syncAccountVerified, { locale: 'en' });
     await expect(seeker.mutation(emailApi.updateMine, {
       locale: 'en', unreadMessages: true, listingReminders: true,
       weeklyDigest: true, marketingConsent: false, digestCities: [], digestRoomTypes: [],
@@ -84,13 +97,13 @@ describe('email automation and consent', () => {
     const emailApi = (api as any).emailPreferences;
     const automation = (internal as any).emailAutomation;
 
-    await candidate.mutation(emailApi.syncAccount, { locale: 'en' });
+    await candidate.action(emailApi.syncAccountVerified, { locale: 'en' });
     await candidate.mutation(emailApi.updateMine, {
       locale: 'en', unreadMessages: true, listingReminders: true,
       weeklyDigest: false, marketingConsent: true, digestCities: [], digestRoomTypes: [],
     });
-    await withoutConsent.mutation(emailApi.syncAccount, { locale: 'en' });
-    await alreadyListed.mutation(emailApi.syncAccount, { locale: 'en' });
+    await withoutConsent.action(emailApi.syncAccountVerified, { locale: 'en' });
+    await alreadyListed.action(emailApi.syncAccountVerified, { locale: 'en' });
     await alreadyListed.mutation(emailApi.updateMine, {
       locale: 'en', unreadMessages: true, listingReminders: true,
       weeklyDigest: false, marketingConsent: true, digestCities: [], digestRoomTypes: [],
@@ -129,8 +142,8 @@ describe('email automation and consent', () => {
     const owner = t.withIdentity(identity('owner'));
     const prospect = t.withIdentity(identity('prospect'));
     const emailApi = (api as any).emailPreferences;
-    await owner.mutation(emailApi.syncAccount, { locale: 'en' });
-    await prospect.mutation(emailApi.syncAccount, { locale: 'en' });
+    await owner.action(emailApi.syncAccountVerified, { locale: 'en' });
+    await prospect.action(emailApi.syncAccountVerified, { locale: 'en' });
     const leaseId = await owner.mutation((api as any).leases.create, listing(isoDate(7)));
     const thread = await prospect.mutation((api as any).domain.write, { operation: 'createThread', input: { placeId: leaseId } });
     await prospect.mutation((api as any).domain.write, { operation: 'sendMessage', input: { threadId: thread.id, body: 'Is this still available?' } });
@@ -153,8 +166,8 @@ describe('email automation and consent', () => {
     const owner = t.withIdentity(identity('message-owner'));
     const prospect = t.withIdentity(identity('message-prospect'));
     const emailApi = (api as any).emailPreferences;
-    await owner.mutation(emailApi.syncAccount, { locale: 'en', fullName: 'Olivia Owner' });
-    await prospect.mutation(emailApi.syncAccount, { locale: 'en', fullName: 'Peter Prospect' });
+    await owner.action(emailApi.syncAccountVerified, { locale: 'en', fullName: 'Olivia Owner' });
+    await prospect.action(emailApi.syncAccountVerified, { locale: 'en', fullName: 'Peter Prospect' });
     const leaseId = await owner.mutation((api as any).leases.create, listing());
     const thread = await prospect.mutation((api as any).domain.write, { operation: 'createThread', input: { placeId: leaseId } });
     const privateBody = 'My private viewing details are 18:30 on Tuesday.';
