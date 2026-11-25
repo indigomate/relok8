@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useId } from 'react';
-import { Globe, Menu, User, Heart, HelpCircle, MessageSquare, Home, Settings, LogOut, Check, LogIn, Bell, Award, GraduationCap } from 'lucide-react';
-import { Show, useClerk } from '@clerk/react';
+import { User, Heart, HelpCircle, MessageSquare, Home, Settings, LogOut, Bell, Award } from 'lucide-react';
+import { useClerk } from '@clerk/react';
 import { Relok8Logo } from './BrandLogo';
 import { SupportedLocale } from '../utils/formatters';
 import { t } from '../utils/translations';
@@ -131,10 +131,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navClass = (active: boolean) => 'min-h-11 px-3 rounded-xl text-sm font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ' + (active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50');
   const menuClass = 'w-full min-h-11 px-3 rounded-xl text-left text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-indigo-600';
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <header className="sticky top-0 z-40 shrink-0 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto h-[72px] px-3 sm:px-6 flex items-center justify-between gap-2">
         <a href={prefix || '/'} onClick={e => { if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {e.preventDefault();go('/');} }} className="shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-600" aria-label="Relok8 Home"><Relok8Logo height={30} theme={theme}/></a>
-        <nav aria-label={pl ? 'Nawigacja główna' : 'Main navigation'} className="hidden md:flex items-center gap-1">
+        <nav aria-label={pl ? 'Nawigacja główna' : 'Main navigation'} className="hidden md:flex min-w-0 items-center gap-1">
           <button className={navClass(['home','city','saved','listing-detail'].includes(currentPath || ''))} onClick={()=>go('/')} aria-current={['home','city','saved','listing-detail'].includes(currentPath || '')?'page':undefined}>{pl?'Szukaj':'Explore'}</button>
           <button className={navClass(['place','dashboard','list'].includes(currentPath || ''))} onClick={()=>go('/place')} aria-current={['place','dashboard','list'].includes(currentPath || '')?'page':undefined}>{pl?'Moje miejsce':'My Place'}</button>
           <button className={navClass(currentPath==='services')} onClick={()=>go('/services')} aria-current={currentPath==='services'?'page':undefined}>{pl?'Usługi':'Services'}</button>
@@ -147,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button ref={accountButtonRef} type="button" onClick={()=>{setIsDropdownOpen(!isDropdownOpen);setIsLangMenuOpen(false);}} aria-label={pl?'Menu konta':'Account menu'} aria-expanded={isDropdownOpen} aria-controls={accountMenuId} className="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-600">
               {currentUser?.avatar?<img src={currentUser.avatar} alt="" className="w-8 h-8 rounded-full object-cover"/>:<User className="w-5 h-5 text-indigo-600"/>}
             </button>
-            {isDropdownOpen&&<div id={accountMenuId} className="absolute right-0 top-full mt-2 w-64 max-h-[75vh] overflow-auto bg-white rounded-2xl border border-slate-200 shadow-xl p-2 z-50">
+            {isDropdownOpen&&<div id={accountMenuId} className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-90px)] overflow-y-auto overscroll-contain bg-white rounded-2xl border border-slate-200 shadow-xl p-2 z-50">
               {currentUser?<div className="px-3 py-3 border-b border-slate-100 mb-1"><p className="font-bold truncate">{currentUser.name}</p><p className="text-xs text-slate-500 truncate">{currentUser.email}</p></div>:<><button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onOpenLogin('signin')}}>{strings.logIn}</button><button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onOpenLogin('signup')}}>{strings.signUp}</button></>}
               <button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onNavigateSaved()}}><Heart size={17}/>{strings.saved}</button>
               <button className={menuClass} onClick={()=>go('/place')}><Home size={17}/>{pl?'Moje miejsce':'My Place'}</button>
