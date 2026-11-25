@@ -42,7 +42,7 @@ import { LandlordDashboard } from './components/LandlordDashboard';
 import { PlacePage } from './pages/PlacePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { RewardsPage } from './pages/RewardsPage';
-import { EnrollmentsPage } from './pages/EnrollmentsPage';
+import { ServicesPage } from './pages/ServicesPage';
 import { EmailPreferencesPage } from './pages/EmailPreferencesPage';
 import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
@@ -855,7 +855,7 @@ function Relok8App() {
             navigateTo(locale === 'pl' ? '/pl' : '/');
           }
         }}
-        isCompactSearchVisible={true}
+        isCompactSearchVisible={currentRoute.type === 'home' || currentRoute.type === 'city'}
       />
 
       {/* Route Views */}
@@ -1022,8 +1022,9 @@ function Relok8App() {
           currentUser={currentUser}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
-      ) : currentRoute.type === 'enrollments' ? (
-        <EnrollmentsPage
+      ) : currentRoute.type === 'services' ? (
+        <ServicesPage
+          onNavigate={(path) => navigateTo((locale === 'pl' ? '/pl' : '') + path)}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
@@ -1312,7 +1313,7 @@ function Relok8App() {
       />}
 
       {/* Mobile Bottom Navigation (active on browse/saved/account/list, hidden on listing-detail & messages to prevent covering sticky CTA and chat composer) */}
-      {currentRoute.type !== 'listing-detail' && currentRoute.type !== 'messages' && (
+      {currentRoute.type !== 'listing-detail' && currentRoute.type !== 'messages' && currentRoute.type !== 'cesja-template' && (
         <MobileBottomNav
           currentPath={currentRoute.type}
           savedCount={savedIds.length}
