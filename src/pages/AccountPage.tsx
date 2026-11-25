@@ -97,7 +97,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({
       }
 
       // Persist the authenticated profile before reporting success.
-      await upsertProfile({ userId: clerkUser.id, fullName: normalizedName });
+      await upsertProfile({ userId: clerkUser.id, fullName: normalizedName, phoneNumber: phone, university });
 
       // 3. Update current user state in application
       const updatedUser: UserProfile = {
