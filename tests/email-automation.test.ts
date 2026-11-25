@@ -115,10 +115,21 @@ describe('email automation and consent', () => {
       for (const profile of profiles) {
         await ctx.db.patch(profile._id, {
           createdAt: Date.now() - (profile.userId === 'listing-candidate' ? 4 : 20) * 86_400_000,
+          isVerified: true, // Explicitly establish platform verification, separate from verified email.
         });
       }
     });
 
+    // Verified email and marketing consent alone must not grant platform verification.
+    await t.run(async (ctx) => {
+      const profile = await ctx.db.query('profiles').withIndex('by_userId', q => q.eq('userId', 'listing-candidate')).unique();
+      await ctx.db.patch(profile!._id, { isVerified: false });
+    });
+    expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(0);
+    await t.run(async (ctx) => {
+      const profile = await ctx.db.query('profiles').withIndex('by_userId', q => q.eq('userId', 'listing-candidate')).unique();
+      await ctx.db.patch(profile!._id, { isVerified: true });
+    });
     expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(1);
     expect((await t.mutation(automation.queueListingNudges, {})).queued).toBe(0);
 
