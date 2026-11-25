@@ -607,7 +607,7 @@ export const invitationPreview = query({
       .query("domainRecords")
       .withIndex("by_key", (q) => q.eq("kind", "invitation").eq("key", a.token))
       .unique();
-    if (!r || r.data.acceptedAt || Date.now() - r.data.createdAt > 7 * 86400000)
+    if (!r || r.data.role !== 'landlord' || r.data.revokedAt || r.data.acceptedAt || Date.now() - r.data.createdAt > 7 * 86400000)
       return {
         error:
           "This invitation is expired, already used or unavailable. Ask the sender for a new link.",
@@ -622,6 +622,7 @@ export const invitationPreview = query({
           "Sign in with the verified email this invitation was addressed to.",
       };
     const l = await lease(ctx, r.placeId!);
+    if (r.ownerId !== l.ownerId || u.subject === l.ownerId || (l.landlordUserId && l.landlordUserId !== u.subject)) return { error: 'This invitation is unavailable or requires review.' };
     return {
       title: l.title,
       address: l.address,
