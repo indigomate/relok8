@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/react';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { ArrowLeft, User, Shield, LogOut, CheckCircle2, AlertCircle, Phone, GraduationCap, Lock, Trash2, Heart, Globe, Building2, ChevronRight } from 'lucide-react';
+import { ArrowLeft, User, Shield, LogOut, CheckCircle2, AlertCircle, Phone, GraduationCap, Lock, Trash2, Heart, Globe, Building2, ChevronRight, Camera } from 'lucide-react';
 import { Listing } from '../types';
 import { SupportedLocale } from '../utils/formatters';
 import { UserProfile } from '../components/Navbar';
@@ -39,6 +39,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [university, setUniversity] = useState(currentUser?.university || '');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
   const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
 
@@ -60,6 +63,23 @@ export const AccountPage: React.FC<AccountPageProps> = ({
       setUniversity(currentUser.university || '');
     }
   }, [currentUser]);
+
+  const uploadPhoto = async (file: File) => {
+    if (!clerkUser || !currentUser) return;
+    setPhotoError('');
+    if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setPhotoError(locale === 'pl' ? 'Wybierz JPG, PNG lub WebP do 5 MB.' : 'Choose a JPG, PNG or WebP image up to 5 MB.');
+      return;
+    }
+    setIsUploadingPhoto(true);
+    try {
+      await clerkUser.setProfileImage({ file });
+      await clerkUser.reload();
+      onUpdateUser({ ...currentUser, avatar: clerkUser.imageUrl });
+    } catch {
+      setPhotoError(locale === 'pl' ? 'Nie udało się zapisać zdjęcia. Spróbuj ponownie.' : 'Could not save your photo. Try again.');
+    } finally { setIsUploadingPhoto(false); }
+  };
 
   // Handle saving personal details
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -225,12 +245,18 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-7 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-slate-900 text-white font-bold text-xl flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+              <div className="relative group shrink-0"><div className="w-16 h-16 rounded-2xl bg-slate-900 text-white font-bold text-xl flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
                 {currentUser.avatar ? (
                   <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
                 ) : (
                   <span>{initials}</span>
                 )}
+              </div>
+              <label className="absolute -bottom-1 -right-1 rounded-full bg-indigo-600 text-white p-2 shadow-md ring-2 ring-white cursor-pointer focus-within:ring-indigo-400">
+                <Camera className="w-4 h-4" aria-hidden="true" />
+                <span className="sr-only">{locale === 'pl' ? 'Zmień zdjęcie profilowe' : 'Change profile photo'}</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={isUploadingPhoto || !clerkUser} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; if (file) void uploadPhoto(file); }} />
+              </label>
               </div>
 
               <div className="space-y-1">
@@ -251,14 +277,17 @@ export const AccountPage: React.FC<AccountPageProps> = ({
 
             <button
               type="button"
-              onClick={onLogout}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
+              disabled={isSigningOut}
+              onClick={async () => { setIsSigningOut(true); try { await clerk.signOut(); onLogout(); } catch { setPhotoError(locale === 'pl' ? 'Nie udało się wylogować.' : 'Could not sign out. Try again.'); } finally { setIsSigningOut(false); } }}
+              className="min-h-11 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto focus-visible:ring-2 focus-visible:ring-rose-600 disabled:opacity-50"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>{locale === 'pl' ? 'Wyloguj się' : 'Sign out'}</span>
             </button>
           </div>
         </div>
+
+        {(isUploadingPhoto || photoError) && <p role={photoError ? 'alert' : 'status'} className={photoError ? 'text-sm text-rose-700' : 'text-sm text-indigo-700'}>{photoError || (locale === 'pl' ? 'Zapisywanie zdjęcia…' : 'Uploading photo…')}</p>}
 
         {/* Landlord Portal Quick Access */}
         <div className="bg-indigo-50/70 rounded-3xl border border-indigo-100 p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
