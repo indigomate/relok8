@@ -1,6 +1,7 @@
 import { internalAction, internalMutation, internalQuery } from './_generated/server';
 import { internal } from './_generated/api';
 import { v } from 'convex/values';
+import { findInvitation } from './lib/invitations';
 import {
   renderRelok8Email,
   type EmailLocale,
@@ -140,6 +141,17 @@ export const markSending = internalMutation({
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
     if (!delivery || ['sent', 'delivered', 'bounced', 'complained', 'suppressed'].includes(delivery.status)) return null;
+    if (delivery.template === 'landlord_invitation') {
+      const data = delivery.templateData as { ctaUrl?: string } | undefined;
+      const token = data?.ctaUrl?.match(/[?&]invite=([a-f0-9]{64})(?:&|$)/)?.[1];
+      const invitation = token ? await findInvitation(ctx, token) : null;
+      const placeId = invitation?.placeId ? ctx.db.normalizeId('leases', invitation.placeId) : null;
+      const place = placeId ? await ctx.db.get(placeId) : null;
+      if (!invitation || invitation.data.role !== 'landlord' || invitation.data.acceptedAt || invitation.data.revokedAt || Date.now() - invitation.data.createdAt >= 7 * 86400000 || !place || place.ownerId !== invitation.ownerId || place.landlordUserId || invitation.data.email.toLowerCase() !== delivery.recipient || delivery.attempts >= MAX_ATTEMPTS) {
+        await ctx.db.patch(delivery._id, { status: 'suppressed', templateData: undefined, errorCode: 'invitation_unavailable', updatedAt: Date.now() });
+        return null;
+      }
+    }
     if (delivery.attempts >= MAX_ATTEMPTS) return null;
     const attempts = delivery.attempts + 1;
     await ctx.db.patch(delivery._id, { status: 'sending', attempts, updatedAt: Date.now() });
@@ -174,10 +186,11 @@ export const markFailed = internalMutation({
   },
   handler: async (ctx, args) => {
     const delivery = await ctx.db.get(args.deliveryId);
-    if (!delivery || ['sent', 'delivered'].includes(delivery.status)) return;
+    if (!delivery || ['sent', 'delivered', 'suppressed'].includes(delivery.status)) return;
     const shouldRetry = args.attempts < MAX_ATTEMPTS;
     await ctx.db.patch(delivery._id, {
       status: shouldRetry ? 'queued' : 'failed',
+      ...(!shouldRetry && delivery.template === 'landlord_invitation' ? { templateData: undefined } : {}),
       errorCode: args.errorCode.slice(0, 100),
       errorMessage: args.errorMessage.slice(0, 500),
       updatedAt: Date.now(),
