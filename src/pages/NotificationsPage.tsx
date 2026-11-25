@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Bell, Share2, Heart, ShieldCheck, MessageSquare, FileText, Home, CheckCircle2, Clock3, Mail, Settings2, X, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Bell, Share2, Heart, MessageSquare, FileText, Home, CheckCircle2, Clock3, Mail, Settings2, X } from 'lucide-react';
 import { useConvexAuth, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { ENABLED_CITIES } from '../data/cities';
@@ -21,8 +21,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   onBack,
   locale = 'en',
   onOpenListing,
-  onRequireLogin,
-  currentUser
+  onRequireLogin
 }) => {
   const preferencesDialog = React.useRef<HTMLDialogElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -77,7 +76,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
   const handleEmailSave = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!isAuthenticated) { onRequireLogin?.(); return; }
+    if (!isAuthenticated) { preferencesDialog.current?.close(); onRequireLogin?.(); return; }
     setEmailSaving(true);
     setEmailStatus(null);
     try {
@@ -102,6 +101,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   const handleWhatsappSave = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!isAuthenticated) {
+      preferencesDialog.current?.close();
       onRequireLogin?.();
       return;
     }
@@ -226,7 +226,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
               <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('all')}
+                  aria-pressed={activeFilter === 'all'} onClick={() => setActiveFilter('all')}
                   className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'all'
                       ? 'bg-white text-slate-900 shadow-2xs'
@@ -243,7 +243,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('saved')}
+                  aria-pressed={activeFilter === 'saved'} onClick={() => setActiveFilter('saved')}
                   className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'saved'
                       ? 'bg-white text-slate-900 shadow-2xs'
@@ -255,7 +255,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('inquiries')}
+                  aria-pressed={activeFilter === 'inquiries'} onClick={() => setActiveFilter('inquiries')}
                   className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'inquiries'
                       ? 'bg-white text-slate-900 shadow-2xs'
@@ -267,7 +267,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => setActiveFilter('approvals')}
+                  aria-pressed={activeFilter === 'approvals'} onClick={() => setActiveFilter('approvals')}
                   className={`min-h-11 px-3 py-2 text-sm font-semibold rounded-lg transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-indigo-600 ${
                     activeFilter === 'approvals'
                       ? 'bg-white text-slate-900 shadow-2xs'
@@ -415,7 +415,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
                   <p className="text-xs leading-5 text-slate-700">
                     {locale === 'pl' ? 'Zaloguj się, aby połączyć numer WhatsApp z własnymi filtrami mieszkań.' : 'Sign in to connect your WhatsApp number to your apartment filters.'}
                   </p>
-                  <button type="button" onClick={onRequireLogin} className="min-h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
+                  <button type="button" onClick={() => { preferencesDialog.current?.close(); onRequireLogin?.(); }} className="min-h-10 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer">
                     {locale === 'pl' ? 'Zaloguj się' : 'Sign in'}
                   </button>
                 </div>
@@ -527,7 +527,7 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
 
             <form onSubmit={handleEmailSave} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-4">
               <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100"><Mail className="w-5 h-5" /></div><div><h3 className="text-sm font-bold text-slate-900">{locale === 'pl' ? 'Alerty e-mail' : 'Email alerts'}</h3><p className="mt-0.5 text-xs leading-5 text-slate-500">{locale === 'pl' ? 'Wybierz wiadomości produktowe i dobrowolny przegląd ofert.' : 'Choose product notifications and the optional property digest.'}</p></div></div>
-              {!isAuthenticated ? <button type="button" onClick={onRequireLogin} className="min-h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white">{locale === 'pl' ? 'Zaloguj się' : 'Sign in'}</button> : <>
+              {!isAuthenticated ? <button type="button" onClick={() => { preferencesDialog.current?.close(); onRequireLogin?.(); }} className="min-h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white">{locale === 'pl' ? 'Zaloguj się' : 'Sign in'}</button> : <>
                 <label className="flex items-center justify-between gap-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Nieprzeczytane wiadomości' : 'Unread-message summaries'}</span><input type="checkbox" checked={emailUnread} onChange={(e) => setEmailUnread(e.target.checked)} className="h-4 w-4 accent-indigo-600" /></label>
                 <label className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-700"><span>{locale === 'pl' ? 'Wygaśnięcie ogłoszenia' : 'Listing-expiry reminders'}</span><input type="checkbox" checked={emailListingReminders} onChange={(e) => setEmailListingReminders(e.target.checked)} className="h-4 w-4 accent-indigo-600" /></label>
                 <label className="flex items-start gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3"><input type="checkbox" checked={emailConsent} onChange={(e) => { setEmailConsent(e.target.checked); if (!e.target.checked) setEmailDigest(false); }} className="mt-0.5 h-4 w-4 accent-indigo-600"/><span className="text-[11px] leading-4 text-slate-600">{locale === 'pl' ? 'Zgadzam się na cotygodniowe oferty oraz maksymalnie dwa przypomnienia o dodaniu własnego ogłoszenia, jeśli jeszcze go nie mam. Zgodę mogę wycofać w każdej chwili.' : 'I agree to weekly property matches and at most two reminders to list my own place if I have not published one. I can withdraw consent at any time.'}</span></label>
