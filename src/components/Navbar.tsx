@@ -120,446 +120,49 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const prefix = locale === 'pl' ? '/pl' : '';
+  const pl = locale === 'pl';
+  const go = (path: string) => {
+    setIsDropdownOpen(false);
+    setIsLangMenuOpen(false);
+    window.history.pushState({}, '', prefix + path || '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+  const navClass = (active: boolean) => 'min-h-11 px-3 rounded-xl text-sm font-semibold whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 ' + (active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-700 hover:bg-slate-50');
+  const menuClass = 'w-full min-h-11 px-3 rounded-xl text-left text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-3 focus-visible:ring-2 focus-visible:ring-indigo-600';
   return (
-    <header className="sticky top-0 z-40 h-[72px] bg-white/95 backdrop-blur-md border-b border-slate-200 transition-colors">
-      <div className="max-w-7xl mx-auto h-full px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4">
-        
-        {/* Left: Brand Logo */}
-        <a
-          href={locale === 'pl' ? '/pl' : '/'}
-          onClick={(e) => {
-            e.preventDefault();
-            window.history.pushState({}, '', locale === 'pl' ? '/pl' : '/');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          className="shrink-0 flex items-center focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none rounded-lg"
-          aria-label="Relok8 Home"
-          aria-current={currentPath === 'home' || currentPath === 'city' ? 'page' : undefined}
-        >
-          <Relok8Logo height={30} theme={theme} />
-        </a>
-
-        {/* Centre: Search bar (§4.2 compact state) */}
-        {isCompactSearchVisible && (
-          <div className="hidden md:flex flex-1 justify-center max-w-xs md:max-w-sm lg:max-w-md mx-2">
-            <SearchBar
-              mode="compact"
-              searchState={searchState}
-              onSearchChange={onSearchChange}
-              locale={locale}
-              onExpandClick={onExpandSearch}
-            />
-          </div>
-        )}
-
-        {/* Right: List your place · Saved · Notifications · Language · Account menu */}
-        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
-          
-          {/* List your place */}
-          <button
-            type="button"
-            onClick={onOpenListPlace}
-            className="hidden sm:inline-flex items-center text-xs sm:text-sm font-semibold text-slate-800 hover:text-indigo-600 hover:bg-slate-50 px-3 py-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer whitespace-nowrap"
-          >
-            {strings.listYourPlace}
-          </button>
-
-          {/* Saved */}
-          <IconButton
-            onClick={onNavigateSaved}
-            label={`${strings.saved} (${savedCount})`}
-            aria-current={currentPath === 'saved' ? 'page' : undefined}
-            className="relative max-[359px]:hidden"
-          >
-            <Heart className="w-5 h-5" />
-            {savedCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-scale-in">
-                {savedCount}
-              </span>
-            )}
-          </IconButton>
-
-          {/* Notifications bell (§2 & §7) */}
-          <IconButton
-            onClick={() => {
-              const target = locale === 'pl' ? '/pl/notifications' : '/notifications';
-              window.history.pushState({}, '', target);
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            label={`${locale === 'pl' ? 'Powiadomienia' : 'Notifications'} (${unreadNotifications})`}
-            aria-current={currentPath === 'notifications' ? 'page' : undefined}
-            className="relative"
-          >
-            <Bell className="w-5 h-5" />
-            {unreadNotifications > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#F2705A] ring-2 ring-white animate-pulse" />
-            )}
-          </IconButton>
-
-          {/* Language Switch */}
-          <div className="relative" ref={langRef}>
-            <IconButton
-              ref={languageButtonRef}
-              onClick={() => {
-                setIsLangMenuOpen((open) => !open);
-                setIsDropdownOpen(false);
-              }}
-              label={locale === 'pl' ? 'Zmień język' : 'Change language'}
-              aria-expanded={isLangMenuOpen}
-              aria-controls={languageMenuId}
-              aria-haspopup={true}
-              className="gap-1"
-            >
-              <Globe className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase">{locale}</span>
-            </IconButton>
-
-
-            {isLangMenuOpen && (
-              <div id={languageMenuId} className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2">
-                {[
-                  { code: 'en', label: 'English (EN)' },
-                  { code: 'pl', label: 'Polski (PL)' }
-                ].map((item) => (
-                  <button
-                    key={item.code}
-                    type="button"
-                    onClick={() => {
-                      onSelectLocale(item.code as any);
-                      setIsLangMenuOpen(false);
-                    }}
-                    aria-pressed={locale === item.code}
-                    className={`w-full px-3 py-2 text-left text-xs font-medium flex items-center justify-between hover:bg-slate-50 cursor-pointer ${
-                      locale === item.code ? 'text-indigo-600 font-bold bg-indigo-50/50' : 'text-slate-700'
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                    {locale === item.code && <Check className="w-4 h-4 text-indigo-600" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {!currentUser && (
-            <Show when="signed-out">
-              <button
-                type="button"
-                onClick={() => onOpenLogin('signin')}
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 rounded-full transition-all shadow-xs cursor-pointer"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>{strings.logIn}</span>
-              </button>
-            </Show>
-          )}
-
-          {/* Account Menu (Dropdown) */}
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+      <div className="max-w-7xl mx-auto h-[72px] px-3 sm:px-6 flex items-center justify-between gap-2">
+        <a href={prefix || '/'} onClick={e => { if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {e.preventDefault();go('/');} }} className="shrink-0 rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-600" aria-label="Relok8 Home"><Relok8Logo height={30} theme={theme}/></a>
+        <nav aria-label={pl ? 'Nawigacja główna' : 'Main navigation'} className="hidden md:flex items-center gap-1">
+          <button className={navClass(['home','city','saved','listing-detail'].includes(currentPath || ''))} onClick={()=>go('/')} aria-current={['home','city','saved','listing-detail'].includes(currentPath || '')?'page':undefined}>{pl?'Szukaj':'Explore'}</button>
+          <button className={navClass(['place','dashboard','list'].includes(currentPath || ''))} onClick={()=>go('/place')} aria-current={['place','dashboard','list'].includes(currentPath || '')?'page':undefined}>{pl?'Moje miejsce':'My Place'}</button>
+          <button className={navClass(currentPath==='services')} onClick={()=>go('/services')} aria-current={currentPath==='services'?'page':undefined}>{pl?'Usługi':'Services'}</button>
+        </nav>
+        <div className="flex items-center gap-1 shrink-0">
+          <IconButton onClick={()=>{setIsDropdownOpen(false);onNavigateSaved();}} label={strings.saved+' ('+savedCount+')'} aria-current={currentPath==='saved'?'page':undefined} className="relative hidden sm:inline-flex"><Heart className="w-5 h-5"/>{savedCount>0&&<span className="absolute right-0 top-0 rounded-full bg-indigo-600 text-white text-[10px] px-1">{savedCount}</span>}</IconButton>
+          <IconButton onClick={()=>go('/messages')} label={(pl?'Wiadomości':'Inbox')+' ('+unreadMessages+')'} aria-current={currentPath==='messages'?'page':undefined} className="relative"><MessageSquare className="w-5 h-5"/>{unreadMessages>0&&<span className="absolute right-1 top-1 w-2 h-2 rounded-full bg-indigo-600"/>}</IconButton>
+          <IconButton onClick={()=>go('/notifications')} label={(pl?'Powiadomienia':'Notifications')+' ('+unreadNotifications+')'} aria-current={currentPath==='notifications'?'page':undefined} className="relative"><Bell className="w-5 h-5"/>{unreadNotifications>0&&<span className="absolute right-1 top-1 w-2 h-2 rounded-full bg-indigo-600"/>}</IconButton>
           <div className="relative" ref={dropdownRef}>
-            <button
-              ref={accountButtonRef}
-              type="button"
-              onClick={() => {
-                setIsDropdownOpen((open) => !open);
-                setIsLangMenuOpen(false);
-              }}
-              className="min-h-11 flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border border-slate-200 hover:shadow-md transition-all text-slate-700 hover:border-slate-300 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:outline-none cursor-pointer"
-              aria-label="Account menu"
-              aria-expanded={isDropdownOpen}
-              aria-controls={accountMenuId}
-              aria-haspopup={true}
-              aria-current={currentPath === 'account' ? 'page' : undefined}
-            >
-              <Menu className="w-4 h-4" />
-              <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 overflow-hidden">
-                {currentUser?.avatar ? (
-                  <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-4 h-4" />
-                )}
-              </div>
+            <button ref={accountButtonRef} type="button" onClick={()=>{setIsDropdownOpen(!isDropdownOpen);setIsLangMenuOpen(false);}} aria-label={pl?'Menu konta':'Account menu'} aria-expanded={isDropdownOpen} aria-controls={accountMenuId} className="w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center hover:bg-indigo-50 focus-visible:ring-2 focus-visible:ring-indigo-600">
+              {currentUser?.avatar?<img src={currentUser.avatar} alt="" className="w-8 h-8 rounded-full object-cover"/>:<User className="w-5 h-5 text-indigo-600"/>}
             </button>
-
-            {/* Dropdown panel - account items only (§4.5) */}
-            {isDropdownOpen && (
-              <div id={accountMenuId} className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 text-left">
-                {/* User section */}
-                {!currentUser ? (
-                  /* GUEST MENU (§4.5): Log in · Sign up · Saved · Help · Theme */
-                  <div className="p-2 space-y-1">
-                    {/* Sign-up promo card with WCAG AA contrast (light text on dark indigo) */}
-                    <div className="p-3 rounded-xl bg-indigo-900 text-white mb-2">
-                      <div className="text-xs font-bold text-white">
-                        {locale === 'pl' ? 'Wprowadź się bez prowizji' : 'Move in with 0 PLN fee'}
-                      </div>
-                      <div className="text-[11px] text-indigo-200 mt-0.5 leading-snug">
-                        {locale === 'pl' ? 'Zaloguj się, aby kontaktować najemców.' : 'Sign in to contact tenants and save listings.'}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          onOpenLogin('signup');
-                        }}
-                        className="mt-2.5 w-full py-1.5 text-center text-xs font-bold bg-white text-indigo-900 rounded-lg hover:bg-slate-100 transition-colors shadow-xs"
-                      >
-                        {strings.signUp}
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        onOpenLogin('signin');
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-slate-800 hover:bg-slate-50 flex items-center justify-between"
-                    >
-                      <span>{strings.logIn}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        onOpenLogin('signup');
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
-                    >
-                      <span>{strings.signUp}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        onNavigateSaved();
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
-                    >
-                      <span>{strings.saved}</span>
-                      {savedCount > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
-                          {savedCount}
-                        </span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        onOpenHelp();
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between"
-                    >
-                      <span>{strings.help}</span>
-                    </button>
-                  </div>
-                ) : (
-                  /* LOGGED IN MENU (§10: Grouped Menu) */
-                  <div className="p-2 space-y-2 text-xs">
-                    {/* Top: Name, email, role badge */}
-                    <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
-                      <div className="min-w-0">
-                        <div className="font-bold text-slate-900 truncate">{currentUser.name}</div>
-                        <div className="text-[11px] text-slate-500 truncate">{currentUser.email}</div>
-                      </div>
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        {locale === "pl" ? "Zalogowano" : "Signed in"}
-                      </span>
-                    </div>
-
-                    {/* Section 1: Housing */}
-                    <div className="space-y-0.5">
-                      <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Housing</div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          const target = locale === 'pl' ? '/pl/messages' : '/messages';
-                          window.history.pushState({}, '', target);
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4 text-slate-400" />
-                          <span>Messages</span>
-                        </div>
-                        {unreadMessages > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 bg-[#F2705A] text-white rounded-full">
-                            {unreadMessages}
-                          </span>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          onNavigateSaved();
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Heart className="w-4 h-4 text-slate-400" />
-                          <span>{strings.saved}</span>
-                        </div>
-                        {savedCount > 0 && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
-                            {savedCount}
-                          </span>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          const target = locale === 'pl' ? '/pl/place' : '/place';
-                          window.history.pushState({}, '', target);
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                      >
-                        <Home className="w-4 h-4 text-slate-400" />
-                        <span>{locale === 'pl' ? 'Moje miejsce' : 'My place'}</span>
-                      </button>
-                      <button type="button" onClick={() => {
-                        setIsDropdownOpen(false);
-                        window.history.pushState({}, '', locale === 'pl' ? '/pl/landlord' : '/landlord');
-                        window.dispatchEvent(new PopStateEvent('popstate'));
-                      }} className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
-                        <Home className="w-4 h-4 text-slate-400" />
-                        <span>{locale === 'pl' ? 'Panel właściciela' : 'Landlord dashboard'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          const target = locale === 'pl' ? '/pl/notifications' : '/notifications';
-                          window.history.pushState({}, '', target);
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Bell className="w-4 h-4 text-slate-400" />
-                          <span>Notifications</span>
-                        </div>
-                        {unreadNotifications > 0 && (
-                          <span className="w-2 h-2 rounded-full bg-[#F2705A]" />
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Section 2: Perks */}
-                    <div className="pt-1 border-t border-slate-100 space-y-0.5">
-                      <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Perks</div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          const target = locale === 'pl' ? '/pl/rewards' : '/rewards';
-                          window.history.pushState({}, '', target);
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Award className="w-4 h-4 text-indigo-500" />
-                          <span>{locale === 'pl' ? 'Program nagród' : 'Tenant rewards'}</span>
-                        </div>
-                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded-full border border-indigo-200">
-                          {rewardsPoints}/15 pts
-                        </span>
-                      </button>
-                    </div>
-
-                    {/* Section 3: Study and arrival */}
-                    <div className="pt-1 border-t border-slate-100 space-y-0.5">
-                      <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Study and arrival</div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          const target = locale === 'pl' ? '/pl/enrollments' : '/enrollments';
-                          window.history.pushState({}, '', target);
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-between cursor-pointer"
-                      >
-                        <div className="flex items-center gap-2">
-                          <GraduationCap className="w-4 h-4 text-slate-400" />
-                          <span>Enrollments</span>
-                        </div>
-                        <span className="text-[10px] text-slate-400">4 universities</span>
-                      </button>
-                    </div>
-
-                    {/* Section 4: Account */}
-                    <div className="pt-1 border-t border-slate-100 space-y-0.5">
-                      <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Account</div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          const target = locale === 'pl' ? '/pl/account' : '/account';
-                          window.history.pushState({}, '', target);
-                          window.dispatchEvent(new PopStateEvent('popstate'));
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                      >
-                        <Settings className="w-4 h-4 text-slate-400" />
-                        <span>{strings.accountSettings}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          onOpenHelp();
-                        }}
-                        className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
-                      >
-                        <HelpCircle className="w-4 h-4 text-slate-400" />
-                        <span>{strings.help}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-
-                {logoutError && <p role="alert" className="p-3 text-xs text-rose-700">{logoutError}</p>}
-                {/* Logout (§4.1) */}
-                {currentUser && onLogout && (
-                  <div className="p-2 space-y-1">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        setIsDropdownOpen(false);
-                        try {
-                          await clerk.signOut();
-                        } catch {
-                          setLogoutError(locale === 'pl' ? 'Nie udało się wylogować. Spróbuj ponownie.' : 'Could not sign out. Please try again.');
-                          setIsDropdownOpen(true);
-                          return;
-                        }
-                        setLogoutError('');
-                        onLogout();
-                      }}
-                      className="w-full px-3 py-2 rounded-lg text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>{strings.logOut}</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            {isDropdownOpen&&<div id={accountMenuId} className="absolute right-0 top-full mt-2 w-64 max-h-[75vh] overflow-auto bg-white rounded-2xl border border-slate-200 shadow-xl p-2 z-50">
+              {currentUser?<div className="px-3 py-3 border-b border-slate-100 mb-1"><p className="font-bold truncate">{currentUser.name}</p><p className="text-xs text-slate-500 truncate">{currentUser.email}</p></div>:<><button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onOpenLogin('signin')}}>{strings.logIn}</button><button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onOpenLogin('signup')}}>{strings.signUp}</button></>}
+              <button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onNavigateSaved()}}><Heart size={17}/>{strings.saved}</button>
+              <button className={menuClass} onClick={()=>go('/place')}><Home size={17}/>{pl?'Moje miejsce':'My Place'}</button>
+              <button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onOpenListPlace()}}>{strings.listYourPlace}</button>
+              <button className={menuClass} onClick={()=>go('/services')}>{pl?'Usługi':'Services'}</button>
+              {currentUser&&<><button className={menuClass} onClick={()=>go('/rewards')}><Award size={17}/>{pl?'Program nagród':'Tenant rewards'} · {rewardsPoints}</button><button className={menuClass} onClick={()=>go('/account')}><Settings size={17}/>{strings.accountSettings}</button></>}
+              <button className={menuClass} onClick={()=>{setIsDropdownOpen(false);onOpenHelp()}}><HelpCircle size={17}/>{strings.help}</button>
+              <div className="flex gap-2 p-2 border-t border-slate-100" aria-label={pl?'Język':'Language'}>{(['en','pl'] as const).map(code=><button key={code} aria-pressed={locale===code} className={navClass(locale===code)} onClick={()=>{onSelectLocale(code);setIsDropdownOpen(false)}}>{code==='en'?'English':'Polski'}</button>)}</div>
+              {logoutError&&<p role="alert" className="text-xs text-rose-700 p-2">{logoutError}</p>}
+              {currentUser&&onLogout&&<button className={menuClass+' text-rose-600'} onClick={async()=>{try{await clerk.signOut();setLogoutError('');setIsDropdownOpen(false);onLogout();}catch{setLogoutError(pl?'Nie udało się wylogować.':'Could not sign out. Try again.');}}}><LogOut size={17}/>{strings.logOut}</button>}
+            </div>}
           </div>
         </div>
-
       </div>
+      {isCompactSearchVisible&&<div className="hidden md:flex justify-center px-4 pb-3"><div className="w-full max-w-md"><SearchBar mode="compact" searchState={searchState} onSearchChange={onSearchChange} locale={locale} onExpandClick={onExpandSearch}/></div></div>}
     </header>
   );
 };
