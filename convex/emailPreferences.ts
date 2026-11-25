@@ -2,6 +2,7 @@ import { action, internalMutation, internalQuery, mutation, query } from './_gen
 import { internal } from './_generated/api';
 import { v } from 'convex/values';
 import { requireIdentity } from './lib/auth';
+import { lookupClerkContact } from './lib/clerkIdentity';
 import { emailLocale, rememberEmailContact } from './lib/emailContacts';
 import { queueEmailDelivery } from './emails';
 import { verifyEmailPreferenceToken } from './lib/emailPreferenceTokens';
@@ -35,20 +36,13 @@ export const syncAccountVerified = action({
   args: { locale: v.union(v.literal('en'), v.literal('pl')), fullName: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ synced: boolean }> => {
     const identity = await requireIdentity(ctx);
-    const key = process.env.CLERK_SECRET_KEY;
-    if (!key) { console.warn('Email account sync skipped', { reason: 'missing_clerk_key' }); return { synced: false }; }
-    const response = await fetch('https://api.clerk.com/v1/users/' + encodeURIComponent(identity.subject), {
-      headers: { Authorization: 'Bearer ' + key },
-    });
-    if (!response.ok) { console.warn('Email account sync skipped', { reason: 'clerk_api_error', status: response.status }); return { synced: false }; }
-    const user = await response.json();
-    const primary = user.email_addresses?.find((entry: any) => entry.id === user.primary_email_address_id);
-    if (user.id !== identity.subject || primary?.verification?.status !== 'verified' || typeof primary.email_address !== 'string') {
-      console.warn('Email account sync skipped', { reason: 'clerk_primary_not_verified' });
+    const result = await lookupClerkContact(identity.subject, process.env.CLERK_SECRET_KEY);
+    if (!result.ok) {
+      console.warn('Email account sync skipped', { reason: result.reason });
       return { synced: false };
     }
     return ctx.runMutation((internal as any).emailPreferences.syncVerifiedContact, {
-      ...args, userId: identity.subject, email: primary.email_address,
+      ...args, userId: result.contact.subject, email: result.contact.email,
     });
   },
 });
