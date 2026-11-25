@@ -25,25 +25,25 @@ import { AIProxyChatModal } from './components/AIProxyChatModal';
 import { Toast } from './components/Toast';
 
 // Dedicated Subpages
-import { ListingDetailPage } from './pages/ListingDetailPage';
-import { SavedApartmentsPage } from './pages/SavedApartmentsPage';
-import { HowItWorksPage } from './pages/HowItWorksPage';
-import { MeldunekGuidePage } from './pages/MeldunekGuidePage';
-import { CesjaTemplatePage } from './pages/CesjaTemplatePage';
-import { SafetyGuidePage } from './pages/SafetyGuidePage';
-import { LegalTermsPrivacyPage } from './pages/LegalTermsPrivacyPage';
-import { HelpPage } from './pages/HelpPage';
-import { ListPage } from './pages/ListPage';
-import { LeaveYourLeasePage } from './pages/LeaveYourLeasePage';
-import { SavingsCalculatorPage } from './pages/SavingsCalculatorPage';
-import { AccountPage } from './pages/AccountPage';
-import { MessagesPage } from './pages/MessagesPage';
+const ListingDetailPage = React.lazy(() => import('./pages/ListingDetailPage').then(module => ({ default: module.ListingDetailPage })));
+const SavedApartmentsPage = React.lazy(() => import('./pages/SavedApartmentsPage').then(module => ({ default: module.SavedApartmentsPage })));
+const HowItWorksPage = React.lazy(() => import('./pages/HowItWorksPage').then(module => ({ default: module.HowItWorksPage })));
+const MeldunekGuidePage = React.lazy(() => import('./pages/MeldunekGuidePage').then(module => ({ default: module.MeldunekGuidePage })));
+const CesjaTemplatePage = React.lazy(() => import('./pages/CesjaTemplatePage').then(module => ({ default: module.CesjaTemplatePage })));
+const SafetyGuidePage = React.lazy(() => import('./pages/SafetyGuidePage').then(module => ({ default: module.SafetyGuidePage })));
+const LegalTermsPrivacyPage = React.lazy(() => import('./pages/LegalTermsPrivacyPage').then(module => ({ default: module.LegalTermsPrivacyPage })));
+const HelpPage = React.lazy(() => import('./pages/HelpPage').then(module => ({ default: module.HelpPage })));
+const ListPage = React.lazy(() => import('./pages/ListPage').then(module => ({ default: module.ListPage })));
+const LeaveYourLeasePage = React.lazy(() => import('./pages/LeaveYourLeasePage').then(module => ({ default: module.LeaveYourLeasePage })));
+const SavingsCalculatorPage = React.lazy(() => import('./pages/SavingsCalculatorPage').then(module => ({ default: module.SavingsCalculatorPage })));
+const AccountPage = React.lazy(() => import('./pages/AccountPage').then(module => ({ default: module.AccountPage })));
+const MessagesPage = React.lazy(() => import('./pages/MessagesPage').then(module => ({ default: module.MessagesPage })));
 import { LandlordDashboard } from './components/LandlordDashboard';
-import { PlacePage } from './pages/PlacePage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { RewardsPage } from './pages/RewardsPage';
-import { ServicesPage } from './pages/ServicesPage';
-import { EmailPreferencesPage } from './pages/EmailPreferencesPage';
+const PlacePage = React.lazy(() => import('./pages/PlacePage').then(module => ({ default: module.PlacePage })));
+const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage').then(module => ({ default: module.NotificationsPage })));
+const RewardsPage = React.lazy(() => import('./pages/RewardsPage').then(module => ({ default: module.RewardsPage })));
+const ServicesPage = React.lazy(() => import('./pages/ServicesPage').then(module => ({ default: module.ServicesPage })));
+const EmailPreferencesPage = React.lazy(() => import('./pages/EmailPreferencesPage').then(module => ({ default: module.EmailPreferencesPage })));
 import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
 import { SupportedLocale, formatPLN } from './utils/formatters';
@@ -859,6 +859,7 @@ function Relok8App() {
       />
 
       {/* Route Views */}
+      <React.Suspense fallback={<main className="flex-1 min-h-[40vh] grid place-items-center" role="status">{locale === 'pl' ? 'Ładowanie…' : 'Loading…'}</main>}>
       {currentRoute.type === 'listing-detail' && currentRoute.listingId ? (
         (() => {
           const detailListing = selectedLease
@@ -1302,6 +1303,8 @@ function Relok8App() {
 
         </main>
       )}
+
+      </React.Suspense>
 
       {/* Public website footer; messaging uses a bounded workspace. */}
       {currentRoute.type !== 'messages' && <Footer
