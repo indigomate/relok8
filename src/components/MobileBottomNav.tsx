@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Heart, PlusCircle, MessageSquare, User } from 'lucide-react';
+import { Search, Home, LayoutGrid, MessageSquare, User } from 'lucide-react';
 import { SupportedLocale } from '../utils/formatters';
 import { classNames } from './ui/classNames';
 
@@ -33,8 +33,8 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   currentUser
 }) => {
   const isExplore = currentPath === 'home' || currentPath === 'city';
-  const isSaved = currentPath === 'saved';
-  const isList = currentPath === 'list';
+  const isSaved = ['place','dashboard','list'].includes(currentPath);
+  const isList = currentPath === 'services';
   const isMessages = currentPath === 'messages';
   const isProfile = currentPath === 'account';
   const itemClassName = (active: boolean) => classNames(
@@ -93,31 +93,27 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* 2. Saved */}
       <button
         type="button"
-        onClick={handleSavedClick}
+        onClick={() => { window.history.pushState({}, '', locale === 'pl' ? '/pl/place' : '/place'); window.dispatchEvent(new PopStateEvent('popstate')); }}
         className={classNames('relative', itemClassName(isSaved))}
         aria-current={isSaved ? 'page' : undefined}
-        aria-label={`${locale === 'pl' ? 'Zapisane' : 'Saved'}${savedCount > 0 ? ` (${savedCount})` : ''}`}
+        aria-label={locale === 'pl' ? 'Moje miejsce' : 'My Place'}
       >
         <div className="relative">
-          <Heart aria-hidden="true" className={`w-5 h-5 ${isSaved ? 'fill-indigo-600 text-indigo-600 stroke-[2.4]' : 'stroke-[1.8]'}`} />
-          {savedCount > 0 && (
-            <span aria-hidden="true" className="absolute -top-1.5 -right-2 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-              {savedCount}
-            </span>
-          )}
+          <Home aria-hidden="true" className="w-5 h-5" />
+          
         </div>
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Zapisane' : 'Saved'}</span>
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Moje miejsce' : 'My Place'}</span>
       </button>
 
       {/* 3. List */}
       <button
         type="button"
-        onClick={handleListClick}
+        onClick={() => { window.history.pushState({}, '', locale === 'pl' ? '/pl/services' : '/services'); window.dispatchEvent(new PopStateEvent('popstate')); }}
         className={itemClassName(isList)}
         aria-current={isList ? 'page' : undefined}
       >
-        <PlusCircle aria-hidden="true" className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Dodaj' : 'List'}</span>
+        <LayoutGrid aria-hidden="true" className={`w-5 h-5 ${isList ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Usługi' : 'Services'}</span>
       </button>
 
       {/* 4. Messages */}
@@ -128,7 +124,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         aria-current={isMessages ? 'page' : undefined}
       >
         <MessageSquare aria-hidden="true" className={`w-5 h-5 ${isMessages ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Wiadomości' : 'Messages'}</span>
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Skrzynka' : 'Inbox'}</span>
       </button>
 
       {/* 5. Profile */}
@@ -139,7 +135,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         aria-current={isProfile ? 'page' : undefined}
       >
         <User aria-hidden="true" className={`w-5 h-5 ${isProfile ? 'stroke-[2.4]' : 'stroke-[1.8]'}`} />
-        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Profil' : 'Profile'}</span>
+        <span className="text-[10px] tracking-normal font-medium">{locale === 'pl' ? 'Konto' : 'Account'}</span>
       </button>
     </nav>
   );
