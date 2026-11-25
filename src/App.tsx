@@ -855,7 +855,7 @@ function Relok8App() {
             navigateTo(locale === 'pl' ? '/pl' : '/');
           }
         }}
-        isCompactSearchVisible={true}
+        isCompactSearchVisible={currentRoute.type === 'home' || currentRoute.type === 'city'}
       />
 
       {/* Route Views */}
@@ -1313,7 +1313,7 @@ function Relok8App() {
       />}
 
       {/* Mobile Bottom Navigation (active on browse/saved/account/list, hidden on listing-detail & messages to prevent covering sticky CTA and chat composer) */}
-      {currentRoute.type !== 'listing-detail' && currentRoute.type !== 'messages' && (
+      {currentRoute.type !== 'listing-detail' && currentRoute.type !== 'messages' && currentRoute.type !== 'cesja-template' && (
         <MobileBottomNav
           currentPath={currentRoute.type}
           savedCount={savedIds.length}
