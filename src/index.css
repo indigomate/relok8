@@ -732,8 +732,7 @@ textarea:focus-visible {
 @keyframes r8-motion-reveal { from { opacity: .7; translate: 0 16px; } to { opacity: 1; translate: 0 0; } }
 @keyframes r8-motion-heart { 0%,100% { scale: 1; } 45% { scale: 1.22; } }
 @media (prefers-reduced-motion: no-preference) {
-  .r8-home-intro, .r8-home-photo { animation: r8-motion-enter var(--r8-motion-reveal) var(--r8-motion-ease) both; }
-  .r8-home-photo { animation-delay: 70ms; }
+  /* Keep above-the-fold content visible on first paint. */
   .r8-motion-card { transition: translate var(--r8-motion-standard) var(--r8-motion-ease), box-shadow var(--r8-motion-standard) var(--r8-motion-ease), border-color var(--r8-motion-fast); }
   .r8-motion-favorite[aria-pressed="true"] svg { animation: r8-motion-heart 320ms var(--r8-motion-ease); }
   .r8-motion-panel, .r8-motion-toast { animation: r8-motion-enter var(--r8-motion-standard) var(--r8-motion-ease) both; }
