@@ -1,3 +1,4 @@
+import { normalizeVerifiedEmail } from './clerkIdentity';
 import type { MutationCtx } from '../_generated/server';
 import type { EmailLocale } from '../../src/emails/templates';
 
@@ -18,9 +19,8 @@ export async function rememberEmailContact(
   localeValue?: unknown,
   preferredName?: unknown,
 ): Promise<EmailContact | null> {
-  if (identity.emailVerified !== true || !identity.email) return null;
-  const email = identity.email.trim().toLowerCase();
-  if (!email || email.length > 254) return null;
+  const email = normalizeVerifiedEmail(identity.email, identity.emailVerified);
+  if (!email) return null;
   const locale = emailLocale(localeValue);
   const existing = await ctx.db
     .query('profiles')
