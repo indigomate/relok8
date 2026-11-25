@@ -141,13 +141,12 @@ function Relok8App() {
       const unsafeMeta = ((clerkUser.unsafeMetadata || (clerkUser as any).unsafe_metadata) || {}) as Record<string, any>;
       const publicMeta = ((clerkUser.publicMetadata || (clerkUser as any).public_metadata) || {}) as Record<string, any>;
 
-      const rawRole = (publicMeta.role as string) || 'student';
-      const role = (rawRole === 'member' || !['student', 'expat', 'landlord', 'tenant'].includes(rawRole)) ? 'student' : rawRole;
+      const role = 'member';
 
       const primaryEmail = clerkUser.primaryEmailAddress || 
         clerkUser.emailAddresses?.find(e => e.id === (clerkUser as any).primaryEmailAddressId || e.id === (clerkUser as any).primary_email_address_id) ||
         clerkUser.emailAddresses?.[0];
-      const isVerified = Boolean(publicMeta.isVerified === true);
+      const isVerified = false;
 
       const university = (unsafeMeta.university as string) || (publicMeta.university as string) || '';
       const phone = clerkUser.primaryPhoneNumber?.phoneNumber || 
@@ -237,6 +236,17 @@ function Relok8App() {
 
   // Live Convex reactive subscriptions (chatty-seahorse-914)
   const { isAuthenticated: isBackendAuthenticated } = useConvexAuth();
+  const savedProfile = useQuery(api.profiles.getProfile, isBackendAuthenticated && clerkUser?.id ? { userId: clerkUser.id } : "skip");
+  useEffect(() => {
+    if (!savedProfile || !isBackendAuthenticated || savedProfile.userId !== clerkUser?.id) return;
+    setCurrentUser(previous => {
+      if (!previous || previous.id !== savedProfile.userId) return previous;
+      const next = { ...previous, name: savedProfile.fullName || previous.name,
+        phone: savedProfile.phoneNumber ?? '', university: savedProfile.university ?? '',
+        role: savedProfile.role || 'member', isVerified: savedProfile.isVerified };
+      return next.name === previous.name && next.phone === previous.phone && next.university === previous.university && next.role === previous.role && next.isVerified === previous.isVerified ? previous : next;
+    });
+  }, [savedProfile, isBackendAuthenticated, clerkUser]);
   const liveConvexLeases = useQuery(api.leases.get, {});
   const selectedLease = useQuery(api.leases.getById, currentRoute.type === "listing-detail" && currentRoute.listingId ? {id:currentRoute.listingId} : "skip");
   const translatePublicListings = useAction((api as any).services.translatePublicListings);
