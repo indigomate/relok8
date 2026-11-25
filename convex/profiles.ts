@@ -75,11 +75,11 @@ export const upsertProfile = mutation({
         ...(args.fullName !== undefined ? { fullName } : {}),
         ...(verifiedEmail ? { email: verifiedEmail } : {}),
         ...(args.avatarUrl !== undefined ? { avatarUrl } : {}),
-        ...(args.phoneNumber !== undefined ? { phoneNumber } : {}),
+        ...(args.phoneNumber !== undefined ? { phoneNumber: phoneNumber ?? '' } : {}),
         ...(args.whatsappNumber !== undefined ? { whatsappNumber } : {}),
 
 
-        ...(args.university !== undefined ? { university } : {}),
+        ...(args.university !== undefined ? { university: university ?? '' } : {}),
       });
       return existing._id;
     } else {
@@ -88,11 +88,11 @@ export const upsertProfile = mutation({
         fullName,
         ...(verifiedEmail ? { email: verifiedEmail } : {}),
         avatarUrl,
-        phoneNumber,
+        phoneNumber: args.phoneNumber === undefined ? undefined : phoneNumber ?? '',
         whatsappNumber,
         isVerified: false,
         role: "member",
-        university,
+        university: args.university === undefined ? undefined : university ?? '',
         createdAt: Date.now(),
       });
     }
