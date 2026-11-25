@@ -43,7 +43,7 @@ export const Footer: React.FC<FooterProps> = ({
                       e.preventDefault();
                       navigateToCity(city.slug, locale);
                     }}
-                    className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                    className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                   >
                     {locale === 'pl' ? `Pokoje w ${city.name === 'Warsaw' ? 'Warszawie' : city.name === 'Kraków' ? 'Krakowie' : city.name === 'Wrocław' ? 'Wrocławiu' : city.name === 'Gdańsk' ? 'Gdańsku' : 'Lublinie'}` : `Rooms in ${city.name}`}
                   </a>
@@ -62,7 +62,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/how-it-works`}
                   onClick={(e) => handleLink('/how-it-works', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerHowItWorks}
                 </a>
@@ -71,7 +71,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/leave-your-lease`}
                   onClick={(e) => handleLink('/leave-your-lease', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerLeaveLease}
                 </a>
@@ -80,7 +80,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/savings-calculator`}
                   onClick={(e) => handleLink('/savings-calculator', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerSavingsCalc}
                 </a>
@@ -98,7 +98,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/help`}
                   onClick={(e) => handleLink('/help', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerFaq}
                 </a>
@@ -107,7 +107,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/safety-guide`}
                   onClick={(e) => handleLink('/safety-guide', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerSafetyTips}
                 </a>
@@ -116,7 +116,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/meldunek-guide`}
                   onClick={(e) => handleLink('/meldunek-guide', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {locale === 'pl' ? 'Poradnik meldunku (PESEL)' : 'Meldunek Registration Guide'}
                 </a>
@@ -125,7 +125,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/cesja-template`}
                   onClick={(e) => handleLink('/cesja-template', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {locale === 'pl' ? 'Wzór uzgodnienia przejęcia' : 'Takeover Agreement Template'}
                 </a>
@@ -137,7 +137,7 @@ export const Footer: React.FC<FooterProps> = ({
                     e.preventDefault();
                     if (onOpenReportListing) onOpenReportListing();
                   }}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerReportListing}
                 </a>
@@ -145,7 +145,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a
                   href="mailto:info@relok8.online"
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerContact}
                 </a>
@@ -163,7 +163,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/how-it-works`}
                   onClick={(e) => handleLink('/how-it-works', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerAbout}
                 </a>
@@ -171,7 +171,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>
                 <a
                   href="mailto:info@relok8.online"
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerContact}
                 </a>
@@ -180,7 +180,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/legal/terms`}
                   onClick={(e) => handleLink('/legal/terms', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerTerms}
                 </a>
@@ -189,7 +189,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/legal/privacy`}
                   onClick={(e) => handleLink('/legal/privacy', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerPrivacy}
                 </a>
@@ -198,7 +198,7 @@ export const Footer: React.FC<FooterProps> = ({
                 <a
                   href={`${locale === 'pl' ? '/pl' : ''}/legal/cookies`}
                   onClick={(e) => handleLink('/legal/cookies', e)}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors block text-left"
+                  className="text-slate-600 hover:text-indigo-600 transition-colors flex items-center min-h-11 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                 >
                   {strings.footerCookies}
                 </a>
@@ -211,7 +211,7 @@ export const Footer: React.FC<FooterProps> = ({
         {/* Short Legal Notice (§4.6 and §9) */}
         <div className="pt-6 border-t border-slate-200/80 text-[11px] text-slate-500 leading-relaxed">
           <p>{strings.footerLegalNotice}</p>
-          <p className="mt-1 text-slate-400">
+          <p className="mt-1 text-slate-600">
             Relok8 · Peer-to-peer rental transitions for local and international movers in Poland · Direct tenant and landlord matching · info@relok8.online
           </p>
         </div>
