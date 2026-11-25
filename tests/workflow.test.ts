@@ -1,7 +1,8 @@
 import { describe, test, expect } from "vitest";
 import { convexTest } from "convex-test";
 import schema from "../convex/schema";
-import { api } from "../convex/_generated/api";
+import { api, internal } from "../convex/_generated/api";
+import { invitationKey } from "../convex/lib/invitations";
 import { invalidListingStep, knownMonthlyCost } from "../src/utils/listingFlow";
 import { parseRoute } from "../src/utils/router";
 const modules = import.meta.glob("../convex/**/*.{ts,js}");
@@ -282,30 +283,28 @@ describe("listing form and links", () => {
 describe("privacy and preservation", () => {
   test("landlord invitation context is visible only to the intended verified recipient", async () => {
     const { t, owner, a, landlord, id } = await setup();
-    const token = "d".repeat(64);
-    await owner.mutation(api.domain.write, {
+    const { token } = await owner.mutation(api.domain.write, {
       operation: "invitation",
       input: {
         placeId: id,
         email: "landlord@example.test",
         role: "landlord",
-        token,
         locale: "pl",
         scheduleDelivery: false,
       },
     });
     expect(
-      (await a.query(api.workflow.invitationPreview, { token })).error,
+      (await a.query((internal as any).workflow.invitationPreviewInternal, { token, subject: "a", email: "a@example.test" })).error,
     ).toBeTruthy();
     expect(
-      await landlord.query(api.workflow.invitationPreview, { token }),
+      await landlord.query((internal as any).workflow.invitationPreviewInternal, { token, subject: "landlord", email: "landlord@example.test" }),
     ).toMatchObject({ title: "Room", city: "Warsaw" });
 
     const deliveries = (await t.run((ctx) => ctx.db.query("emailDeliveries").collect()))
       .filter((delivery) => delivery.template === "landlord_invitation");
     expect(deliveries).toHaveLength(1);
     expect(deliveries[0]).toMatchObject({
-      idempotencyKey: `landlord-invitation:${token}`,
+      idempotencyKey: `landlord-invitation:${await invitationKey(token)}`,
       recipient: "landlord@example.test",
       template: "landlord_invitation",
       locale: "pl",
