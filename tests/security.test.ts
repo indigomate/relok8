@@ -30,7 +30,7 @@ describe('authentication and ownership', () => {
     const { a } = setup();
     await a.mutation(api.profiles.upsertProfile, { userId: 'a', isVerified: true, role: 'landlord', email: 'victim@example.test' });
     const profile = await a.query(api.profiles.getProfile, { userId: 'a' });
-    expect(profile).toMatchObject({ isVerified: false, role: 'student', email: 'a@example.test' });
+    expect(profile).toMatchObject({ isVerified: false, role: 'member', email: 'a@example.test' });
   });
   test('public catalog redacts private contact, ownership and workflow fields', async () => {
     const { t, owner } = setup(); const id = await owner.mutation(api.leases.create, listing);

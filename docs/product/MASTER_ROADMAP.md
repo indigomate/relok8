@@ -19,8 +19,8 @@ Baseline: 2026-11-25. Statuses are preliminary; no feature is certified by sourc
 | 14 | Integrated operations and Onlo | Pending |
 
 ## R8-00.01 identity infrastructure
-- A: implementation merged and production deployment reported successful for 0a82ed6; CI run #19 passed 204/204 tests, 19/19 suites, typecheck and frontend build. Preview deployment passed. Live public routes and authenticated acceptance checks remain unverified because direct site and Vercel API access are unavailable. Status: deployed, acceptance open.
-- B: profile synchronization and role normalization pending.
+- A: deployed successfully as 0a82ed6; CI 204/204, production Convex target confirmed by user build-log screenshot, user reports developed functionality working and authorized proceeding to B. Individual live acceptance tests and production logs not independently verified. Accepted by user, outstanding independent verification retained.
+- B: profile persistence, neutral member defaults, authenticated preferences, legacy hydration fallback, explicit clearing, independent landlord navigation and single-provider personal profile saves implemented. CI run #31 for e8c9e80 passed 209/209 tests, 20/20 suites, typecheck and build; Vercel preview success. Existing landlord URL aliases My Place; no new landlord portfolio implemented. Release candidate; browser/cross-device and live backend acceptance remain unverified. Await release approval.
 - C: landlord invitation and reassignment protection pending.
 - D: signed Clerk lifecycle webhooks pending.
 - E: public data projections and resource permissions pending.
@@ -42,3 +42,7 @@ Review, typecheck, tests, build, security/privacy review, user authorization, th
 - Run 45522806537 (bcefaff): 204/204 passed, 19/19 suites, typecheck and frontend build passed. Vercel preview build rejected by production guard, confirmed by user screenshot. Corrected preview path in f0e645e; no production release yet.
 
 - Run 45523346566 (342765c): completed successfully, 204/204 tests, 19/19 files, typecheck and frontend build passed; Vercel preview success. PR #1 merged as 0a82ed6982eca39d4250a153107bf9791f66a525; GitHub Vercel status success. Public route probes unavailable from verification environment; no authenticated test or production log inspection completed. Do not close A until live checks pass.
+
+- Milestone A user acceptance: user reported everything developed appears working. Production target modest-anteater-459 confirmed by Vercel build-log screenshot. Do not treat this as an independently executed end-to-end test.
+
+- B verification: run 45524811946 initially failed TypeScript because generated Convex API declarations omit emailPreferences; test references aligned with existing compatibility convention. Run 45525208917 (e8c9e80) passed 209/209 tests, 20/20 files, typecheck and build; Vercel preview success. Legacy contact fallback and explicit clearing reviewed; personal details saved only in Convex, Clerk name may differ. No bulk migration; legacy metadata persists until edited. Landlord dashboard is an existing alias to My Place; resource authorization lifecycle remains C. Browser integration, direct deployment logs and live authenticated tests not independently verified. No merge or production deployment for B.

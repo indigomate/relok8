@@ -76,28 +76,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({
     setProfileErrorMsg(null);
 
     try {
-      // 1. Sync to Clerk if authenticated session
-      if (clerkUser) {
-        const parts = normalizedName.split(' ');
-        const firstName = parts[0] || '';
-        const lastName = parts.slice(1).join(' ') || '';
-
-        await clerkUser.update({
-          firstName,
-          lastName
-        });
-
-        await clerkUser.updateMetadata({
-          unsafeMetadata: {
-            ...(clerkUser.unsafeMetadata || {}),
-            university,
-            phone
-          }
-        });
-      }
-
-      // Persist the authenticated profile before reporting success.
-      await upsertProfile({ userId: clerkUser.id, fullName: normalizedName });
+      // Convex is authoritative for editable account details. Avoid partial
+      // writes across two providers; Clerk remains responsible for sign-in.
+      await upsertProfile({ userId: clerkUser.id, fullName: normalizedName, phoneNumber: phone, university });
 
       // 3. Update current user state in application
       const updatedUser: UserProfile = {

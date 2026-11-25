@@ -1,3 +1,4 @@
+import { normalizeVerifiedEmail } from "./lib/clerkIdentity";
 import { requireSelf } from "./lib/auth";
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
@@ -58,6 +59,7 @@ export const upsertProfile = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireSelf(ctx, args.userId);
+    const verifiedEmail = normalizeVerifiedEmail(identity.email, identity.emailVerified);
     const fullName = optionalText(args.fullName, 150, 'name');
     const avatarUrl = optionalAvatar(args.avatarUrl);
     const phoneNumber = optionalPhone(args.phoneNumber);
@@ -71,26 +73,26 @@ export const upsertProfile = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         ...(args.fullName !== undefined ? { fullName } : {}),
-        ...(identity.emailVerified === true && identity.email ? { email: identity.email.trim().toLowerCase() } : {}),
+        ...(verifiedEmail ? { email: verifiedEmail } : {}),
         ...(args.avatarUrl !== undefined ? { avatarUrl } : {}),
-        ...(args.phoneNumber !== undefined ? { phoneNumber } : {}),
+        ...(args.phoneNumber !== undefined ? { phoneNumber: phoneNumber ?? '' } : {}),
         ...(args.whatsappNumber !== undefined ? { whatsappNumber } : {}),
 
 
-        ...(args.university !== undefined ? { university } : {}),
+        ...(args.university !== undefined ? { university: university ?? '' } : {}),
       });
       return existing._id;
     } else {
       return await ctx.db.insert("profiles", {
         userId: args.userId,
         fullName,
-        ...(identity.emailVerified === true && identity.email ? { email: identity.email.trim().toLowerCase() } : {}),
+        ...(verifiedEmail ? { email: verifiedEmail } : {}),
         avatarUrl,
-        phoneNumber,
+        phoneNumber: args.phoneNumber === undefined ? undefined : phoneNumber ?? '',
         whatsappNumber,
         isVerified: false,
-        role: "student",
-        university,
+        role: "member",
+        university: args.university === undefined ? undefined : university ?? '',
         createdAt: Date.now(),
       });
     }

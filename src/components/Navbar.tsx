@@ -414,17 +414,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                         type="button"
                         onClick={() => {
                           setIsDropdownOpen(false);
-                          const isLandlord = currentUser.role === 'landlord';
-                          const target = isLandlord
-                            ? (locale === 'pl' ? '/pl/landlord' : '/landlord')
-                            : (locale === 'pl' ? '/pl/place' : '/place');
+                          const target = locale === 'pl' ? '/pl/place' : '/place';
                           window.history.pushState({}, '', target);
                           window.dispatchEvent(new PopStateEvent('popstate'));
                         }}
                         className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                       >
                         <Home className="w-4 h-4 text-slate-400" />
-                        <span>{currentUser.role === 'landlord' ? 'My places' : 'My place'}</span>
+                        <span>{locale === 'pl' ? 'Moje miejsce' : 'My place'}</span>
+                      </button>
+                      <button type="button" onClick={() => {
+                        setIsDropdownOpen(false);
+                        window.history.pushState({}, '', locale === 'pl' ? '/pl/landlord' : '/landlord');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
+                      }} className="w-full px-3 py-1.5 rounded-xl text-left font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
+                        <Home className="w-4 h-4 text-slate-400" />
+                        <span>{locale === 'pl' ? 'Panel właściciela' : 'Landlord dashboard'}</span>
                       </button>
 
                       <button

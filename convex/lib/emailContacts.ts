@@ -27,7 +27,7 @@ export async function rememberEmailContact(
     .withIndex('by_userId', (q) => q.eq('userId', identity.subject))
     .first();
   const suppliedName = typeof preferredName === 'string' ? preferredName.trim() : '';
-  const name = suppliedName || identity.name?.trim() || existing?.fullName?.trim() || 'Relok8 member';
+  const name = existing?.fullName?.trim() && existing.fullName !== 'Relok8 member' ? existing.fullName.trim() : suppliedName || identity.name?.trim() || 'Relok8 member';
   if (existing) {
     await ctx.db.patch(existing._id, { email, fullName: name, locale });
   } else {
@@ -37,7 +37,7 @@ export async function rememberEmailContact(
       email,
       locale,
       isVerified: false,
-      role: 'student',
+      role: 'member',
       createdAt: Date.now(),
     });
   }
