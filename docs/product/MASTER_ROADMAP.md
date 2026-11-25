@@ -19,8 +19,8 @@ Baseline: 2026-11-25. Statuses are preliminary; no feature is certified by sourc
 | 14 | Integrated operations and Onlo | Pending |
 
 ## R8-00.01 identity infrastructure
-- A: implementation merged and production deployment reported successful for 0a82ed6; CI run #19 passed 204/204 tests, 19/19 suites, typecheck and frontend build. Preview deployment passed. Live public routes and authenticated acceptance checks remain unverified because direct site and Vercel API access are unavailable. Status: deployed, acceptance open.
-- B: profile synchronization and role normalization pending.
+- A: deployed successfully as 0a82ed6; CI 204/204, production Convex target confirmed by user build-log screenshot, user reports developed functionality working and authorized proceeding to B. Individual live acceptance tests and production logs not independently verified. Accepted by user, outstanding independent verification retained.
+- B: initial profile persistence, neutral defaults, authenticated preference updates and frontend hydration implemented on development/r8-00-01-b; regression tests authored, CI and compatibility review pending. No production authorization.
 - C: landlord invitation and reassignment protection pending.
 - D: signed Clerk lifecycle webhooks pending.
 - E: public data projections and resource permissions pending.
@@ -42,3 +42,5 @@ Review, typecheck, tests, build, security/privacy review, user authorization, th
 - Run 45522806537 (bcefaff): 204/204 passed, 19/19 suites, typecheck and frontend build passed. Vercel preview build rejected by production guard, confirmed by user screenshot. Corrected preview path in f0e645e; no production release yet.
 
 - Run 45523346566 (342765c): completed successfully, 204/204 tests, 19/19 files, typecheck and frontend build passed; Vercel preview success. PR #1 merged as 0a82ed6982eca39d4250a153107bf9791f66a525; GitHub Vercel status success. Public route probes unavailable from verification environment; no authenticated test or production log inspection completed. Do not close A until live checks pass.
+
+- Milestone A user acceptance: user reported everything developed appears working. Production target modest-anteater-459 confirmed by Vercel build-log screenshot. Do not treat this as an independently executed end-to-end test.
