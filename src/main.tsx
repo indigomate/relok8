@@ -3,9 +3,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
+import { inject } from '@vercel/analytics';
 import App from './App';
 import { configureBackend } from './lib/backend';
 import './index.css';
+
+inject();
 
 const key = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const url = import.meta.env.VITE_CONVEX_URL;
