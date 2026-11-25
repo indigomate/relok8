@@ -42,7 +42,7 @@ import { LandlordDashboard } from './components/LandlordDashboard';
 import { PlacePage } from './pages/PlacePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { RewardsPage } from './pages/RewardsPage';
-import { EnrollmentsPage } from './pages/EnrollmentsPage';
+import { ServicesPage } from './pages/ServicesPage';
 import { EmailPreferencesPage } from './pages/EmailPreferencesPage';
 import { OnloGlobalWidget } from './components/OnloGlobalWidget';
 
@@ -1022,8 +1022,9 @@ function Relok8App() {
           currentUser={currentUser}
           onOpenIntake={() => navigateTo(locale === 'pl' ? '/pl/list' : '/list')}
         />
-      ) : currentRoute.type === 'enrollments' ? (
-        <EnrollmentsPage
+      ) : currentRoute.type === 'services' ? (
+        <ServicesPage
+          onNavigate={(path) => navigateTo((locale === 'pl' ? '/pl' : '') + path)}
           onBack={() => navigateTo(locale === 'pl' ? '/pl' : '/')}
           locale={locale}
         />
