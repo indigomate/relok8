@@ -14,7 +14,7 @@ type RouteType =
   | 'notifications'
   | 'email-preferences'
   | 'rewards'
-  | 'enrollments'
+  | 'services'
   | 'sign-in'
   | 'sign-up'
   | 'help'
@@ -183,8 +183,8 @@ export function parseRoute(pathname: string = window.location.pathname, hash: st
   }
 
   // Enrollments & Study Arrival
-  if (first === 'enrollments' || first === 'universities') {
-    return { type: 'enrollments', locale, path: pathname, searchParams };
+  if (first === 'services' || first === 'enrollments' || first === 'universities') {
+    return { type: 'services', locale, path: pathname, searchParams };
   }
 
   // How it works / About
