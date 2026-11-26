@@ -22,8 +22,8 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
   locale = 'en'
 }) => {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36 sm:pb-24 text-left font-sans">
-      <div className="r8-motion-page max-w-[1280px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 space-y-5 sm:space-y-6">
+    <div className="min-h-dvh bg-slate-50 text-slate-900 pb-[calc(9rem+env(safe-area-inset-bottom))] md:pb-24 text-left font-sans">
+      <div className="r8-motion-page w-full min-w-0 max-w-[1280px] mx-auto px-4 sm:px-6 pt-3 sm:pt-8 space-y-4 sm:space-y-6">
         
         {/* Header with back button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 sm:pb-6 border-b border-slate-200">
@@ -38,9 +38,10 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
                 <span>{locale === 'pl' ? 'Wróć do pokoi' : 'All rooms'}</span>
               </button>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <Bookmark className="w-5 h-5 text-indigo-600 fill-indigo-600" />
-              <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved Apartments'} ({savedListings.length})</span>
+            <h1 className="!text-[clamp(1.25rem,5.5vw,1.5rem)] !leading-tight font-bold text-slate-900 tracking-tight flex flex-wrap items-center gap-2">
+              <Bookmark className="w-5 h-5 shrink-0 text-indigo-600 fill-indigo-600" />
+              <span>{locale === 'pl' ? 'Zapisane pokoje' : 'Saved apartments'}</span>
+              <span className="inline-flex items-center justify-center min-w-5 h-5 sm:w-7 sm:h-7 px-2 rounded-full bg-indigo-50 text-indigo-700 text-sm font-semibold tabular-nums">{savedListings.length}</span>
             </h1>
             <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">
               {locale === 'pl' 
@@ -63,22 +64,22 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
 
         {/* Listings Grid or Empty State */}
         {savedListings.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-md mx-auto space-y-4 my-8">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 px-5 py-6 sm:p-10 text-center w-full max-w-md mx-auto space-y-3 my-4 sm:my-8">
+            <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
               <Bookmark className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h2 className="text-lg font-bold text-slate-900">No saved apartments yet</h2>
-              <p className="text-xs text-slate-500">
-                Browse our rooms in Warsaw, Kraków, Wrocław, Gdańsk, or Lublin and click "Save apartment" to keep your favorites here.
+              <h2 className="!text-lg !leading-snug font-bold text-slate-900">{locale === 'pl' ? 'Nie masz jeszcze zapisanych pokoi' : 'No saved apartments yet'}</h2>
+              <p className="!text-sm !leading-relaxed text-slate-500 max-w-[30ch] mx-auto">
+                {locale === 'pl' ? 'Zapisuj ulubione oferty, aby łatwo do nich wrócić.' : 'Save your favourite rooms to find and compare them here.'}
               </p>
             </div>
             <button
               type="button"
               onClick={onBrowseListings}
-              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors cursor-pointer"
+              className="min-h-11 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition-colors cursor-pointer"
             >
-              Explore available rooms
+              {locale === 'pl' ? 'Przeglądaj pokoje' : 'Explore available rooms'}
             </button>
           </div>
         ) : (
@@ -135,7 +136,7 @@ export const SavedApartmentsPage: React.FC<SavedApartmentsPageProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-2 items-center justify-between">
                     <div>
                       <span className="text-base font-extrabold text-slate-900 font-mono">
                         {formatPLN(knownMonthlyCost(listing), locale)}
