@@ -8,6 +8,7 @@ import { SupportedLocale } from '../utils/formatters';
 interface OnloGlobalWidgetProps {
   locale?: SupportedLocale;
   isOpen: boolean;
+  compactMobile?: boolean;
   isAuthenticated: boolean;
   onOpenChange: (open: boolean) => void;
   onRequireLogin: () => void;
@@ -36,6 +37,7 @@ function greeting(locale: SupportedLocale): ChatMessage {
 
 export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
   locale = 'en',
+  compactMobile = false,
   isOpen,
   isAuthenticated,
   onOpenChange,
@@ -194,7 +196,8 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
           ref={triggerRef}
           type="button"
           onClick={() => onOpenChange(!isOpen)}
-          className="onlo-launcher min-h-11 px-3.5 sm:px-4 rounded-full flex items-center gap-2.5 bg-slate-950 hover:bg-slate-800 text-white border border-white/10 shadow-[0_12px_32px_rgba(15,23,42,0.22)] cursor-pointer"
+          className={`onlo-launcher min-h-11 rounded-full flex items-center justify-center gap-2.5 bg-slate-950 hover:bg-slate-800 text-white border border-white/10 shadow-[0_12px_32px_rgba(15,23,42,0.22)] cursor-pointer ${compactMobile ? 'w-12 h-12 p-0 md:w-auto md:h-auto md:px-4' : 'px-3.5 sm:px-4'}`}
+          aria-label={locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           aria-controls="onlo-global-dialog"
@@ -203,7 +206,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
             <OnloAvatar size={28} variant="avatar" state={widgetState} title="" />
             <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-950" />
           </span>
-          <span className="text-xs font-bold tracking-tight">
+          <span className={`text-xs font-bold tracking-tight ${compactMobile ? 'hidden md:inline' : ''}`}>
             {locale === 'pl' ? 'Zapytaj Onlo' : 'Ask Onlo'}
           </span>
         </button>
