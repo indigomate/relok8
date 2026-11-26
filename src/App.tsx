@@ -1395,7 +1395,7 @@ function Relok8App() {
         />
       )}
 
-      {shouldShowGlobalOnlo(currentRoute.type) && !activeCardAIChat && (
+      {shouldShowGlobalOnlo(currentRoute.type) && currentRoute.type !== 'saved' && !activeCardAIChat && (
         <OnloGlobalWidget
           locale={locale}
           isOpen={isGlobalOnloOpen}
