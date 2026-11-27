@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.124",
-    "@clerk/react": "^6.17.5",
+    "@clerk/react": "^6.19.7",
     "@convex-dev/rag": "^0.7.9",
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.3.3",
