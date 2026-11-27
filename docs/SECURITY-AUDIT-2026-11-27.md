@@ -37,6 +37,7 @@ This is an engineering hardening review, not a guarantee that no vulnerability e
 - Vite production build: passed.
 - Dependency audit: zero moderate-or-higher production vulnerabilities.
 - `git diff --check`: passed.
+- Initial production CSP smoke: correctly blocked an unlisted origin; the policy was narrowed to also allow the exact Clerk custom domain `https://clerk.relok8.online` before final verification.
 
 Production deployment status and post-deploy route/header smoke evidence should be added to this section after the release commit is live.
 
