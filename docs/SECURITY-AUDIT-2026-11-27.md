@@ -39,7 +39,13 @@ This is an engineering hardening review, not a guarantee that no vulnerability e
 - `git diff --check`: passed.
 - Initial production CSP smoke: correctly blocked an unlisted origin; the policy was narrowed to also allow the exact Clerk custom domain `https://clerk.relok8.online` before final verification.
 
-Production deployment status and post-deploy route/header smoke evidence should be added to this section after the release commit is live.
+Production evidence:
+
+- Security release `ab50da9` and CSP compatibility follow-up `b968762` deployed successfully through Vercel.
+- All 11 production browser smoke checks passed after the final CSP change, including mobile/desktop home, Polish home, listing, signed-out messages, how-it-works, and English/Polish help routes.
+- Live responses include the enforced CSP, HSTS, frame denial, MIME sniffing prevention, referrer policy, permissions policy, opener/resource isolation, origin-agent clustering, and disabled DNS prefetching.
+- An unsigned Resend POST returns `401 Invalid signature`.
+- WhatsApp GET verification and unsigned POST currently return `503` because the production verify token and app secret are not configured. This is safe failure behavior, but WhatsApp is not operational until those secrets and approved templates are added and delivery is tested.
 
 ## Manual production checks still required
 
