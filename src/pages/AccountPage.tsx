@@ -108,10 +108,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({
         university
       };
 
-      try {
-        localStorage.setItem('r8_user', JSON.stringify(updatedUser));
-      } catch (err) {}
-
       onUpdateUser(updatedUser);
       setProfileSuccessMsg(
         locale === 'pl' ? 'Ustawienia konta zostały zapisane pomyślnie.' : 'Account details saved successfully.'

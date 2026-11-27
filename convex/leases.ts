@@ -1,6 +1,6 @@
 import { leaseHasEnded, validLeaseDates } from '../src/utils/leaseTiming';
 import { consume, removeLease } from "./domain";
-import { requireIdentity, requireSelf, isLandlord, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing } from "./lib/auth";
+import { requireIdentity, requireSelf, isLandlord, requireOwner, requireLandlord, requireAdmin, publicListing, validateListing, requireTrustedDisplayName } from "./lib/auth";
 import { rememberEmailContact } from './lib/emailContacts';
 import { queueEmailDelivery } from './emails';
 import { query, mutation } from "./_generated/server";
@@ -179,6 +179,7 @@ export const reserve = mutation({
     if (!validLeaseDates(lease.moveInDate, lease.leaseEndDate) || leaseHasEnded(lease.leaseEndDate)) throw new Error("Current lease has ended or its dates need updating");
     if (!["AVAILABLE", "PENDING_HOLD", "RESERVED_PENDING"].includes(lease.status || "")) throw new Error("Listing unavailable");
     if (lease.ownerId === identity.subject || isLandlord(lease, identity)) throw new Error("You cannot reserve your own listing");
+    const reservedByName = await requireTrustedDisplayName(ctx, identity);
     const now = Date.now();
     if (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now) {
       if (lease.lockedByUserId !== args.userId) {
@@ -191,7 +192,7 @@ export const reserve = mutation({
       isLocked: true,
       lockedUntil,
       lockedByUserId: args.userId,
-      reservedByName: args.userName || "Verified Student",
+      reservedByName,
       status: "PENDING_HOLD",
     });
 
@@ -400,9 +401,8 @@ export const requestTakeover = mutation({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     await consume(ctx, identity, "takeover", 10);
-    const studentName = args.studentName.trim();
     const message = args.message?.trim();
-    if (!studentName || studentName.length > 150 || (message && message.length > 10_000) || (args.studentPhone && (!/^\+?[0-9 ()-]{7,25}$/.test(args.studentPhone) || args.studentPhone.length > 25))) throw new Error('Invalid takeover request');
+    if ((message && message.length > 10_000) || (args.studentPhone && (!/^\+?[0-9 ()-]{7,25}$/.test(args.studentPhone) || args.studentPhone.length > 25))) throw new Error('Invalid takeover request');
     const lease = await ctx.db
       .query("leases")
       .filter((q) => q.eq(q.field("_id"), args.leaseId))
@@ -412,6 +412,7 @@ export const requestTakeover = mutation({
 
     const now = Date.now();
     if (lease.ownerId === identity.subject || isLandlord(lease, identity) || !validLeaseDates(lease.moveInDate, lease.leaseEndDate) || leaseHasEnded(lease.leaseEndDate) || ["PAUSED", "APPROVED", "TRANSFERRED", "LEASED"].includes(lease.status) || (lease.isLocked && lease.lockedUntil && lease.lockedUntil > now && lease.lockedByUserId !== identity.subject)) throw new Error("Listing unavailable");
+    const studentName = await requireTrustedDisplayName(ctx, identity);
     await ctx.db.patch(lease._id, {
       status: "PENDING_HOLD",
       isLocked: true,

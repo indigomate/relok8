@@ -2,6 +2,37 @@ import { validLeaseDates } from '../../src/utils/leaseTiming';
 import type { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";
 
 type AuthCtx = Pick<QueryCtx | MutationCtx | ActionCtx, "auth">;
+type DataCtx = Pick<QueryCtx | MutationCtx, "db">;
+
+const PLACEHOLDER_NAMES = new Set([
+  "add your name",
+  "name unavailable",
+  "prospect",
+  "relok8 member",
+  "user",
+  "verified student",
+]);
+
+export function trustedDisplayName(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const name = value.trim().replace(/\s+/g, " ");
+  if (!name || name.length > 150 || PLACEHOLDER_NAMES.has(name.toLowerCase())) return null;
+  return name;
+}
+
+export async function requireTrustedDisplayName(
+  ctx: DataCtx,
+  identity: { subject: string; name?: string },
+): Promise<string> {
+  const profile = await ctx.db
+    .query("profiles")
+    .withIndex("by_userId", (query) => query.eq("userId", identity.subject))
+    .unique();
+  const name = trustedDisplayName(profile?.fullName) || trustedDisplayName(identity.name);
+  if (!name) throw new Error("Add your first and last name in Account settings before continuing");
+  return name;
+}
+
 export async function requireIdentity(ctx: AuthCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new Error("Authentication required");

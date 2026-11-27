@@ -7,7 +7,7 @@ import { formatPLN } from '../src/utils/formatters';
 import { mapConvexListingToAppListing } from '../src/lib/convex/client';
 import { authReturnPath, safeReturnPath } from '../src/utils/authFlow';
 const modules = import.meta.glob('../convex/**/*.{ts,js}');
-const identity = (subject: string, email = subject + '@example.test', emailVerified = true) => ({ subject, email, emailVerified, issuer: 'https://clerk.example.test' });
+const identity = (subject: string, email = subject + '@example.test', emailVerified = true) => ({ subject, name: `${subject} Person`, email, emailVerified, issuer: 'https://clerk.example.test' });
 const listing = {title: 'Room', address: 'Test Street', city: 'Warsaw', monthlyRent: 2000.10, czynszAdmin: 300.20, fixedBillsPLN: 100.30, billsMode: 'fixed' as const, deposit: 2200, roomType: 'Studio', areaM2: 25, moveInDate: '2027-01-01', leaseEndDate: '2027-06-30', amenities: [], images: [], landlordContactEmail: 'old@example.test'};
 async function setup() {
   const t = convexTest(schema, modules); const owner = t.withIdentity(identity('owner')); const id = await owner.mutation(api.leases.create, listing);

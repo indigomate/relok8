@@ -1,103 +1,92 @@
-# Relok8 — Convex Setup & Environment Variables Guide
+# Relok8 — production configuration
 
-This guide walks you through connecting **Convex** to Relok8, configuring all required environment variables, and deploying backend functions and schemas.
+Relok8 uses Clerk for identity, Convex for application data and server work, Vercel for the Vite frontend, Resend for product email, Gemini for Onlo, an independently hosted Opus-MT service for dynamic translation, and Meta's WhatsApp Cloud API for consented alerts.
 
----
+## Current product boundary
 
-## 1. Overview: What Convex Does in Relok8
+- Listings, authenticated messaging, private place rooms, invitations, email automation, Onlo, and notification preferences are implemented.
+- Payment checkout is deliberately disabled. Relok8 does not collect, hold, capture, refund, or pay out rent, deposits, or service fees.
+- WhatsApp delivery code is implemented, but a feature is not operational until Meta approves its templates, all production secrets are configured, and a signed delivery webhook plus receipt on a test phone are confirmed.
+- Opus-MT translation requires a separately hosted HTTPS model service. The GitHub model repository is not a hosted API.
+- There is no local-storage or in-browser backend fallback. Missing production configuration fails visibly.
 
-Relok8 has transitioned to **Convex** for its real-time data and transactional engine:
-- **Reactive Queries:** Listings update instantaneously across all connected browsers.
-- **15-minute EarlyLock Atomic Holds (`convex/listings.ts`):** Deterministic hold mutation with automatic countdown timer preventing double-booking during lease takeovers.
-- **Stripe Escrow Manual Capture (`convex/payments.ts`):** Creates an authorization hold (149 PLN base hold + 39 PLN Verification + 59 PLN Meldunek Pack).
-- **WhatsApp Cloud API Integration (`convex/whatsapp.ts`):** Pushes interactive lease approval requests to landlords with quick reply buttons (`APPROVE_LEASE` / `REJECT_LEASE`).
-- **AI Proxy Messaging (`convex/aiMessages.ts`):** Gemini-powered queries for university proximity calculations and listing embedding similarity.
+## Browser variables — Vercel
 
----
+Set these in the Vercel project for Production and Preview as appropriate:
 
-## 2. All Variables Checklist
+| Variable | Required | Value source |
+| --- | --- | --- |
+| `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk → API keys. This is the publishable browser key, never the Clerk secret key. |
+| `VITE_CONVEX_URL` | Yes | Convex production deployment URL ending in `.convex.cloud`. |
 
-### A. Frontend / Client Variables (Set in `.env` or in AI Studio)
-| Variable Name | Required | Default / Example | Purpose |
-|---|---|---|---|
-| `VITE_CONVEX_URL` | **Yes** | `https://your-deployment-name.convex.cloud` | Connects the React client (`convexClient` & `useQuery` / `useMutation`) to your Convex deployment. |
-| `CONVEX_DEPLOYMENT` | **Yes** (for CLI) | `dev:your-deployment-name` | Identifies which Convex cloud deployment is targeted when running `npx convex dev` or `npx convex deploy`. |
+Do not put any API token or secret in a variable beginning with `VITE_`; Vite exposes those values to the browser bundle.
 
-> **Note:** Relok8 includes an in-app URL tester and connection manager in the Admin Console / Account page. You can paste your `https://*.convex.cloud` URL directly into the UI to test and connect instantly!
+## Server variables — Convex production
 
----
+Set these in Convex Dashboard → Production → Settings → Environment Variables. Keep real values out of chat, screenshots, source control, and documentation.
 
-### B. Backend Action Variables (Set in Convex Cloud Dashboard)
-Convex backend actions run in the cloud and access variables via `process.env`. Configure these in **Convex Dashboard > Settings > Environment Variables** (or via `npx convex env set`):
+### Core
 
-| Variable Name | Required | Example | Purpose |
-|---|---|---|---|
-| `STRIPE_SECRET_KEY` | Optional / For Payments | `sk_test_...` or `sk_live_...` | Authorizes Stripe manual capture escrow intents in `convex/payments.ts`. |
-| `STRIPE_PUBLISHABLE_KEY` | Optional | `pk_test_...` | For Stripe client checkout widgets. |
-| `WHATSAPP_TOKEN` | Optional / For WhatsApp | `EAAG...` | Meta WhatsApp Cloud API access token for dispatching landlord notifications. |
-| `WHATSAPP_PHONE_NUMBER_ID` | Optional / For WhatsApp | `1029384756` | Meta WhatsApp Business phone number ID. |
-| `GEMINI_API_KEY` | Optional / Injected | `AIzaSy...` | Powers Gemini AI proxy and embedding calculations in `convex/aiMessages.ts`. |
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `CLERK_JWT_ISSUER_DOMAIN` | Yes | Exact Clerk issuer for the production instance. |
+| `PUBLIC_APP_URL` | Yes | `https://relok8.online` |
+| `ADMIN_USER_IDS` | For admin tools | Comma-separated Clerk user IDs with the minimum necessary access. |
 
----
+### Email
 
-## 3. Step-by-Step Setup Instructions
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `RESEND_API_KEY` | Yes for product email | Resend API key. |
+| `RESEND_FROM_EMAIL` | Yes for product email | Verified sender, for example `Relok8 <updates@send.relok8.online>`. |
+| `SUPPORT_EMAIL` | Yes for support forms | Monitored support mailbox. |
+| `EMAIL_PREFERENCES_SECRET` | Yes for durable preference links | A separate random secret of at least 32 bytes. |
+| `RESEND_WEBHOOK_SECRET` | Yes for delivery events | Signing secret for the Resend webhook. |
 
-### Step 1: Sign Up & Install Convex
-If you don't already have a Convex account:
-1. Open [dashboard.convex.dev](https://dashboard.convex.dev) and log in with GitHub or email.
-2. In your project terminal, run:
-```bash
-npx convex dev
-```
-3. Convex will prompt you to log in in your browser and will automatically configure your project.
+Webhook: `https://modest-anteater-459.convex.site/resend/webhook`
 
-### Step 2: Retrieve Your Deployment URL
-When `npx convex dev` finishes starting, it prints your deployment URL:
-```
-Deploying to: https://swift-otter-412.convex.cloud
-```
-You can also copy this URL anytime from **Convex Dashboard > Settings > URL & Deploy Key**.
+Subscribe to `email.delivered`, `email.bounced`, and `email.complained`. See `docs/EMAIL-SETUP.md` for the end-to-end test.
 
-### Step 3: Add to Environment
-In your `.env` file (or host configuration):
-```env
-VITE_CONVEX_URL="https://swift-otter-412.convex.cloud"
-CONVEX_DEPLOYMENT="dev:swift-otter-412"
-```
+### Onlo and translation
 
-### Step 4: Configure Backend Secrets in Convex
-Set backend secrets using the Convex CLI or dashboard:
-```bash
-npx convex env set STRIPE_SECRET_KEY=sk_test_51...
-npx convex env set WHATSAPP_TOKEN=EAAG...
-npx convex env set WHATSAPP_PHONE_NUMBER_ID=1092837465
-npx convex env set GEMINI_API_KEY=your_gemini_key
-```
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Yes for Onlo | Server-side Gemini key. |
+| `GEMINI_MODEL` | Yes for Onlo | An enabled model name for that key/project. |
+| `OPUS_MT_API_URL` | Yes for live dynamic translation | Private HTTPS Opus-MT endpoint. |
+| `OPUS_MT_API_TOKEN` | Recommended | Bearer token enforced by the translation service proxy. |
+| `OPUS_MT_CACHE_VERSION` | Optional | Cache namespace; change when replacing translation models. |
 
-### Step 5: Deploy Functions & Schema
-To deploy all schemas and backend mutations to production:
-```bash
-npx convex deploy
-```
+See `docs/AI-TRANSLATION-SETUP.md`.
 
----
+### WhatsApp
 
-## 4. Testing Your Setup in Relok8
+| Variable | Required for delivery | Purpose |
+| --- | --- | --- |
+| `WHATSAPP_ACCESS_TOKEN` | Yes | Meta system-user token. |
+| `WHATSAPP_PHONE_NUMBER_ID` | Yes | WhatsApp Business phone number ID. |
+| `WHATSAPP_GRAPH_VERSION` | Yes | A currently supported Meta Graph API version. |
+| `WHATSAPP_APP_SECRET` | Yes | Verifies signed POST webhooks. |
+| `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | Yes | Random token used only for Meta's GET verification. |
+| `WHATSAPP_DAILY_TEMPLATE_EN` / `WHATSAPP_DAILY_TEMPLATE_PL` | For daily digests | Approved template names. |
+| `WHATSAPP_MESSAGE_TEMPLATE_EN` / `WHATSAPP_MESSAGE_TEMPLATE_PL` | For unread-message alerts | Approved template names. |
 
-1. Go to the **Admin Console** (or Account > Admin Console tab).
-2. Click on the **Convex Engine** tab.
-3. Check the **Connection Mode**:
-   - 🟢 **Live Convex Cloud**: Connected and receiving real-time updates!
-   - 🟡 **Local Deterministic Engine**: Active in-memory/localStorage fallback mode.
-4. Click **Ping** to measure round-trip latency to your Convex deployment.
-5. Try clicking **Reserve** on any listing to test the 15-minute EarlyLock atomic hold mutation in real-time.
+Webhook: `https://modest-anteater-459.convex.site/whatsapp/webhook`
 
----
+See `docs/WHATSAPP-SETUP.md` and `docs/WHATSAPP-MESSAGE-NOTIFICATIONS.md`.
 
-## 5. Troubleshooting & FAQs
+## Deploy and verify
 
-- **Q: What if I haven't run `npx convex dev` yet?**  
-  **A:** Relok8 automatically runs its deterministic reactive engine. All features—EarlyLock hold timer, escrow reservation calculation, and AI proxy—work 100% out of the box.
+1. Run `npm run check` locally. It must finish with type checks, every test, and the Vite production build passing.
+2. Push to `main`. Vercel runs `npx convex deploy --cmd 'node build-vercel.mjs'`, so a successful production deployment covers both the Convex functions/schema and frontend build.
+3. Run `npm run smoke:production`.
+4. Test with two separate Clerk accounts: create a listing, open an inquiry, exchange messages, and confirm neither account can open the other's unrelated threads.
+5. Verify each external delivery independently. A saved setting proves configuration only; a provider delivery event and receipt in the real inbox/device prove the delivery path.
+6. Keep payment wording disabled until a regulated payment architecture, provider onboarding, legal review, and complete test flow exist.
 
-- **Q: Can I test my Convex URL without restarting the dev server?**  
-  **A:** Yes! Open the Convex Guide in the app, paste your `https://*.convex.cloud` URL into the URL field, and click **Connect & Test**. It saves the URL to your browser session and connects immediately.
+## Secret handling
+
+- Generate credentials in the owning provider and paste them directly into the destination secret field.
+- Never reveal or copy real secret values into support chat or screenshots.
+- Rotate a credential immediately if it appears in a repository, screenshot, terminal recording, URL, or message.
+- Use separate development and production credentials, least privilege, and provider-side access logs where available.

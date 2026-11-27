@@ -135,9 +135,10 @@ describe('private messaging and invitations', () => {
 
 describe('reservations and unavailable services', () => {
   test('reservation identity is verified, holders cannot be displaced or extended', async () => {
-    const { owner, a, b } = setup(); const leaseId = await owner.mutation(api.leases.create, listing);
+    const { t, owner, a, b } = setup(); const leaseId = await owner.mutation(api.leases.create, listing);
     await expect(a.mutation(api.leases.reserve, { leaseId, userId: 'b' })).rejects.toThrow('Forbidden');
-    const first = await a.mutation(api.leases.reserve, { leaseId, userId: 'a' });
+    const first = await a.mutation(api.leases.reserve, { leaseId, userId: 'a', userName: 'Spoofed Name' });
+    expect((await t.run(ctx => ctx.db.get(leaseId)))?.reservedByName).toBe('a');
     await expect(b.mutation(api.leases.reserve, { leaseId, userId: 'b' })).rejects.toThrow('held');
     await expect(b.mutation(api.leases.release, { leaseId })).rejects.toThrow('Forbidden');
     expect((await a.mutation(api.leases.reserve, { leaseId, userId: 'a' })).lockedUntil).toBe(first.lockedUntil);
@@ -230,10 +231,26 @@ describe('expiry, quotas, and data integrity', () => {
     await expect(a.mutation(api.inquiries.sendInquiry, { listingId: placeId, tenantName: 'Applicant', tenantEmail: 'ignored@example.test', message: 'Viewing?' })).rejects.toThrow('unavailable');
     await expect(a.mutation(api.favorites.addFavorite, { userId: 'a', listingId: placeId })).rejects.toThrow('unavailable');
   });
+  test('legacy inquiries and takeover holds use the authenticated name, not client claims', async () => {
+    const { t, owner, a } = setup();
+    const inquiryPlaceId = await owner.mutation(api.leases.create, listing);
+    const inquiryId = await a.mutation(api.inquiries.sendInquiry, {
+      listingId: inquiryPlaceId,
+      tenantName: 'Spoofed Name',
+      tenantEmail: 'spoofed@example.test',
+      message: 'Can I view this place?',
+    });
+    expect(await t.run(ctx => ctx.db.get(inquiryId))).toMatchObject({ tenantName: 'a', tenantEmail: 'a@example.test' });
+
+    const takeoverPlaceId = await owner.mutation(api.leases.create, { ...listing, title: 'Second room' });
+    await a.mutation(api.leases.requestTakeover, { leaseId: takeoverPlaceId, studentName: 'Another Spoof' });
+    const takeover = await t.run(ctx => ctx.db.get(takeoverPlaceId));
+    expect(takeover?.reservedByName).toBe('a');
+  });
   test('takeover and profile inputs are bounded and validated', async () => {
     const { owner, a } = setup();
     const placeId = await owner.mutation(api.leases.create, listing);
-    await expect(a.mutation(api.leases.requestTakeover, { leaseId: placeId, studentName: ' '.repeat(3) })).rejects.toThrow('Invalid takeover request');
+    await expect(a.mutation(api.leases.requestTakeover, { leaseId: placeId, studentName: 'Ignored', studentPhone: 'not-a-phone' })).rejects.toThrow('Invalid takeover request');
     await expect(a.mutation(api.profiles.upsertProfile, { userId: 'a', fullName: 'x'.repeat(151) })).rejects.toThrow('Invalid name');
     await expect(a.mutation(api.profiles.upsertProfile, { userId: 'a', avatarUrl: 'javascript:alert(1)' })).rejects.toThrow('Invalid avatar URL');
     await expect(a.mutation(api.profiles.upsertProfile, { userId: 'a', phoneNumber: 'not-a-phone' })).rejects.toThrow('Invalid phone number');

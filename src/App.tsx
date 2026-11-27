@@ -172,9 +172,6 @@ function Relok8App() {
       };
 
       setCurrentUser(mappedUser);
-      try {
-        localStorage.setItem('r8_user', JSON.stringify(mappedUser));
-      } catch (e) {}
     } else if (isAuthLoaded && !isClerkSignedIn) {
       // Session inactive, logged out, or account deleted: clear auth state immediately
       setCurrentUser(null);
@@ -1357,7 +1354,6 @@ function Relok8App() {
           initialMode={loginMode}
           onLoginSuccess={(user) => {
             setCurrentUser(user);
-            localStorage.setItem('r8_user', JSON.stringify(user));
             setIsLoginOpen(false);
             if (currentRoute.type === 'sign-in' || currentRoute.type === 'sign-up') {
               const redirectUrl = authReturnPath(window.location.pathname, window.location.search);
