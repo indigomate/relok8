@@ -35,7 +35,7 @@ Add these variables to the **Convex production deployment**, not Vercel client v
 
 - `OPUS_MT_API_URL` — the HTTPS base URL of the deployed Opus-MT service; a full URL ending in `/api/translate` is also accepted
 - `OPUS_MT_API_TOKEN` — optional bearer token enforced by the reverse proxy in front of Opus-MT
-- `OPUS_MT_CACHE_VERSION` — optional cache namespace, default `opus-mt-v2`; change it after replacing models when old cached translations should be regenerated
+- `OPUS_MT_CACHE_VERSION` — optional cache namespace, default `opus-mt-v3`; change it after replacing models or language detection when old cached translations should be regenerated
 
 Never put the token in Git, browser code, or any `VITE_` environment variable.
 

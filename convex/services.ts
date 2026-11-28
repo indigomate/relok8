@@ -32,10 +32,21 @@ type TranslationLocale = 'en' | 'pl';
 
 const POLISH_CHARACTER = /[ąćęłńóśźż]/i;
 const OPUS_MT_REQUEST_TIMEOUT_MS = 60_000;
+const POLISH_WORDS = new Set([
+  'bardzo', 'chce', 'czesc', 'czy', 'dzien', 'dziekuje', 'dobrze', 'dobry', 'dostepny', 'gdzie', 'hej',
+  'ile', 'interesuje', 'jak', 'jaki', 'jaka', 'jest', 'jestes', 'jeszcze', 'juz', 'kaucja', 'kiedy', 'mam',
+  'masz', 'mieszkanie', 'mozemy', 'mozna', 'nadal', 'nie', 'ogladanie', 'odpowiedz', 'pan', 'pani', 'pokoj',
+  'poprosze', 'prosze', 'potrzebuje', 'rachunki', 'sa', 'sie', 'tak', 'umowic', 'wiadomosc', 'witam',
+  'wliczone', 'wynajac', 'wynajem', 'za',
+]);
+const ENGLISH_WORDS = new Set([
+  'apartment', 'are', 'available', 'bills', 'can', 'deposit', 'good', 'hello', 'hi', 'how', 'included',
+  'is', 'no', 'please', 'rent', 'room', 'thanks', 'thank', 'the', 'viewing', 'want', 'we', 'yes', 'you',
+]);
 
 function translationHash(text: string): string {
-  const version = process.env.OPUS_MT_CACHE_VERSION || 'opus-mt-v2';
-  return createHash('sha256').update(`${version}\0${text}`, 'utf8').digest('hex');
+  const version = process.env.OPUS_MT_CACHE_VERSION || 'opus-mt-v3';
+  return createHash('sha256').update(`${version}:detector-v2\0${text}`, 'utf8').digest('hex');
 }
 
 export function parseOpusTranslationResponse(payload: unknown): string {
@@ -93,14 +104,25 @@ async function callOpusMt(source: string, target: TranslationLocale, text: strin
   return parseOpusTranslationResponse(payload);
 }
 
-export function detectSupportedTranslationSource(text: string): TranslationLocale {
+export function detectSupportedTranslationSource(text: string, target?: TranslationLocale): TranslationLocale {
+  if (POLISH_CHARACTER.test(text)) return 'pl';
+  const words = text
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .match(/[a-z]+/g) || [];
+  const polishScore = words.reduce((score, word) => score + (POLISH_WORDS.has(word) ? 1 : 0), 0);
+  const englishScore = words.reduce((score, word) => score + (ENGLISH_WORDS.has(word) ? 1 : 0), 0);
+  if (polishScore > englishScore) return 'pl';
+  if (englishScore > polishScore) return 'en';
+
   const detected = detect(text);
   if (detected === 'pl' || detected === 'en') return detected;
-  // tinyld can label short English messages as languages such as Afrikaans or
-  // Tagalog. Opus-MT only supports English and Polish here, so never forward an
-  // unsupported language code. Polish-specific characters provide a reliable
-  // fallback; otherwise English is the safer default for ambiguous short text.
-  return POLISH_CHARACTER.test(text) ? 'pl' : 'en';
+  // tinyld often labels very short Polish messages such as "Tak", "Nie" or
+  // "Czesc" as Czech, Afrikaans or Romanian. When the caller asks for a
+  // target language, an otherwise ambiguous message is most safely treated as
+  // the opposite supported language instead of being silently left unchanged.
+  return target === 'en' ? 'pl' : 'en';
 }
 
 export async function translateOpusBatchResiliently(
@@ -121,7 +143,7 @@ export async function translateOpusBatchResiliently(
       results.push(text);
       continue;
     }
-    const source = detectSupportedTranslationSource(text);
+    const source = detectSupportedTranslationSource(text, target);
     if (source === target) {
       results.push(text);
       continue;

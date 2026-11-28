@@ -48,6 +48,30 @@ describe('Opus-MT English and Polish routing', () => {
     expect(detectSupportedTranslationSource('Hi sorry I was busy')).toBe('en');
     expect(detectSupportedTranslationSource('Private room in Lublin')).toBe('en');
     expect(detectSupportedTranslationSource('Dzień dobry, czy pokój jest nadal dostępny?')).toBe('pl');
+    expect(detectSupportedTranslationSource('Mozemy umowic ogladanie?', 'en')).toBe('pl');
+    expect(detectSupportedTranslationSource('Tak', 'en')).toBe('pl');
+    expect(detectSupportedTranslationSource('Nie', 'en')).toBe('pl');
+    expect(detectSupportedTranslationSource('Czesc', 'en')).toBe('pl');
+    expect(detectSupportedTranslationSource('Hej, poprosze o odpowiedz', 'en')).toBe('pl');
+    expect(detectSupportedTranslationSource('Interesuje mnie wynajem', 'en')).toBe('pl');
+    expect(detectSupportedTranslationSource('Hi', 'en')).toBe('en');
+    expect(detectSupportedTranslationSource('OK', 'en')).toBe('pl');
+  });
+
+  test('translates short Polish messages instead of silently treating them as English', async () => {
+    const calls: string[] = [];
+    const translated = await translateOpusBatchResiliently(
+      ['Tak', 'Nie', 'Czesc', 'Mozemy umowic ogladanie?'],
+      'en',
+      async (source, target, text) => {
+        calls.push(`${source}-${target}:${text}`);
+        return `EN:${text}`;
+      },
+    );
+    expect(calls).toEqual([
+      'pl-en:Tak', 'pl-en:Nie', 'pl-en:Czesc', 'pl-en:Mozemy umowic ogladanie?',
+    ]);
+    expect(translated).toEqual(['EN:Tak', 'EN:Nie', 'EN:Czesc', 'EN:Mozemy umowic ogladanie?']);
   });
 
   test('processes provider calls sequentially and preserves partial results', async () => {

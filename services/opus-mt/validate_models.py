@@ -36,6 +36,27 @@ def main() -> None:
         "Dzień dobry, jak się masz?",
         ("hello", "good", "how", "you"),
     )
+    require_translation(
+        translator,
+        "pl",
+        "en",
+        "Tak, pokój jest nadal dostępny.",
+        ("yes", "room", "available"),
+    )
+    require_translation(
+        translator,
+        "pl",
+        "en",
+        "Możemy umówić oglądanie jutro?",
+        ("view", "tomorrow", "arrange"),
+    )
+    require_translation(
+        translator,
+        "pl",
+        "en",
+        "Czy rachunki są wliczone w czynsz?",
+        ("bill", "included", "rent"),
+    )
 
 
 if __name__ == "__main__":
