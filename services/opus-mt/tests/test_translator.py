@@ -1,7 +1,12 @@
 from threading import Lock
 from types import SimpleNamespace
 
-from app.translator import MODEL_SPECS, OpusTranslator
+from app.translator import (
+    MODEL_SPECS,
+    OpusTranslator,
+    decoding_limit,
+    pathological_translation,
+)
 
 
 class FakeProcessor:
@@ -21,13 +26,15 @@ class FakeProcessor:
 class FakeModel:
     def __init__(self) -> None:
         self.received: list[list[str]] = []
+        self.options: dict[str, object] = {}
 
-    def translate_batch(self, values: list[list[str]], **_: object) -> list[SimpleNamespace]:
+    def translate_batch(self, values: list[list[str]], **options: object) -> list[SimpleNamespace]:
         self.received = values
+        self.options = options
         return [SimpleNamespace(hypotheses=[["przetłumaczone"]])]
 
 
-def test_english_to_polish_uses_required_target_prefix() -> None:
+def test_english_to_polish_uses_dedicated_model_and_bounded_decoding() -> None:
     source_processor = FakeProcessor()
     target_processor = FakeProcessor()
     model = FakeModel()
@@ -43,10 +50,20 @@ def test_english_to_polish_uses_required_target_prefix() -> None:
 
     result = translator.translate("en", "pl", "Available from May")
 
-    assert model.received == [[">>pol<<", "Available from May"]]
+    assert model.received == [["Available from May"]]
+    assert model.options["max_decoding_length"] == decoding_limit(1)
+    assert model.options["no_repeat_ngram_size"] == 3
+    assert model.options["repetition_penalty"] == 1.1
     assert result == "przetłumaczone"
 
 
 def test_same_language_returns_original_text() -> None:
     translator = OpusTranslator.__new__(OpusTranslator)
     assert translator.translate("pl", "pl", "Dzień dobry") == "Dzień dobry"
+
+
+def test_rejects_runaway_repetition_and_oversized_output() -> None:
+    repeated = " ".join(["się"] * 20)
+    assert pathological_translation("Hello", repeated)
+    assert pathological_translation("Hello", "x" * 241)
+    assert not pathological_translation("Hello, how are you?", "Cześć, jak się masz?")

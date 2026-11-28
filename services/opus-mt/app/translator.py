@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 import gc
 import os
 import re
@@ -14,9 +15,11 @@ class TranslationEngine(Protocol):
 
 @dataclass(frozen=True)
 class ModelSpec:
-    repository: str
-    revision: str
     directory: str
+    repository: str | None = None
+    revision: str | None = None
+    archive_url: str | None = None
+    archive_sha256: str | None = None
     target_prefix: str = ""
 
     @property
@@ -27,17 +30,35 @@ class ModelSpec:
 
 MODEL_SPECS: dict[tuple[str, str], ModelSpec] = {
     ("pl", "en"): ModelSpec(
+        directory="pl-en",
         repository="Helsinki-NLP/opus-mt-pl-en",
         revision="7f2bb874fdfb6139f9842b91a9b75c4a6c93401c",
-        directory="pl-en",
     ),
     ("en", "pl"): ModelSpec(
-        repository="Helsinki-NLP/opus-mt-en-zlw",
-        revision="92ffd5aa936924688bd715b26d6bb75393082c03",
-        directory="en-zlw",
-        target_prefix=">>pol<< ",
+        directory="en-pl",
+        archive_url="https://object.pouta.csc.fi/Tatoeba-MT-models/eng-pol/opus-2021-02-19.zip",
+        archive_sha256="b8106bc3a1034649a06fb9a7a62b8267d1924fc273afe6032c4d58ea40a4865c",
     ),
 }
+
+
+def decoding_limit(source_token_count: int) -> int:
+    """Keep short messages from running to the model's 512-token ceiling."""
+    return max(16, min(256, source_token_count * 3 + 12))
+
+
+def pathological_translation(source: str, translated: str) -> bool:
+    """Reject runaway repetition while preserving ordinary longer translations."""
+    if not translated.strip() or len(translated) > max(240, len(source) * 8):
+        return True
+    words = re.findall(r"[\wąćęłńóśźż]+", translated.lower(), flags=re.UNICODE)
+    if len(words) < 12:
+        return False
+    counts = Counter(words)
+    if counts.most_common(1)[0][1] / len(words) > 0.35:
+        return True
+    trigrams = list(zip(words, words[1:], words[2:]))
+    return bool(trigrams) and Counter(trigrams).most_common(1)[0][1] >= 4
 
 
 class OpusTranslator:
@@ -103,12 +124,17 @@ class OpusTranslator:
         generated = model.translate_batch(
             token_batches,
             beam_size=4,
-            max_decoding_length=512,
+            max_decoding_length=max(decoding_limit(len(tokens)) for tokens in token_batches),
+            no_repeat_ngram_size=3,
+            repetition_penalty=1.1,
         )
-        return " ".join(
+        translated = " ".join(
             target_processor.decode(item.hypotheses[0]).strip()
             for item in generated
         ).strip()
+        if pathological_translation(text, translated):
+            raise ValueError("Translation model returned repetitive or oversized output")
+        return translated
 
     def translate(self, source: str, target: str, text: str) -> str:
         if source == target:

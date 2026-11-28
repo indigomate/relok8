@@ -4,7 +4,7 @@ Authenticated English/Polish translation service for Relok8. It implements the
 `POST /api/translate` contract used by `convex/services.ts` and keeps the two
 pinned Helsinki-NLP Marian models inside the container image.
 
-The build converts the pinned PyTorch checkpoints to int8 CTranslate2 models.
+The build converts the pinned source checkpoints to int8 CTranslate2 models.
 The smaller production stage contains no PyTorch dependency, and startup is
 fully offline.
 
@@ -56,5 +56,10 @@ curl -X POST http://127.0.0.1:8000/api/translate \
 Model sources and licenses:
 
 - `Helsinki-NLP/opus-mt-pl-en` (Apache-2.0)
-- `Helsinki-NLP/opus-mt-en-zlw` with the required `>>pol<<` target token
-  (Apache-2.0)
+- Helsinki-NLP Tatoeba Challenge `eng-pol/opus-2021-02-19`, distributed under
+  CC BY 4.0. The model archive, its README, and its license are copied into the
+  deployed model directory. Model authors: Jörg Tiedemann and the Helsinki-NLP
+  contributors; training data: OPUS.
+
+The build verifies the archive SHA-256 and runs real English↔Polish smoke
+translations against the converted int8 models before producing an image.

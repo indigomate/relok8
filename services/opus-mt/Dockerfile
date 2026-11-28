@@ -13,6 +13,7 @@ COPY services/opus-mt/requirements.txt ./
 COPY services/opus-mt/requirements-build.txt ./
 COPY services/opus-mt/app ./app
 COPY services/opus-mt/download_models.py ./
+COPY services/opus-mt/validate_models.py ./
 
 # Conversion needs PyTorch, but the production stage does not contain it.
 RUN --mount=type=secret,id=build_ca,required=false \
@@ -21,6 +22,7 @@ RUN --mount=type=secret,id=build_ca,required=false \
     && python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.9.1+cpu \
     && python -m pip install --no-cache-dir -r requirements-build.txt \
     && python download_models.py \
+    && python validate_models.py \
     && cp -R app /bundle/app \
     && cp requirements.txt /bundle/requirements.txt \
     && rm -rf /opt/huggingface
