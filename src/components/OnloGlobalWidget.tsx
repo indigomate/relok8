@@ -20,6 +20,9 @@ interface ChatMessage {
   text: string;
   timestamp: number;
   sources?: Array<{ id: string; label: string; url?: string; kind: 'official' | 'internal' }>;
+  runId?: string;
+  confidence?: 'verified' | 'partial' | 'unverified';
+  suggestedActions?: Array<{ id: string; label: string; kind: 'ask' | 'review' | 'navigate'; prompt?: string; href?: string; requiresConfirmation: boolean }>;
 }
 
 const EXIT_DURATION = 190;
@@ -48,6 +51,11 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
   const [isMounted, setIsMounted] = useState(isOpen);
   const [isVisible, setIsVisible] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [greeting(locale)]);
+  const [sessionId, setSessionId] = useState<string | null>(() => {
+    try { return localStorage.getItem('r8_onlo_general_session'); } catch { return null; }
+  });
+  const [ratedRuns, setRatedRuns] = useState<Set<string>>(() => new Set());
+  const [memoryEnabled, setMemoryEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +79,33 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
       ? [greeting(locale)]
       : previous);
   }, [locale]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !sessionId) return;
+    let cancelled = false;
+    backend().query((api as any).onloSessions.messages, { sessionId }).then((history: any[]) => {
+      if (cancelled || !history.length) return;
+      setMessages(history.map((message) => ({
+        id: String(message._id),
+        sender: message.role === 'user' ? 'user' : 'onlo',
+        text: message.content,
+        timestamp: message.createdAt,
+        sources: message.sources,
+        runId: message.runId ? String(message.runId) : undefined,
+      })));
+    }).catch(() => {
+      try { localStorage.removeItem('r8_onlo_general_session'); } catch {}
+      setSessionId(null);
+    });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, sessionId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    backend().query((api as any).onloSessions.myPreferences, {}).then((preferences: any) => {
+      setMemoryEnabled(Boolean(preferences?.memoryEnabled));
+    }).catch(() => {});
+  }, [isAuthenticated]);
 
   useEffect(() => {
     let frame = 0;
@@ -157,13 +192,20 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
     setWidgetState('thinking');
 
     try {
-      const data = await backend().action(api.services.ask, { question: trimmed, locale });
+      const data: any = await backend().action((api as any).services.ask, { question: trimmed, locale, ...(sessionId ? { sessionId } : {}) });
+      if (data.sessionId && data.sessionId !== sessionId) {
+        setSessionId(data.sessionId);
+        try { localStorage.setItem('r8_onlo_general_session', data.sessionId); } catch {}
+      }
       setMessages((previous) => [...previous, {
         id: `onlo-${crypto.randomUUID()}`,
         sender: 'onlo',
         text: data.answer || (locale === 'pl' ? 'W czym mogę jeszcze pomóc?' : 'What else can I help with?'),
         timestamp: Date.now(),
         sources: data.sources,
+        runId: data.runId,
+        confidence: data.confidence,
+        suggestedActions: data.suggestedActions,
       }]);
       setWidgetState('happy');
       window.setTimeout(() => setWidgetState('idle'), 1800);
@@ -180,6 +222,25 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const rateAnswer = async (runId: string, feedback: 'helpful' | 'not_helpful') => {
+    if (ratedRuns.has(runId)) return;
+    await backend().mutation((api as any).onloSessions.rateRun, { runId, feedback });
+    setRatedRuns((previous) => new Set(previous).add(runId));
+  };
+
+  const toggleMemory = async () => {
+    const next = !memoryEnabled;
+    await backend().mutation((api as any).onloSessions.updatePreferences, { memoryEnabled: next, locale });
+    setMemoryEnabled(next);
+  };
+
+  const clearConversation = async () => {
+    if (sessionId) await backend().mutation((api as any).onloSessions.deleteSession, { sessionId });
+    try { localStorage.removeItem('r8_onlo_general_session'); } catch {}
+    setSessionId(null);
+    setMessages([greeting(locale)]);
   };
 
   const suggestionChips = locale === 'pl'
@@ -245,6 +306,19 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                   <p id={descriptionId} className="text-xs text-slate-500 leading-tight truncate">
                     {locale === 'pl' ? 'Wynajem i przejmowanie umów w Polsce' : 'Renting and lease takeovers in Poland'}
                   </p>
+                  {isAuthenticated && (
+                    <div className="mt-1 flex items-center gap-2 text-[10px]">
+                      <button type="button" onClick={toggleMemory} className="font-semibold text-indigo-700 hover:underline">
+                        {memoryEnabled
+                          ? (locale === 'pl' ? 'Pamięć osobista: włączona' : 'Personal memory: on')
+                          : (locale === 'pl' ? 'Pamięć osobista: wyłączona' : 'Personal memory: off')}
+                      </button>
+                      <span aria-hidden="true" className="text-slate-300">·</span>
+                      <button type="button" onClick={clearConversation} className="font-semibold text-slate-500 hover:text-rose-700">
+                        {locale === 'pl' ? 'Wyczyść rozmowę' : 'Clear chat'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <button
@@ -309,6 +383,39 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                               [{index + 1}] {source.label}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {!isUser && message.confidence && (
+                        <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-500">
+                          <span className={`rounded-full border px-2 py-0.5 font-semibold ${message.confidence === 'verified' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : message.confidence === 'partial' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                            {message.confidence === 'verified'
+                              ? (locale === 'pl' ? 'Oparte na źródłach' : 'Source-backed')
+                              : message.confidence === 'partial'
+                                ? (locale === 'pl' ? 'Częściowo potwierdzone' : 'Partially verified')
+                                : (locale === 'pl' ? 'Wymaga potwierdzenia' : 'Needs confirmation')}
+                          </span>
+                        </div>
+                      )}
+                      {!isUser && message.suggestedActions && message.suggestedActions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1.5">
+                          {message.suggestedActions.map((action) => action.prompt && (
+                            <button key={action.id} type="button" onClick={() => handleSend(action.prompt!)} disabled={isLoading} className="min-h-8 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {!isUser && message.runId && (
+                        <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-400">
+                          {ratedRuns.has(message.runId) ? (
+                            <span>{locale === 'pl' ? 'Dziękujemy za opinię' : 'Thanks for the feedback'}</span>
+                          ) : (
+                            <>
+                              <span>{locale === 'pl' ? 'Pomocne?' : 'Helpful?'}</span>
+                              <button type="button" onClick={() => rateAnswer(message.runId!, 'helpful')} className="min-h-7 px-2 font-semibold text-slate-600 hover:text-indigo-700">{locale === 'pl' ? 'Tak' : 'Yes'}</button>
+                              <button type="button" onClick={() => rateAnswer(message.runId!, 'not_helpful')} className="min-h-7 px-2 font-semibold text-slate-600 hover:text-indigo-700">{locale === 'pl' ? 'Nie' : 'No'}</button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>

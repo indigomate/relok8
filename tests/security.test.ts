@@ -212,6 +212,21 @@ describe('expiry, quotas, and data integrity', () => {
     await expect(t.action(api.services.ask, { question: 'Hello' })).rejects.toThrow('Authentication required');
     await expect(t.mutation(api.uploads.generateUploadUrl, {})).rejects.toThrow('Authentication required');
   });
+  test('Onlo sessions, preferences and feedback are account bound', async () => {
+    const { t, a, b } = setup();
+    const sessionId = await t.run(async (ctx) => ctx.db.insert('onloSessions', {
+      userId: 'a', scope: 'general', locale: 'en', createdAt: Date.now(), updatedAt: Date.now(),
+    }));
+    await t.run(async (ctx) => ctx.db.insert('onloSessionMessages', {
+      sessionId, userId: 'a', role: 'user', content: 'Private question', createdAt: Date.now(),
+    }));
+    await expect(b.query((api as any).onloSessions.messages, { sessionId })).rejects.toThrow('Onlo session not found');
+    await a.mutation((api as any).onloSessions.updatePreferences, { memoryEnabled: true, locale: 'en', cities: ['Warsaw'] });
+    expect(await a.query((api as any).onloSessions.myPreferences, {})).toMatchObject({ memoryEnabled: true, cities: ['Warsaw'] });
+    await expect(t.query((api as any).onloSessions.myPreferences, {})).rejects.toThrow('Authentication required');
+    await a.mutation((api as any).onloSessions.deleteSession, { sessionId });
+    expect(await t.run((ctx) => ctx.db.get(sessionId))).toBeNull();
+  });
   test('listing photos must be uploaded by the listing owner', async () => {
     const { owner } = setup();
     await expect(owner.mutation(api.leases.create, { ...listing, images: ['https://example.test/other-user-photo.jpg'] })).rejects.toThrow('own uploaded photos');

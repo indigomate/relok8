@@ -40,6 +40,72 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_active", ["active"])
     .index("by_category", ["category"]),
+  onloSessions: defineTable({
+    userId: v.string(),
+    scope: v.union(v.literal("general"), v.literal("listing"), v.literal("application"), v.literal("thread")),
+    scopeId: v.optional(v.string()),
+    locale: v.union(v.literal("en"), v.literal("pl")),
+    summary: v.optional(v.string()),
+    lastIntent: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_scope", ["userId", "scope", "scopeId"]),
+  onloSessionMessages: defineTable({
+    sessionId: v.id("onloSessions"),
+    userId: v.string(),
+    role: v.union(v.literal("user"), v.literal("onlo")),
+    content: v.string(),
+    sources: v.optional(v.array(v.object({
+      id: v.string(),
+      label: v.string(),
+      url: v.optional(v.string()),
+      kind: v.union(v.literal("official"), v.literal("internal")),
+    }))),
+    runId: v.optional(v.id("onloRuns")),
+    createdAt: v.number(),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_user", ["userId"]),
+  onloPreferences: defineTable({
+    userId: v.string(),
+    memoryEnabled: v.boolean(),
+    locale: v.optional(v.union(v.literal("en"), v.literal("pl"))),
+    cities: v.optional(v.array(v.string())),
+    roomTypes: v.optional(v.array(v.string())),
+    maxMonthlyRent: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
+  onloRuns: defineTable({
+    userId: v.string(),
+    sessionId: v.optional(v.id("onloSessions")),
+    scope: v.string(),
+    intent: v.string(),
+    status: v.union(v.literal("completed"), v.literal("failed")),
+    toolNames: v.array(v.string()),
+    sourceIds: v.array(v.string()),
+    model: v.optional(v.string()),
+    latencyMs: v.number(),
+    citationStatus: v.string(),
+    confidence: v.string(),
+    needsHuman: v.boolean(),
+    feedback: v.optional(v.union(v.literal("helpful"), v.literal("not_helpful"))),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_session", ["sessionId"]),
+  onloDrafts: defineTable({
+    userId: v.string(),
+    threadId: v.string(),
+    content: v.string(),
+    status: v.union(v.literal("draft"), v.literal("discarded")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_thread", ["threadId"]),
   // Relok8 Leases table (for live lease takeover listings)
   leases: defineTable({
     occupancyStatus: v.optional(v.union(v.literal("occupied"), v.literal("vacant"))),
@@ -237,6 +303,17 @@ export default defineSchema({
       kind: v.union(v.literal("official"), v.literal("internal")),
     }))),
     functionExecuted: v.optional(v.string()),
+    runId: v.optional(v.id("onloRuns")),
+    confidence: v.optional(v.union(v.literal("verified"), v.literal("partial"), v.literal("unverified"))),
+    needsHuman: v.optional(v.boolean()),
+    suggestedActions: v.optional(v.array(v.object({
+      id: v.string(),
+      label: v.string(),
+      kind: v.union(v.literal("ask"), v.literal("review"), v.literal("navigate")),
+      prompt: v.optional(v.string()),
+      href: v.optional(v.string()),
+      requiresConfirmation: v.boolean(),
+    }))),
     timestamp: v.number(),
   }),
 

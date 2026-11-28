@@ -57,6 +57,10 @@ export interface ConvexAIMessageDoc {
   content: string;
   sources?: Array<{ id: string; label: string; url?: string; kind: 'official' | 'internal' }>;
   functionExecuted?: string;
+  runId?: string;
+  confidence?: 'verified' | 'partial' | 'unverified';
+  needsHuman?: boolean;
+  suggestedActions?: Array<{ id: string; label: string; kind: 'ask' | 'review' | 'navigate'; prompt?: string; href?: string; requiresConfirmation: boolean }>;
   timestamp: number;
 }
 
@@ -135,7 +139,8 @@ export const ConvexProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (!isAuthenticated) throw new Error('Sign in to use the listing assistant.');
       const result = await client.action(api.aiMessages.generateAIProxyResponse, { listingId, userPrompt, locale });
       const now = Date.now();
-      return { userMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'user', content: userPrompt }, aiMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'ai', content: (result as any).replyText || (result as any).content || 'Please contact the tenant for confirmation.', sources: (result as any).sources } };
+      const assistant = (result as any).assistant;
+      return { userMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'user', content: userPrompt }, aiMsg: { _id: crypto.randomUUID(), _creationTime: now, timestamp: now, listingId, sender: 'ai', content: (result as any).replyText || (result as any).content || 'Please contact the tenant for confirmation.', sources: (result as any).sources, runId: assistant?.runId, confidence: assistant?.confidence, needsHuman: assistant?.needsHuman, suggestedActions: assistant?.suggestedActions } };
     },
   }), [client, listings, isAuthenticated, history]);
   return <ConvexContext.Provider value={value}>{children}</ConvexContext.Provider>;

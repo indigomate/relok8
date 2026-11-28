@@ -14,7 +14,7 @@
     "check": "npm run lint && npm run test && npm run build",
     "smoke:production": "node scripts/smoke-public-routes.mjs --base-url https://relok8.online",
     "capture:help-states": "node scripts/capture-help-states.mjs --base-url https://relok8.online",
-    "test:onlo": "vitest run tests/onlo-knowledge.test.ts tests/onlo-knowledge-eval.test.ts",
+    "test:onlo": "vitest run tests/onlo-knowledge.test.ts tests/onlo-knowledge-eval.test.ts tests/onlo-agent.test.ts tests/onlo-agent-eval.test.ts",
     "emails:preview": "tsx scripts/render-email-previews.ts"
   },
   "dependencies": {

@@ -351,6 +351,26 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         {cleanedContent}
                       </div>
 
+                      {msg.confidence && (
+                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${msg.confidence === 'verified' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : msg.confidence === 'partial' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
+                          {msg.confidence === 'verified'
+                            ? (locale === 'pl' ? 'Oparte na źródłach' : 'Source-backed')
+                            : msg.confidence === 'partial'
+                              ? (locale === 'pl' ? 'Częściowo potwierdzone' : 'Partially verified')
+                              : (locale === 'pl' ? 'Wymaga potwierdzenia' : 'Needs confirmation')}
+                        </span>
+                      )}
+
+                      {msg.suggestedActions && msg.suggestedActions.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {msg.suggestedActions.map((action) => action.prompt && (
+                            <button key={action.id} type="button" onClick={() => handleSendPrompt(action.prompt!)} disabled={isGenerating} className="min-h-8 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Similar listings tool results rendered as structured cards */}
                       {isSimilarListingsQuery && (
                         <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xs">

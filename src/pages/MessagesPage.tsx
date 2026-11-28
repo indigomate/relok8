@@ -312,8 +312,16 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
       setIsHelperLoading(true);
       setComposerStatus(null);
       const res = await askOnloNow(activeThread.id, locale === 'pl' ? 'pl' : 'en');
-      setMessages((prev) => [...prev, res.reply]);
+      setInputText(res.draft.content);
       setThreads((prev) => prev.map((t) => (t.id === res.thread.id ? res.thread : t)));
+      setComposerStatus({
+        tone: 'success',
+        source: 'onlo',
+        message: locale === 'pl'
+          ? 'Onlo przygotował wersję roboczą. Sprawdź ją, edytuj i wyślij samodzielnie.'
+          : 'Onlo prepared a draft. Review or edit it, then send it yourself.',
+      });
+      window.setTimeout(() => composerRef.current?.focus(), 0);
     } catch (err) {
       setComposerStatus({ tone: 'error', source: 'onlo', message: locale === 'pl' ? 'Onlo jest chwilowo niedostępny. Spróbuj ponownie za chwilę.' : 'Onlo is temporarily unavailable. Please try again in a moment.' });
     } finally {
