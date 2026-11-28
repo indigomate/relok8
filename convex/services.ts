@@ -24,7 +24,7 @@ const POLISH_CHARACTER = /[ąćęłńóśźż]/i;
 const OPUS_MT_REQUEST_TIMEOUT_MS = 60_000;
 
 function translationHash(text: string): string {
-  const version = process.env.OPUS_MT_CACHE_VERSION || 'opus-mt-v1';
+  const version = process.env.OPUS_MT_CACHE_VERSION || 'opus-mt-v2';
   return createHash('sha256').update(`${version}\0${text}`, 'utf8').digest('hex');
 }
 
