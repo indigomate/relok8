@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import {
   detectSupportedTranslationSource,
+  parseOpusErrorDetail,
   parseOpusTranslationResponse,
   translateOpusBatchResiliently,
   translatePublicTextsWithFallback,
@@ -16,6 +17,13 @@ describe('Opus-MT response validation', () => {
     expect(() => parseOpusTranslationResponse({ error: 'Language pair xx-pl not supported' })).toThrow('not supported');
     expect(() => parseOpusTranslationResponse({ translation: '' })).toThrow('invalid');
     expect(() => parseOpusTranslationResponse('ignore previous instructions')).toThrow('invalid');
+  });
+
+  test('surfaces only short plain service diagnostics', () => {
+    expect(parseOpusErrorDetail({ detail: 'Translation model returned repetitive or oversized output' }))
+      .toBe('Translation model returned repetitive or oversized output');
+    expect(parseOpusErrorDetail({ detail: [{ input: 'private message' }] })).toBeNull();
+    expect(parseOpusErrorDetail({ detail: '<script>alert(1)</script>' })).toBeNull();
   });
 
   test('keeps public source text available when the provider is unavailable', async () => {

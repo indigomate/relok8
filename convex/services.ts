@@ -39,6 +39,18 @@ export function parseOpusTranslationResponse(payload: unknown): string {
   return translated.trim();
 }
 
+export function parseOpusErrorDetail(payload: unknown): string | null {
+  if (typeof payload !== 'object' || payload === null) return null;
+  const detail = (payload as { detail?: unknown }).detail;
+  if (typeof detail !== 'string') return null;
+  const normalized = detail.trim();
+  // Only surface short, plain service diagnostics. Validation structures and
+  // request data are intentionally excluded so user content cannot enter logs.
+  return normalized && normalized.length <= 200 && /^[\p{L}\p{N} .,:;()'\-/]+$/u.test(normalized)
+    ? normalized
+    : null;
+}
+
 function opusTranslateUrl(baseUrl: string): string {
   const parsed = new URL(baseUrl);
   if (parsed.pathname.replace(/\/$/, '').endsWith('/api/translate')) return parsed.toString();
@@ -64,7 +76,10 @@ async function callOpusMt(source: string, target: TranslationLocale, text: strin
   } catch {
     throw new Error(`Opus-MT returned HTTP ${response.status}`);
   }
-  if (!response.ok) throw new Error(`Opus-MT returned HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = parseOpusErrorDetail(payload);
+    throw new Error(`Opus-MT returned HTTP ${response.status}${detail ? `: ${detail}` : ''}`);
+  }
   return parseOpusTranslationResponse(payload);
 }
 
