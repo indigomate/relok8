@@ -8,7 +8,7 @@ The browser never talks to Opus-MT directly. Convex detects the source language,
 
 Opus-MT is a model server, not a hosted API included with the GitHub repository. Run it on a container or GPU/CPU host that can stay online; it is not suitable for a Vercel browser bundle or short-lived Vercel function. Relok8 includes a production container in `services/opus-mt`. It pins the Polish-to-English model and the English-to-West-Slavic model used with the required Polish target token.
 
-Deploy `services/opus-mt/Dockerfile` on a long-running host with at least 1 GB RAM and expose it over HTTPS. The build converts both pinned checkpoints to int8 CTranslate2 models, keeping the production image and memory use suitable for a small CPU container. The service implements the endpoint expected by Convex:
+Deploy `services/opus-mt/Dockerfile` from the repository-root build context on a long-running host with at least 1 GB RAM and expose it over HTTPS. The build converts both pinned checkpoints to int8 CTranslate2 models, keeping the production image and memory use suitable for a small CPU container. The service implements the endpoint expected by Convex:
 
 ```text
 POST /api/translate

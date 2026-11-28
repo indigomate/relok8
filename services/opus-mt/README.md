@@ -32,7 +32,7 @@ pytest
 Build and run the production image:
 
 ```sh
-docker build -t relok8-opus-mt .
+docker build -f services/opus-mt/Dockerfile -t relok8-opus-mt .
 docker run --rm -p 8000:8000 \
   -e OPUS_MT_API_TOKEN="replace-with-a-random-secret" \
   relok8-opus-mt

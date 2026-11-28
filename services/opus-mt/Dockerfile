@@ -9,9 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /build
 
-COPY requirements.txt ./
-COPY app ./app
-COPY download_models.py ./
+COPY services/opus-mt/requirements.txt ./
+COPY services/opus-mt/app ./app
+COPY services/opus-mt/download_models.py ./
 
 # Conversion needs PyTorch, but the production stage does not contain it.
 RUN --mount=type=secret,id=build_ca,required=false \
