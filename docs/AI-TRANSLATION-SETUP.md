@@ -6,9 +6,9 @@ The browser never talks to Opus-MT directly. Convex detects the source language,
 
 ## 1. Host the Opus-MT service
 
-Opus-MT is a model server, not a hosted API included with the GitHub repository. Run it on a container or GPU/CPU host that can stay online; it is not suitable for a Vercel browser bundle or short-lived Vercel function.
+Opus-MT is a model server, not a hosted API included with the GitHub repository. Run it on a container or GPU/CPU host that can stay online; it is not suitable for a Vercel browser bundle or short-lived Vercel function. Relok8 includes a production container in `services/opus-mt`. It pins the Polish-to-English model and the English-to-West-Slavic model used with the required Polish target token.
 
-Follow the repository's Docker or manual setup, download the required public models, and expose its REST service over HTTPS. The app uses the repository's official endpoint:
+Deploy `services/opus-mt/Dockerfile` on a long-running host with at least 1 GB RAM and expose it over HTTPS. The build converts both pinned checkpoints to int8 CTranslate2 models, keeping the production image and memory use suitable for a small CPU container. The service implements the endpoint expected by Convex:
 
 ```text
 POST /api/translate
@@ -25,9 +25,9 @@ The service should return:
 
 At minimum, configure `pl -> en` and `en -> pl`. For additional input languages, configure each language directly to English and/or Polish. When a direct `source -> pl` pair is unavailable, Relok8 automatically tries `source -> en -> pl`.
 
-Put the service behind TLS and an authenticated reverse proxy. Relok8 sends an `Authorization: Bearer …` header when `OPUS_MT_API_TOKEN` is configured.
+The container requires `OPUS_MT_API_TOKEN` and rejects missing or incorrect bearer tokens. The hosting platform must terminate TLS. Relok8 sends the matching `Authorization: Bearer …` header from Convex.
 
-The public models linked by the repository are CC-BY 4.0. Keep the required attribution in your product/legal notices and review the model card for every model you deploy.
+The pinned Hugging Face model cards currently identify both deployed model repositories as Apache-2.0. Keep model attribution in the product/legal notices and re-check each model card before changing a pinned revision.
 
 ## 2. Configure Convex production
 
@@ -68,3 +68,11 @@ Static interface copy remains deterministic English/Polish content from the app 
 4. Switch back to Polish and confirm the Polish version appears.
 5. In Convex, verify `translationCache` contains entries for both target languages after both views.
 6. Stop the Opus-MT service temporarily and confirm the original content remains visible.
+
+## Production readiness checks
+
+- `GET /healthz` returns `status: ok` and both `pl-en` and `en-pl` pairs.
+- A request without the bearer token returns HTTP 401.
+- The same Polish and English samples succeed with the bearer token.
+- The host remains available long enough to satisfy Convex's 20-second timeout; sleeping free tiers are unsuitable for production traffic.
+- Service logs do not record message or listing text.

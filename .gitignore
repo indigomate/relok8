@@ -8,6 +8,12 @@ coverage/
 !.env.example
 .aistudio/
 
+# Python tooling and local virtual environments
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+
 data/*.json
 data/*.sqlite*
 .env.local
