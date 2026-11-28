@@ -1,10 +1,10 @@
 import { timingLabels, leaseHasEnded } from '../utils/leaseTiming';
 import { formatDate } from '../utils/formatters';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ApplicationDecision } from "./ApplicationDecision";
 import { PropertySettings } from "./PropertySettings";
 import { handoverProgress } from "../utils/handover";
-import { useQuery, useMutation, useConvexAuth } from "convex/react";
+import { useQuery, useMutation, useAction, useConvexAuth } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { backend } from "../lib/backend";
 import { navigateTo, navigateToListing } from "../utils/router";
@@ -40,10 +40,17 @@ export function TakeoverProgress({
   const [selectedId, setSelectedId] = useState("");
   const selectedPlace = places?.find(p => p.id === selectedId) || places?.[0];
   const token = new URLSearchParams(window.location.search).get("invite");
-  const invitation = useQuery(
-    api.workflow.invitationPreview,
-    isAuthenticated && token ? { token } : "skip",
-  );
+  const previewInvitation = useAction((api as any).workflow.invitationPreviewVerified);
+  const acceptInvitation = useAction((api as any).domain.acceptInvitationVerified);
+  const [invitation, setInvitation] = useState<{error?: string; title?: string; address?: string; city?: string} | null>(null);
+  useEffect(() => {
+    let active = true;
+    setInvitation(null);
+    if (isAuthenticated && token) previewInvitation({ token }).then(result => {
+      if (active) setInvitation(result);
+    }).catch(() => { if (active) setInvitation({ error: 'Could not verify invitation. Sign in with the intended email and try again.' }); });
+    return () => { active = false; };
+  }, [isAuthenticated, token, previewInvitation]);
   const run = async (fn: () => Promise<any>) => {
     setBusy(true);
     setError("");
@@ -146,10 +153,8 @@ export function TakeoverProgress({
             className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50"
             onClick={() =>
               run(async () => {
-                await backend().mutation(api.domain.write, {
-                  operation: "acceptInvitation",
-                  input: { token, locale },
-                });
+                if (!token) return;
+                await acceptInvitation({ token, locale });
                 navigateTo(prefix + "/place");
               })
             }
@@ -299,23 +304,11 @@ export function TakeoverProgress({
               onSubmit={(e) => {
                 e.preventDefault();
                 run(async () => {
-                  const bytes = crypto.getRandomValues(new Uint8Array(32));
-                  const token = Array.from(bytes, (b) =>
-                    b.toString(16).padStart(2, "0"),
-                  ).join("");
-                  await backend().mutation(api.domain.write, {
+                  const result = await backend().mutation(api.domain.write, {
                     operation: "invitation",
-                    input: {
-                      placeId: p.id,
-                      email: inviteEmail,
-                      role: "landlord",
-                      token,
-                      locale,
-                    },
-                  });
-                  setInviteUrl(
-                    window.location.origin + prefix + "/place?invite=" + token,
-                  );
+                    input: { placeId: p.id, email: inviteEmail, role: "landlord", locale },
+                  }) as { token: string };
+                  setInviteUrl(window.location.origin + prefix + "/place?invite=" + result.token);
                 });
               }}
             >

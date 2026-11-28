@@ -1,6 +1,9 @@
 import { validLeaseDates, leaseHasEnded } from '../src/utils/leaseTiming';
-import { query, mutation } from "./_generated/server";
+import { query, mutation, action, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
+import { lookupClerkContact } from "./lib/clerkIdentity";
+import { findInvitation } from "./lib/invitations";
 import {
   requireIdentity,
   isLandlord,
@@ -599,34 +602,25 @@ export const resolveReport = mutation({
   },
 });
 
-export const invitationPreview = query({
+export const invitationPreviewVerified = action({
   args: { token: v.string() },
+  handler: async (ctx, args): Promise<any> => {
+    const identity = await requireIdentity(ctx);
+    const result = await lookupClerkContact(identity.subject, process.env.CLERK_SECRET_KEY);
+    if (!result.ok) return { error: 'Sign in with the intended verified email.' };
+    return ctx.runQuery((internal as any).workflow.invitationPreviewInternal, { token: args.token, subject: identity.subject, email: result.contact.email });
+  },
+});
+export const invitationPreviewInternal = internalQuery({
+  args: { token: v.string(), subject: v.string(), email: v.string() },
   handler: async (ctx, a) => {
     const u = await requireIdentity(ctx);
-    const r = await ctx.db
-      .query("domainRecords")
-      .withIndex("by_key", (q) => q.eq("kind", "invitation").eq("key", a.token))
-      .unique();
-    if (!r || r.data.acceptedAt || Date.now() - r.data.createdAt > 7 * 86400000)
-      return {
-        error:
-          "This invitation is expired, already used or unavailable. Ask the sender for a new link.",
-      };
-    if (
-      u.emailVerified !== true ||
-      !u.email ||
-      r.data.email.toLowerCase() !== u.email.toLowerCase()
-    )
-      return {
-        error:
-          "Sign in with the verified email this invitation was addressed to.",
-      };
+    if (u.subject !== a.subject) throw new Error('Forbidden');
+    const r = await findInvitation(ctx, a.token);
+    if (!r || r.data.role !== 'landlord' || r.data.revokedAt || r.data.acceptedAt || Date.now() - r.data.createdAt > 7 * 86400000 || r.data.email.toLowerCase() !== a.email)
+      return { error: 'This invitation is unavailable, expired or addressed to another account.' };
     const l = await lease(ctx, r.placeId!);
-    return {
-      title: l.title,
-      address: l.address,
-      city: l.city,
-      role: r.data.role,
-    };
+    if (r.ownerId !== l.ownerId || u.subject === l.ownerId || (l.landlordUserId && l.landlordUserId !== u.subject)) return { error: 'This invitation is unavailable or requires review.' };
+    return { title: l.title, address: l.address, city: l.city, role: r.data.role };
   },
 });

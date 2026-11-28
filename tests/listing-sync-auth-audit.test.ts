@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { convexTest } from 'convex-test';
 import schema from '../convex/schema';
-import { api } from '../convex/_generated/api';
+import { api, internal } from '../convex/_generated/api';
 import { knownMonthlyCost } from '../src/utils/listingFlow';
 import { formatPLN } from '../src/utils/formatters';
 import { mapConvexListingToAppListing } from '../src/lib/convex/client';
@@ -92,7 +92,8 @@ describe('legacy workflow protections',()=>{
     const {t,id,oldLandlord}=await setup();
     await expect(oldLandlord.mutation(api.domain.write,{operation:'invitation',input:{placeId:id,email:'new@example.test',role:'tenant',token:'a'.repeat(64)}})).rejects.toThrow('takeover workflow');
     await t.run(async ctx=>{await ctx.db.insert('domainRecords',{kind:'invitation',key:'b'.repeat(64),ownerId:'old',placeId:id,data:{role:'tenant',email:'new@example.test',createdAt:Date.now()}});});
-    await expect(t.withIdentity(identity('new')).mutation(api.domain.write,{operation:'acceptInvitation',input:{token:'b'.repeat(64)}})).rejects.toThrow('Invalid or expired');
+    await expect(t.withIdentity(identity('new')).mutation(api.domain.write,{operation:'acceptInvitation',input:{token:'b'.repeat(64)}})).rejects.toThrow('verified invitation acceptance service');
+    await expect(t.withIdentity(identity('new')).mutation((internal as any).domain.acceptInvitationInternal,{token:'b'.repeat(64),subject:'new',email:'new@example.test'})).rejects.toThrow('Invalid or expired');
     expect((await t.run(async ctx=>ctx.db.get(id)))?.ownerId).toBe('owner');
   });
   test('legacy placeState snapshots do not override current canonical prices',async()=>{
