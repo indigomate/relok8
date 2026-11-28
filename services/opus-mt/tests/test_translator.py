@@ -4,24 +4,15 @@ from types import SimpleNamespace
 from app.translator import MODEL_SPECS, OpusTranslator
 
 
-class FakeTokenizer:
+class FakeProcessor:
     def __init__(self) -> None:
         self.source = ""
 
-    def __call__(self, text: str, add_special_tokens: bool = False) -> dict[str, list[int]]:
+    def encode(self, text: str, out_type: type) -> list[object]:
         self.source = text
-        return {"input_ids": [1]}
+        return [1] if out_type is int else [text]
 
-    def encode(self, text: str) -> list[str]:
-        return [text]
-
-    def convert_ids_to_tokens(self, values: list[str]) -> list[str]:
-        return values
-
-    def convert_tokens_to_ids(self, values: list[str]) -> list[str]:
-        return values
-
-    def decode(self, values: list[object], skip_special_tokens: bool = True) -> str:
+    def decode(self, values: list[object]) -> str:
         if values == [1]:
             return self.source
         return " ".join(str(value) for value in values)
@@ -37,15 +28,22 @@ class FakeModel:
 
 
 def test_english_to_polish_uses_required_target_prefix() -> None:
-    tokenizer = FakeTokenizer()
+    source_processor = FakeProcessor()
+    target_processor = FakeProcessor()
     model = FakeModel()
     translator = OpusTranslator.__new__(OpusTranslator)
     translator._lock = Lock()
-    translator._models = {("en", "pl"): (tokenizer, model, MODEL_SPECS[("en", "pl")])}
+    translator._loaded_pair = ("en", "pl")
+    translator._loaded = (
+        source_processor,
+        target_processor,
+        model,
+        MODEL_SPECS[("en", "pl")],
+    )
 
     result = translator.translate("en", "pl", "Available from May")
 
-    assert model.received == [[">>pol<< Available from May"]]
+    assert model.received == [[">>pol<<", "Available from May"]]
     assert result == "przetłumaczone"
 
 

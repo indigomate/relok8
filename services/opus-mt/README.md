@@ -10,9 +10,9 @@ fully offline.
 
 ## Resources
 
-Use a long-running Docker host with at least 1 GB of RAM. The service loads both
-models once and intentionally runs one Uvicorn worker to avoid duplicating model
-memory. Do not deploy it as a Vercel Function.
+Use a long-running Docker host with at least 512 MB of RAM. The service keeps
+only the active translation direction in memory and intentionally runs one
+Uvicorn worker. Do not deploy it as a Vercel Function.
 
 ## Configuration
 

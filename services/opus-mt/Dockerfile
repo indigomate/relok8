@@ -10,6 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /build
 
 COPY services/opus-mt/requirements.txt ./
+COPY services/opus-mt/requirements-build.txt ./
 COPY services/opus-mt/app ./app
 COPY services/opus-mt/download_models.py ./
 
@@ -18,7 +19,7 @@ RUN --mount=type=secret,id=build_ca,required=false \
     if [ -f /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca REQUESTS_CA_BUNDLE=/run/secrets/build_ca SSL_CERT_FILE=/run/secrets/build_ca; fi \
     && python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.9.1+cpu \
-    && python -m pip install --no-cache-dir -r requirements.txt \
+    && python -m pip install --no-cache-dir -r requirements-build.txt \
     && python download_models.py \
     && cp -R app /bundle/app \
     && cp requirements.txt /bundle/requirements.txt \

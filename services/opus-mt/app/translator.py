@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import os
 import re
 from dataclasses import dataclass
@@ -40,63 +41,79 @@ MODEL_SPECS: dict[tuple[str, str], ModelSpec] = {
 
 
 class OpusTranslator:
-    """Loads int8 CTranslate2 Marian models and runs CPU inference."""
+    """Loads one int8 CTranslate2 Marian model at a time for low-memory hosts."""
 
     def __init__(self) -> None:
         import ctranslate2
-        from transformers import MarianTokenizer
+        import sentencepiece
 
-        self._models: dict[tuple[str, str], tuple[object, object, ModelSpec]] = {}
+        self._ctranslate2 = ctranslate2
+        self._sentencepiece = sentencepiece
+        self._loaded_pair: tuple[str, str] | None = None
+        self._loaded: tuple[object, object, object, ModelSpec] | None = None
         self._lock = Lock()
-        for pair, spec in MODEL_SPECS.items():
-            tokenizer = MarianTokenizer.from_pretrained(
-                spec.local_path,
-                local_files_only=True,
-            )
-            model = ctranslate2.Translator(
-                spec.local_path,
-                device="cpu",
-                compute_type="int8",
-                inter_threads=1,
-                intra_threads=1,
-            )
-            self._models[pair] = (tokenizer, model, spec)
+        for spec in MODEL_SPECS.values():
+            for filename in ("config.json", "model.bin", "source.spm", "target.spm"):
+                if not os.path.isfile(os.path.join(spec.local_path, filename)):
+                    raise RuntimeError(f"Missing model file: {spec.directory}/{filename}")
+
+    def _load(self, pair: tuple[str, str]) -> tuple[object, object, object, ModelSpec]:
+        if self._loaded_pair == pair and self._loaded is not None:
+            return self._loaded
+
+        self._loaded = None
+        self._loaded_pair = None
+        gc.collect()
+
+        spec = MODEL_SPECS[pair]
+        source_processor = self._sentencepiece.SentencePieceProcessor(
+            model_file=os.path.join(spec.local_path, "source.spm")
+        )
+        target_processor = self._sentencepiece.SentencePieceProcessor(
+            model_file=os.path.join(spec.local_path, "target.spm")
+        )
+        model = self._ctranslate2.Translator(
+            spec.local_path,
+            device="cpu",
+            compute_type="int8",
+            inter_threads=1,
+            intra_threads=1,
+        )
+        self._loaded_pair = pair
+        self._loaded = (source_processor, target_processor, model, spec)
+        return self._loaded
 
     @staticmethod
-    def _chunks(text: str, tokenizer: object, maximum_tokens: int = 400) -> list[str]:
-        encoded = tokenizer(text, add_special_tokens=False)["input_ids"]
+    def _chunks(text: str, source_processor: object, maximum_tokens: int = 400) -> list[str]:
+        encoded = source_processor.encode(text, out_type=int)
         if not encoded:
             return [text]
         return [
-            tokenizer.decode(encoded[start : start + maximum_tokens], skip_special_tokens=True)
+            source_processor.decode(encoded[start : start + maximum_tokens])
             for start in range(0, len(encoded), maximum_tokens)
         ]
 
     def _translate_segment(self, source: str, target: str, text: str) -> str:
-        tokenizer, model, spec = self._models[(source, target)]
-        chunks = self._chunks(text, tokenizer)
-        prepared = [f"{spec.target_prefix}{chunk}" for chunk in chunks]
-        token_batches = [
-            tokenizer.convert_ids_to_tokens(tokenizer.encode(item))
-            for item in prepared
-        ]
+        source_processor, target_processor, model, spec = self._load((source, target))
+        chunks = self._chunks(text, source_processor)
+        token_batches = [source_processor.encode(chunk, out_type=str) for chunk in chunks]
+        if spec.target_prefix:
+            language_token = spec.target_prefix.strip()
+            token_batches = [[language_token, *tokens] for tokens in token_batches]
         generated = model.translate_batch(
             token_batches,
             beam_size=4,
             max_decoding_length=512,
         )
         return " ".join(
-            tokenizer.decode(
-                tokenizer.convert_tokens_to_ids(item.hypotheses[0]),
-                skip_special_tokens=True,
-            ).strip()
+            target_processor.decode(item.hypotheses[0]).strip()
             for item in generated
         ).strip()
 
     def translate(self, source: str, target: str, text: str) -> str:
         if source == target:
             return text
-        if (source, target) not in self._models:
+        if (source, target) not in MODEL_SPECS:
             raise ValueError(f"Unsupported language pair: {source}-{target}")
 
         # Preserve paragraph breaks while translating each text segment.
