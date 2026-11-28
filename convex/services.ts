@@ -20,6 +20,9 @@ import { appOrigin } from './lib/appUrl';
 
 type TranslationLocale = 'en' | 'pl';
 
+const POLISH_CHARACTER = /[ąćęłńóśźż]/i;
+const OPUS_MT_REQUEST_TIMEOUT_MS = 60_000;
+
 function translationHash(text: string): string {
   const version = process.env.OPUS_MT_CACHE_VERSION || 'opus-mt-v1';
   return createHash('sha256').update(`${version}\0${text}`, 'utf8').digest('hex');
@@ -53,7 +56,7 @@ async function callOpusMt(source: string, target: TranslationLocale, text: strin
     method: 'POST',
     headers,
     body: JSON.stringify({ from: source, to: target, source: text }),
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(OPUS_MT_REQUEST_TIMEOUT_MS),
   });
   let payload: unknown;
   try {
@@ -65,29 +68,57 @@ async function callOpusMt(source: string, target: TranslationLocale, text: strin
   return parseOpusTranslationResponse(payload);
 }
 
-async function translateWithOpusMt(text: string, target: TranslationLocale): Promise<string> {
-  if (!/[\p{L}\p{N}]/u.test(text)) return text;
-  const source = detect(text) || (target === 'en' ? 'pl' : 'en');
-  if (source === target) return text;
-  try {
-    return await callOpusMt(source, target, text);
-  } catch (directError) {
-    if (source === 'en' || target === 'en') throw directError;
-    const english = await callOpusMt(source, 'en', text);
-    return callOpusMt('en', target, english);
-  }
+export function detectSupportedTranslationSource(text: string): TranslationLocale {
+  const detected = detect(text);
+  if (detected === 'pl' || detected === 'en') return detected;
+  // tinyld can label short English messages as languages such as Afrikaans or
+  // Tagalog. Opus-MT only supports English and Polish here, so never forward an
+  // unsupported language code. Polish-specific characters provide a reliable
+  // fallback; otherwise English is the safer default for ambiguous short text.
+  return POLISH_CHARACTER.test(text) ? 'pl' : 'en';
 }
 
-async function translateConcurrently(texts: string[], target: TranslationLocale): Promise<string[]> {
-  const results = new Array<string>(texts.length);
-  let next = 0;
-  const workers = Array.from({ length: Math.min(4, texts.length) }, async () => {
-    while (next < texts.length) {
-      const index = next++;
-      results[index] = await translateWithOpusMt(texts[index], target);
+export async function translateOpusBatchResiliently(
+  texts: string[],
+  target: TranslationLocale,
+  translate: (source: TranslationLocale, target: TranslationLocale, text: string) => Promise<string> = callOpusMt,
+): Promise<string[]> {
+  const results: string[] = [];
+  let attempted = 0;
+  let succeeded = 0;
+  let firstError: unknown;
+
+  // The 512 MB Northflank service intentionally loads one model and processes
+  // one inference at a time. Sequential calls avoid queueing several requests
+  // behind that lock until Convex times them out.
+  for (const text of texts) {
+    if (!/[\p{L}\p{N}]/u.test(text)) {
+      results.push(text);
+      continue;
     }
-  });
-  await Promise.all(workers);
+    const source = detectSupportedTranslationSource(text);
+    if (source === target) {
+      results.push(text);
+      continue;
+    }
+    attempted += 1;
+    try {
+      results.push(await translate(source, target, text));
+      succeeded += 1;
+    } catch (error) {
+      firstError ??= error;
+      results.push(text);
+      console.warn('Opus-MT translation item failed', {
+        source,
+        target,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  // Preserve partial results when one item fails, but still surface a complete
+  // provider outage instead of reporting the original text as a translation.
+  if (attempted > 0 && succeeded === 0 && firstError) throw firstError;
   return results;
 }
 
@@ -110,7 +141,7 @@ async function translateTexts(ctx: any, values: string[], targetLocale: Translat
       hash,
       text: texts[hashes.indexOf(hash)],
     }));
-    const translated = await translateConcurrently(missing.map((item) => item.text), targetLocale);
+    const translated = await translateOpusBatchResiliently(missing.map((item) => item.text), targetLocale);
     const writes = missing.map((item, index) => ({
       sourceHash: item.hash,
       targetLocale,
