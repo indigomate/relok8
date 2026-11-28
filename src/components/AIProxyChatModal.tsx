@@ -5,6 +5,7 @@ import { Listing } from '../types';
 import { SupportedLocale } from '../utils/formatters';
 import { useConvex, ConvexAIMessageDoc } from '../lib/convex/client';
 import { OnloAvatar } from './OnloAvatar';
+import { TypewriterText } from './TypewriterText';
 
 interface AIProxyChatModalProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [lastUserPrompt, setLastUserPrompt] = useState<string | null>(null);
+  const [animateRepliesAfter, setAnimateRepliesAfter] = useState(Number.POSITIVE_INFINITY);
+  const [typedMessageIds, setTypedMessageIds] = useState<Set<string>>(() => new Set());
   const [isVisible, setIsVisible] = useState(false);
   const [isRendered, setIsRendered] = useState(isOpen);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -193,6 +196,13 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     text = text.replace(/📄 Landlord Approval Workflow:?/gi, '');
     text = text.replace(/Retrieved cosine similarity.*94\.6%/gi, '');
     text = text.replace(/High affinity match score:[^.\n]+/gi, '');
+    text = text.replace(/```[a-z]*\n?/gi, '').replace(/```/g, '');
+    text = text.replace(/^\s{0,3}#{1,6}\s+/gm, '');
+    text = text.replace(/^\s*(?:[-*+•▪◦]|\d+[.)])\s+/gm, '');
+    text = text.replace(/[*_`~]+/g, '');
+    text = text.replace(/\s*\[\d+]/g, '');
+    text = text.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '');
+    text = text.replace(/\n{3,}/g, '\n\n');
     // If it's a similar listings answer, return clean summary line
     if (text.toLowerCase().includes('embedding') || text.toLowerCase().includes('similar') || text.toLowerCase().includes('match')) {
       return text.trim();
@@ -211,6 +221,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
     setIsGenerating(true);
     setHasError(false);
     setLastUserPrompt(userText);
+    setAnimateRepliesAfter(Date.now());
 
     try {
       await convex.sendAIMessage(listing.id, userText, locale === 'pl' ? 'pl' : 'en');
@@ -323,6 +334,8 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
               cleanedContent.toLowerCase().includes('around pln')
             );
             const isLastAssistantMessage = !isUser && idx === messages.length - 1;
+            const shouldType = isLastAssistantMessage && (msg.timestamp || 0) >= animateRepliesAfter;
+            const revealDetails = !shouldType || typedMessageIds.has(uniqueKey);
 
             return (
               <div key={uniqueKey} className="onlo-message-entry space-y-1.5">
@@ -347,11 +360,16 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         <span className="text-xs font-bold text-slate-900">Onlo</span>
                         <span className="text-[11px] text-slate-400 font-medium">· {locale === 'pl' ? 'lokalny przewodnik' : 'local guide'}</span>
                       </div>
-                      <div className="whitespace-pre-wrap text-[15px] leading-[22px] text-slate-900">
-                        {cleanedContent}
+                      <div className="whitespace-pre-wrap rounded-2xl rounded-tl-md border border-slate-200 bg-slate-50/80 px-4 py-3 text-[15px] leading-[22px] text-slate-900 shadow-xs">
+                        <TypewriterText
+                          text={cleanedContent}
+                          animate={shouldType}
+                          onProgress={shouldType ? () => messagesEndRef.current?.scrollIntoView({ block: 'nearest' }) : undefined}
+                          onComplete={shouldType ? () => setTypedMessageIds((previous) => new Set(previous).add(uniqueKey)) : undefined}
+                        />
                       </div>
 
-                      {msg.confidence && (
+                      {revealDetails && msg.confidence && (
                         <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${msg.confidence === 'verified' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : msg.confidence === 'partial' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
                           {msg.confidence === 'verified'
                             ? (locale === 'pl' ? 'Oparte na źródłach' : 'Source-backed')
@@ -361,7 +379,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                         </span>
                       )}
 
-                      {msg.suggestedActions && msg.suggestedActions.length > 0 && (
+                      {revealDetails && msg.suggestedActions && msg.suggestedActions.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {msg.suggestedActions.map((action) => action.prompt && (
                             <button key={action.id} type="button" onClick={() => handleSendPrompt(action.prompt!)} disabled={isGenerating} className="min-h-8 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">
@@ -372,7 +390,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                       )}
 
                       {/* Similar listings tool results rendered as structured cards */}
-                      {isSimilarListingsQuery && (
+                      {revealDetails && isSimilarListingsQuery && (
                         <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white shadow-xs">
                           {fallbackSimilarRooms.map((room) => (
                             <button
@@ -410,20 +428,20 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                       )}
 
                       {/* Sources used for this answer */}
-                      <div className="pt-0.5 flex flex-wrap gap-1.5" aria-label={locale === 'pl' ? 'Źródła odpowiedzi' : 'Answer sources'}>
+                      {revealDetails && <div className="pt-0.5 flex flex-wrap gap-1.5" aria-label={locale === 'pl' ? 'Źródła odpowiedzi' : 'Answer sources'}>
                         {(msg.sources?.length ? msg.sources : [{ id: 'listing', label: locale === 'pl' ? 'Dane ogłoszenia Relok8' : 'Relok8 listing data', kind: 'internal' as const }]).map((source, sourceIndex) => source.url ? (
                           <a key={`${source.id}-${sourceIndex}`} href={source.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-indigo-700 hover:bg-indigo-50">
-                            [{sourceIndex}] {source.label}
+                            {source.label}
                           </a>
                         ) : (
                           <span key={`${source.id}-${sourceIndex}`} className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
-                            [{sourceIndex}] {source.label}
+                            {source.label}
                           </span>
                         ))}
-                      </div>
+                      </div>}
 
                       {/* Disclaimer under last answer */}
-                      {isLastAssistantMessage && (
+                      {revealDetails && isLastAssistantMessage && (
                         <p className="text-[12px] leading-[18px] text-slate-400 pt-2">
                           {locale === 'pl'
                             ? 'Onlo udziela wskazówek sąsiedzkich i nie świadczy formalnych porad prawnych. '
@@ -458,7 +476,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-slate-900">Onlo</span>
                   <span className="text-[11px] text-indigo-600 font-medium">
-                    · {locale === 'pl' ? 'zastanawia się...' : 'thinking...'}
+                    · {locale === 'pl' ? 'przygotowuje odpowiedź' : 'preparing a reply'}
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl rounded-tl-xs bg-indigo-50/70 border border-indigo-100 text-indigo-950 text-xs shadow-2xs">
@@ -466,7 +484,7 @@ export const AIProxyChatModal: React.FC<AIProxyChatModalProps> = ({
                   <span className="onlo-typing-dot [animation-delay:140ms]" />
                   <span className="onlo-typing-dot [animation-delay:280ms]" />
                   <span className="text-[12px] font-medium ml-1">
-                    {locale === 'pl' ? 'Onlo przygotowuje odpowiedź...' : 'Onlo is answering...'}
+                    {locale === 'pl' ? 'Sprawdzam źródła' : 'Checking sources'}
                   </span>
                 </div>
               </div>

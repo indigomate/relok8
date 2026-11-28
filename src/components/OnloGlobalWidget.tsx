@@ -3,6 +3,7 @@ import { ArrowUp, LockKeyhole, X } from 'lucide-react';
 import { backend } from '../lib/backend';
 import { api } from '../../convex/_generated/api';
 import { OnloAvatar, OnloState } from './OnloAvatar';
+import { TypewriterText } from './TypewriterText';
 import { SupportedLocale } from '../utils/formatters';
 
 interface OnloGlobalWidgetProps {
@@ -23,6 +24,7 @@ interface ChatMessage {
   runId?: string;
   confidence?: 'verified' | 'partial' | 'unverified';
   suggestedActions?: Array<{ id: string; label: string; kind: 'ask' | 'review' | 'navigate'; prompt?: string; href?: string; requiresConfirmation: boolean }>;
+  animate?: boolean;
 }
 
 const EXIT_DURATION = 190;
@@ -32,7 +34,7 @@ function greeting(locale: SupportedLocale): ChatMessage {
     id: 'init-global-onlo',
     sender: 'onlo',
     text: locale === 'pl'
-      ? 'Cześć! Jestem Onlo — przewodnikiem po wynajmie i przejmowaniu umów w Polsce. Zapytaj mnie o czynsz, meldunek, kaucję lub cesję najmu.'
+      ? 'Cześć! Jestem Onlo. Pomagam w wynajmie i przejmowaniu umów w Polsce. Zapytaj mnie o czynsz, meldunek, kaucję lub cesję najmu.'
       : 'Hey! I’m Onlo, your guide to renting and lease takeovers in Poland. Ask me about czynsz, meldunek, deposits, or taking over a lease.',
     timestamp: Date.now(),
   };
@@ -56,12 +58,14 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
   });
   const [ratedRuns, setRatedRuns] = useState<Set<string>>(() => new Set());
   const [memoryEnabled, setMemoryEnabled] = useState(false);
+  const [typedMessageIds, setTypedMessageIds] = useState<Set<string>>(() => new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const sessionCreatedLocallyRef = useRef(false);
 
   const [widgetState, setWidgetState] = useState<OnloState>(() => {
     try {
@@ -82,6 +86,10 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
 
   useEffect(() => {
     if (!isAuthenticated || !sessionId) return;
+    if (sessionCreatedLocallyRef.current) {
+      sessionCreatedLocallyRef.current = false;
+      return;
+    }
     let cancelled = false;
     backend().query((api as any).onloSessions.messages, { sessionId }).then((history: any[]) => {
       if (cancelled || !history.length) return;
@@ -194,6 +202,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
     try {
       const data: any = await backend().action((api as any).services.ask, { question: trimmed, locale, ...(sessionId ? { sessionId } : {}) });
       if (data.sessionId && data.sessionId !== sessionId) {
+        sessionCreatedLocallyRef.current = true;
         setSessionId(data.sessionId);
         try { localStorage.setItem('r8_onlo_general_session', data.sessionId); } catch {}
       }
@@ -206,6 +215,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
         runId: data.runId,
         confidence: data.confidence,
         suggestedActions: data.suggestedActions,
+        animate: true,
       }]);
       setWidgetState('happy');
       window.setTimeout(() => setWidgetState('idle'), 1800);
@@ -217,6 +227,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
           ? 'Nie udało mi się teraz odpowiedzieć. Spróbuj ponownie za chwilę.'
           : 'I couldn’t answer just now. Please try again in a moment.',
         timestamp: Date.now(),
+        animate: true,
       }]);
       setWidgetState('idle');
     } finally {
@@ -348,6 +359,8 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 bg-white overscroll-contain" aria-live="polite" aria-busy={isLoading}>
               {messages.map((message) => {
                 const isUser = message.sender === 'user';
+                const shouldType = !isUser && Boolean(message.animate);
+                const revealDetails = !shouldType || typedMessageIds.has(message.id);
                 return (
                   <div key={message.id} className={`onlo-message-entry flex ${isUser ? 'justify-end' : 'items-start gap-2.5'}`}>
                     {!isUser && <OnloAvatar size={26} variant="avatar" state="static" title="" className="mt-0.5" />}
@@ -362,11 +375,18 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                       )}
                       <div className={`whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-5 ${isUser
                         ? 'rounded-br-md bg-indigo-600 text-white shadow-xs'
-                        : 'rounded-tl-md bg-slate-100 text-slate-800 border border-slate-200/60'
+                        : 'rounded-tl-md border border-slate-200 border-l-2 border-l-indigo-500 bg-slate-50 text-slate-800 shadow-xs'
                       }`}>
-                        {message.text}
+                        {isUser ? message.text : (
+                          <TypewriterText
+                            text={message.text}
+                            animate={shouldType}
+                            onProgress={shouldType ? () => messagesEndRef.current?.scrollIntoView({ block: 'nearest' }) : undefined}
+                            onComplete={shouldType ? () => setTypedMessageIds((previous) => new Set(previous).add(message.id)) : undefined}
+                          />
+                        )}
                       </div>
-                      {!isUser && message.sources && message.sources.length > 0 && (
+                      {revealDetails && !isUser && message.sources && message.sources.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-1" aria-label={locale === 'pl' ? 'Źródła odpowiedzi' : 'Answer sources'}>
                           {message.sources.map((source, index) => source.url ? (
                             <a
@@ -376,16 +396,16 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                               rel="noopener noreferrer"
                               className="inline-flex min-h-7 items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-indigo-700 hover:border-indigo-300 hover:bg-indigo-50"
                             >
-                              [{index + 1}] {source.label}
+                              {source.label}
                             </a>
                           ) : (
                             <span key={`${source.id}-${index}`} className="inline-flex min-h-7 items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600">
-                              [{index + 1}] {source.label}
+                              {source.label}
                             </span>
                           ))}
                         </div>
                       )}
-                      {!isUser && message.confidence && (
+                      {revealDetails && !isUser && message.confidence && (
                         <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-500">
                           <span className={`rounded-full border px-2 py-0.5 font-semibold ${message.confidence === 'verified' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : message.confidence === 'partial' ? 'border-amber-200 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
                             {message.confidence === 'verified'
@@ -396,7 +416,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                           </span>
                         </div>
                       )}
-                      {!isUser && message.suggestedActions && message.suggestedActions.length > 0 && (
+                      {revealDetails && !isUser && message.suggestedActions && message.suggestedActions.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 pt-1.5">
                           {message.suggestedActions.map((action) => action.prompt && (
                             <button key={action.id} type="button" onClick={() => handleSend(action.prompt!)} disabled={isLoading} className="min-h-8 rounded-full border border-indigo-200 bg-indigo-50 px-3 text-[10px] font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50">
@@ -405,7 +425,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                           ))}
                         </div>
                       )}
-                      {!isUser && message.runId && (
+                      {revealDetails && !isUser && message.runId && (
                         <div className="flex items-center gap-2 pt-1 text-[10px] text-slate-400">
                           {ratedRuns.has(message.runId) ? (
                             <span>{locale === 'pl' ? 'Dziękujemy za opinię' : 'Thanks for the feedback'}</span>
@@ -430,7 +450,7 @@ export const OnloGlobalWidget: React.FC<OnloGlobalWidgetProps> = ({
                     <span className="onlo-typing-dot" />
                     <span className="onlo-typing-dot [animation-delay:140ms]" />
                     <span className="onlo-typing-dot [animation-delay:280ms]" />
-                    <span className="font-medium ml-1">{locale === 'pl' ? 'Onlo odpowiada…' : 'Onlo is answering…'}</span>
+                    <span className="font-medium ml-1">{locale === 'pl' ? 'Przygotowuję odpowiedź' : 'Preparing a reply'}</span>
                   </div>
                 </div>
               )}

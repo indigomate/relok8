@@ -489,6 +489,17 @@ textarea:focus-visible {
   animation: onlo-typing 840ms ease-in-out infinite;
 }
 
+.onlo-type-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  border-radius: 999px;
+  background: #4f46e5;
+  vertical-align: -0.12em;
+  animation: onlo-caret 620ms ease-in-out infinite;
+}
+
 @keyframes onlo-message-enter {
   from { opacity: 0; transform: translateY(8px) scale(0.985); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -497,6 +508,11 @@ textarea:focus-visible {
 @keyframes onlo-typing {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.38; }
   30% { transform: translateY(-3px); opacity: 1; }
+}
+
+@keyframes onlo-caret {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0.18; }
 }
 
 @media (max-width: 639px) {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { proactiveActions, routeOnloIntent, toolsForIntent, validateEvidenceAnswer } from '../convex/lib/onloAgent';
+import { cleanOnloText, proactiveActions, routeOnloIntent, toolsForIntent, validateEvidenceAnswer } from '../convex/lib/onloAgent';
 import { knownMonthlyCost, listingContradictions, verifiedListingFacts } from '../convex/lib/onloTools';
 
 describe('Onlo bounded agent architecture', () => {
@@ -32,5 +32,10 @@ describe('Onlo bounded agent architecture', () => {
 
   test('offers proactive suggestions without pretending to execute them', () => {
     expect(proactiveActions('safety', 'en', true).every((action) => action.requiresConfirmation === false)).toBe(true);
+  });
+
+  test('turns model formatting into clean readable text', () => {
+    expect(cleanOnloText('## **Answer**\n- The rent is `800 PLN` [1]. 😀', true)).toBe('Answer\nThe rent is 800 PLN.');
+    expect(cleanOnloText('Cześć\u200B!\n\n\nJak mogę pomóc?')).toBe('Cześć!\n\nJak mogę pomóc?');
   });
 });

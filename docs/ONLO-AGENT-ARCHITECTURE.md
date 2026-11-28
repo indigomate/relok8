@@ -39,3 +39,9 @@ Conversation assistance produces a draft in the user's composer. The user review
 ## Evaluation and operations
 
 `npm run test:onlo` runs bilingual retrieval, intent routing, citation validation, redaction and deterministic-tool tests. Production traces support grounded-answer, citation, escalation, latency and feedback measurements without copying private messages into logs.
+
+## Response performance and presentation
+
+Common bilingual rental questions use deterministic lexical retrieval without waiting for an embedding provider. Semantic retrieval remains a fallback for questions without a clear lexical match. Generation uses the fast model's minimal reasoning mode, a concise output limit and a bounded provider timeout.
+
+Model text is normalised on the server before it is stored or displayed. Markdown, decorative symbols, emoji, invisible control characters and inline citation markers are removed; source information remains available as separate source chips. New replies use a short adaptive typewriter animation in the global and listing assistants. The animation completes within 1.8 seconds and is skipped when the device requests reduced motion.

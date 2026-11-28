@@ -39,6 +39,27 @@ export interface OnloEvidenceValidation {
   needsHuman: boolean;
 }
 
+export function cleanOnloText(value: string, stripCitations = false): string {
+  let text = value
+    .normalize('NFKC')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200D\u2060\uFEFF]/g, '')
+    .replace(/```[\s\S]*?```/g, (block) => block.replace(/```[a-z]*\n?/gi, '').replace(/```/g, ''))
+    .replace(/<[^>]+>/g, '')
+    .replace(/\[([^\]]+)]\((?:https?:\/\/)?[^)]+\)/g, '$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s*(?:[-*+•▪◦]|\d+[.)])\s+/gm, '')
+    .replace(/[*_`~]+/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/[!?.,]{3,}/g, (match) => match[0]);
+  if (stripCitations) text = text.replace(/\s*\[\d+]/g, '');
+  return text
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 const patterns: Array<[OnloIntent, RegExp]> = [
   ['safety', /scam|fraud|safe|oszust|bezpiecz|pay before|money before|before (?:I )?view|przelew przed/i],
   ['costs', /cost|price|rent|deposit|bill|czynsz|koszt|cena|kaucj|rachun/i],
